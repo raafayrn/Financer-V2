@@ -1,0 +1,27 @@
+{
+  "name": "controle-financeiro",
+  "version": "1.0.0",
+  "private": true,
+  "description": "App pessoal de controle financeiro — foco em quanto ainda posso gastar no mês.",
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace server & npm run dev --workspace client",
+    "dev:server": "npm run dev --workspace server",
+    "dev:client": "npm run dev --workspace client",
+    "build": "npm run build --workspace server && npm run build --workspace client",
+    "test": "npm run test --workspace server"
+  },
+  "allowScripts": {
+    "@prisma/client@6.19.3": true,
+    "@prisma/engines@6.19.3": true,
+    "esbuild@0.28.1": true,
+    "esbuild@0.21.5": true,
+    "esbuild@0.25.12": true,
+    "prisma@6.19.3": true,
+    "protobufjs@7.6.4": true,
+    "@google/genai@2.10.0": true
+  }
+}

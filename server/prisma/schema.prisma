@@ -1,0 +1,149 @@
+// Prisma schema — Controle Financeiro
+//
+// Todos os valores monetários são armazenados em CENTAVOS (inteiros) para
+// evitar erros de arredondamento de ponto flutuante. A conversão para reais
+// acontece apenas na borda da API.
+//
+// Modelo de contas: cada usuário tem 3 contas fixas, criadas automaticamente
+// no cadastro (ver seedAccountsForUser em src/lib/accounts.ts):
+//   - CREDIT_CARD   ("Cartão de crédito")  — fatura mensal, fixos/variáveis
+//   - FOOD_VOUCHER  ("Vale-alimentação")   — gasto do vale (ex.: energéticos)
+//   - WALLET        ("Carteira (Pix)")     — saldo ACUMULATIVO (não reseta
+//                     por mês); sobe com Income.accountId = wallet e desce
+//                     com Expense.accountId = wallet.
+// `kind` identifica a conta de forma estável (não depender do nome, que o
+// usuário poderia editar no futuro).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  createdAt    DateTime @default(now())
+
+  categories     Category[]
+  budgets        MonthlyBudget[]
+  salaries       MonthlySalary[]
+  expenses       Expense[]
+  incomes        Income[]
+  accounts       Account[]
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  color     String   @default("#6366f1")
+  createdAt DateTime @default(now())
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expenses Expense[]
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model MonthlyBudget {
+  id        String   @id @default(cuid())
+  userId    String
+  // Ano e mês (1-12) a que o orçamento se refere.
+  year      Int
+  month     Int
+  // Valor do orçamento em centavos.
+  amount    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, year, month])
+  @@index([userId])
+}
+
+// Salário fixo do mês — editado em Ajustes, igual ao orçamento. Renda do mês
+// = MonthlySalary.amount + soma dos Income daquele mês.
+model MonthlySalary {
+  id        String   @id @default(cuid())
+  userId    String
+  year      Int
+  month     Int
+  // Valor em centavos.
+  amount    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, year, month])
+  @@index([userId])
+}
+
+enum AccountKind {
+  CREDIT_CARD
+  FOOD_VOUCHER
+  WALLET
+}
+
+model Account {
+  id        String      @id @default(cuid())
+  userId    String
+  name      String
+  kind      AccountKind
+  createdAt DateTime    @default(now())
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expenses Expense[]
+  incomes  Income[]
+
+  @@unique([userId, kind])
+  @@index([userId])
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  userId      String
+  description String
+  // Valor em centavos.
+  amount      Int
+  date        DateTime
+  categoryId  String?
+  accountId   String?
+  recurring   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  account  Account?  @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+  @@index([userId, date])
+  @@index([categoryId])
+}
+
+// Lançamentos de renda avulsos (ex.: vale-alimentação convertido em Pix).
+// Quando accountId aponta para a conta WALLET, credita o saldo da carteira.
+model Income {
+  id          String   @id @default(cuid())
+  userId      String
+  description String
+  // Valor em centavos.
+  amount      Int
+  date        DateTime
+  accountId   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+  @@index([userId, date])
+}
