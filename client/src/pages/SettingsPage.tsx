@@ -1,9 +1,19 @@
+import { AnimatePresence, motion } from 'framer-motion';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { api, ApiError } from '../api/client';
 import type { Category } from '../api/types';
 import { useMonth } from '../context/MonthContext';
 import { MonthNavigator } from '../components/MonthNavigator';
 import { formatCurrency, monthName } from '../utils/format';
+import { springSmooth, springTap } from '../lib/motion';
+
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 24 24" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 7h16M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2m-9 0 1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13" />
+    </svg>
+  );
+}
 
 const PALETTE = [
   '#ef4444',
@@ -184,19 +194,26 @@ export function SettingsPage() {
           />
           <div className="palette">
             {PALETTE.map((c) => (
-              <button
+              <motion.button
                 type="button"
                 key={c}
                 className={`swatch ${newColor === c ? 'selected' : ''}`}
                 style={{ background: c }}
                 onClick={() => setNewColor(c)}
                 aria-label={`Cor ${c}`}
+                whileTap={{ scale: 0.85 }}
+                transition={springTap}
               />
             ))}
           </div>
-          <button type="submit" className="btn-primary btn-sm">
+          <motion.button
+            type="submit"
+            className="btn-primary btn-sm"
+            whileTap={{ scale: 0.95 }}
+            transition={springTap}
+          >
             Adicionar
-          </button>
+          </motion.button>
         </form>
         {catError && <div className="alert alert-error">{catError}</div>}
 
@@ -204,15 +221,26 @@ export function SettingsPage() {
           <p className="empty">Nenhuma categoria cadastrada.</p>
         ) : (
           <ul className="settings-cat-list">
-            {categories.map((c) => (
-              <li key={c.id} className="settings-cat-row">
-                <span className="cat-dot" style={{ background: c.color }} />
-                <span className="cat-name">{c.name}</span>
-                <button className="icon-btn" title="Excluir" onClick={() => removeCategory(c.id)}>
-                  🗑
-                </button>
-              </li>
-            ))}
+            <AnimatePresence initial={false}>
+              {categories.map((c) => (
+                <motion.li
+                  key={c.id}
+                  className="settings-cat-row"
+                  layout
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={springSmooth}
+                  style={{ overflow: 'hidden' }}
+                >
+                  <span className="cat-dot" style={{ background: c.color }} />
+                  <span className="cat-name">{c.name}</span>
+                  <button className="icon-btn" title="Excluir" onClick={() => removeCategory(c.id)}>
+                    <TrashIcon />
+                  </button>
+                </motion.li>
+              ))}
+            </AnimatePresence>
           </ul>
         )}
       </section>

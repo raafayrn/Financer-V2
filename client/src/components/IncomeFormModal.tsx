@@ -2,10 +2,12 @@ import { useState, type FormEvent } from 'react';
 import type { Account, Income, IncomeInput } from '../api/types';
 import { ApiError } from '../api/client';
 import { todayIso } from '../utils/format';
+import { Modal } from './Modal';
 
 interface Props {
   accounts: Account[];
   initial?: Partial<Income>;
+  defaultAccountId?: string;
   title: string;
   onCancel: () => void;
   onSubmit: (data: IncomeInput) => Promise<void>;
@@ -14,15 +16,15 @@ interface Props {
 /**
  * Modal para lançamentos de renda avulsa (ex.: vale-alimentação convertido em
  * Pix). Quando a conta escolhida é a Carteira, o valor passa a compor o
- * saldo acumulado dela.
+ * saldo dela no mês.
  */
-export function IncomeFormModal({ accounts, initial, title, onCancel, onSubmit }: Props) {
+export function IncomeFormModal({ accounts, initial, defaultAccountId, title, onCancel, onSubmit }: Props) {
   const [description, setDescription] = useState(initial?.description ?? '');
   const [amount, setAmount] = useState(
     initial?.amount !== undefined ? String(initial.amount) : '',
   );
   const [date, setDate] = useState(initial?.date ?? todayIso());
-  const [accountId, setAccountId] = useState(initial?.accountId ?? '');
+  const [accountId, setAccountId] = useState(initial?.accountId ?? defaultAccountId ?? '');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -49,8 +51,9 @@ export function IncomeFormModal({ accounts, initial, title, onCancel, onSubmit }
   }
 
   return (
-    <div className="modal-backdrop" onClick={onCancel}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+    <Modal onCancel={onCancel}>
+      {(close) => (
+        <>
         <h2 className="modal-title">{title}</h2>
 
         <form onSubmit={handleSubmit} className="modal-form">
@@ -103,7 +106,7 @@ export function IncomeFormModal({ accounts, initial, title, onCancel, onSubmit }
           {error && <div className="alert alert-error">{error}</div>}
 
           <div className="modal-actions">
-            <button type="button" className="btn-ghost" onClick={onCancel}>
+            <button type="button" className="btn-ghost" onClick={close}>
               Cancelar
             </button>
             <button type="submit" className="btn-primary" disabled={submitting}>
@@ -111,7 +114,8 @@ export function IncomeFormModal({ accounts, initial, title, onCancel, onSubmit }
             </button>
           </div>
         </form>
-      </div>
-    </div>
+        </>
+      )}
+    </Modal>
   );
 }

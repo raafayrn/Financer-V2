@@ -1,23 +1,28 @@
-import { GoogleGenAI } from '@google/genai';
+import Anthropic from '@anthropic-ai/sdk';
 import { env } from '../env';
 
 export interface ParsedExpense {
-  /** Valor em reais (número). null quando a IA não conseguiu identificar. */
   valor: number | null;
   descricao: string;
-  /** Nome de categoria sugerida (deve estar entre as existentes ou null). */
   categoria: string | null;
-  /** Data no formato AAAA-MM-DD. */
   data: string;
-  /** Mensagem curta para o usuário quando não foi possível extrair o valor. */
   aviso: string | null;
 }
 
-let client: GoogleGenAI | null = null;
+export interface ClassifiedMessage {
+  intent: 'despesa' | 'receita' | 'pergunta' | 'desconhecido';
+  valor: number | null;
+  descricao: string;
+  categoria: string | null;
+  data: string;
+  aviso: string | null;
+}
 
-function getClient(): GoogleGenAI {
+let client: Anthropic | null = null;
+
+function getClient(): Anthropic {
   if (!client) {
-    client = new GoogleGenAI({ apiKey: env.geminiApiKey });
+    client = new Anthropic({ apiKey: env.anthropicApiKey });
   }
   return client;
 }
@@ -28,201 +33,224 @@ function categoryContext(categories: string[]): string {
     : '(o usuário ainda não cadastrou categorias)';
 }
 
-// Schema JSON estrito de um lançamento — reutilizado tanto na extração por
-// texto quanto por imagem (onde vira um item de um array).
-const EXPENSE_ITEM_SCHEMA = {
-  type: 'object',
-  properties: {
-    valor: {
-      type: ['number', 'null'],
-      description:
-        'Valor da despesa em reais (ex.: 150.0). null se não houver valor claro.',
-    },
-    descricao: {
-      type: 'string',
-      description:
-        'Descrição curta e legível da despesa (ex.: "Loja de materiais de construção").',
-    },
-    categoria: {
-      type: ['string', 'null'],
-      description:
-        'Nome de UMA das categorias existentes do usuário que melhor se encaixa, ou null se nenhuma se encaixar.',
-    },
-    data: {
-      type: 'string',
-      description:
-        'Data da despesa no formato AAAA-MM-DD. Interprete termos relativos (hoje, ontem, anteontem) em relação à data atual informada.',
-    },
-  },
-  required: ['valor', 'descricao', 'categoria', 'data'],
-};
-
-const TEXT_EXTRACTION_SCHEMA = {
-  ...EXPENSE_ITEM_SCHEMA,
-  properties: {
-    ...EXPENSE_ITEM_SCHEMA.properties,
-    aviso: {
-      type: ['string', 'null'],
-      description:
-        'Se não foi possível identificar um valor claro, uma mensagem curta pedindo para o usuário reformular. Caso contrário, null.',
-    },
-  },
-  required: [...EXPENSE_ITEM_SCHEMA.required, 'aviso'],
-};
-
-const IMAGE_EXTRACTION_SCHEMA = {
-  type: 'object',
-  properties: {
-    lancamentos: {
-      type: 'array',
-      description: 'Uma despesa para cada compra distinta identificada na imagem.',
-      items: EXPENSE_ITEM_SCHEMA,
-    },
-    aviso: {
-      type: ['string', 'null'],
-      description:
-        'Se a imagem não continha nenhuma despesa legível, uma mensagem curta explicando. Caso contrário, null.',
-    },
-  },
-  required: ['lancamentos', 'aviso'],
-};
-
-function toParsedExpense(raw: unknown, today: string): ParsedExpense {
-  const parsed = (raw ?? {}) as Record<string, unknown>;
-  const valor = typeof parsed.valor === 'number' ? parsed.valor : null;
-  const descricao = typeof parsed.descricao === 'string' ? parsed.descricao : '';
-  const categoria = typeof parsed.categoria === 'string' ? parsed.categoria : null;
-  const data =
-    typeof parsed.data === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(parsed.data)
-      ? parsed.data
-      : today;
-  const aviso = typeof parsed.aviso === 'string' ? parsed.aviso : null;
-  return { valor, descricao, categoria, data, aviso };
+async function ask(system: string, userPrompt: string): Promise<string> {
+  const msg = await getClient().messages.create({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 1024,
+    system,
+    messages: [{ role: 'user', content: userPrompt }],
+  });
+  const block = msg.content[0];
+  if (block.type !== 'text') throw new Error('Claude não retornou texto.');
+  return block.text;
 }
 
-/**
- * Envia o texto do usuário para o Gemini e retorna o lançamento estruturado.
- * A chave da API nunca sai do backend.
- */
+function parseJson(text: string): unknown {
+  const clean = text.replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/i, '').trim();
+  return JSON.parse(clean);
+}
+
+function toParsedExpense(raw: unknown, today: string): ParsedExpense {
+  const p = (raw ?? {}) as Record<string, unknown>;
+  return {
+    valor: typeof p.valor === 'number' ? p.valor : null,
+    descricao: typeof p.descricao === 'string' ? p.descricao : '',
+    categoria: typeof p.categoria === 'string' ? p.categoria : null,
+    data: typeof p.data === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(p.data) ? p.data : today,
+    aviso: typeof p.aviso === 'string' ? p.aviso : null,
+  };
+}
+
 export async function parseExpenseFromText(
   text: string,
   categories: string[],
-  today: string, // AAAA-MM-DD
+  today: string,
 ): Promise<ParsedExpense> {
-  const systemInstruction = [
+  const system = [
     'Você extrai lançamentos de despesas a partir de frases em português brasileiro.',
-    `A data de hoje é ${today}. Use-a para resolver termos relativos como "hoje", "ontem", "anteontem".`,
-    'Interprete valores em reais. "150", "150 reais", "R$ 150,00" e "cento e cinquenta" significam 150.0.',
-    'Escolha a categoria APENAS entre as categorias existentes do usuário listadas abaixo. Se nenhuma se encaixar bem, use null.',
-    'Categorias existentes do usuário:',
-    categoryContext(categories),
-    'Responda SOMENTE com o JSON no formato pedido. Se não houver um valor claro na frase, defina valor como null e preencha aviso.',
+    `A data de hoje é ${today}. Resolva termos relativos como "hoje", "ontem", "anteontem".`,
+    'Interprete valores em reais: "150", "150 reais", "R$ 150,00", "cento e cinquenta" = 150.0.',
+    'Escolha a categoria APENAS entre as listadas abaixo. Se nenhuma se encaixar, use null.',
+    'Categorias:', categoryContext(categories),
+    'Responda SOMENTE com JSON: {"valor": number|null, "descricao": string, "categoria": string|null, "data": "AAAA-MM-DD", "aviso": string|null}',
+    'Se não houver valor claro, defina valor como null e preencha aviso.',
   ].join('\n');
 
-  const interaction = await getClient().interactions.create({
-    model: env.geminiModel,
-    system_instruction: systemInstruction,
-    input: text,
-    response_format: {
-      type: 'text',
-      mime_type: 'application/json',
-      schema: TEXT_EXTRACTION_SCHEMA,
-    },
-  });
-
-  if (!interaction.output_text) {
-    throw new Error('O Gemini não retornou texto na resposta.');
-  }
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(interaction.output_text);
-  } catch {
-    throw new Error('O Gemini não retornou um JSON válido.');
-  }
-
-  return toParsedExpense(parsed, today);
+  const raw = await ask(system, text);
+  return toParsedExpense(parseJson(raw), today);
 }
 
-/**
- * Envia uma foto de comprovante/nota (base64) para o Gemini e retorna UMA OU
- * MAIS despesas identificadas na imagem (ex.: várias compras num mesmo
- * comprovante, ou várias notas fotografadas juntas).
- */
 export async function parseExpensesFromImage(
   imageBase64: string,
   mimeType: string,
   categories: string[],
   today: string,
 ): Promise<{ expenses: ParsedExpense[]; aviso: string | null }> {
-  const systemInstruction = [
-    'Você extrai lançamentos de despesas a partir de uma foto de nota fiscal, comprovante ou print de compra.',
-    `A data de hoje é ${today}. Se a imagem não tiver data legível, use a data de hoje.`,
-    'Se a imagem mostrar VÁRIAS compras distintas (vários itens de uma nota, ou várias notas na mesma foto), retorne um lançamento para CADA uma. Se for uma única compra, retorne apenas um item.',
-    'Escolha a categoria APENAS entre as categorias existentes do usuário listadas abaixo. Se nenhuma se encaixar bem, use null.',
-    'Categorias existentes do usuário:',
-    categoryContext(categories),
-    'Responda SOMENTE com o JSON no formato pedido. Se a imagem não tiver nenhuma despesa legível, retorne lancamentos como lista vazia e preencha aviso.',
+  const system = [
+    'Você extrai lançamentos de despesas a partir de uma foto de nota fiscal ou comprovante.',
+    `A data de hoje é ${today}. Se a imagem não tiver data legível, use hoje.`,
+    'Se houver várias compras distintas, retorne um lançamento para cada uma.',
+    'Escolha a categoria APENAS entre as listadas abaixo. Se nenhuma se encaixar, use null.',
+    'Categorias:', categoryContext(categories),
+    'Responda SOMENTE com JSON: {"lancamentos": [{"valor": number, "descricao": string, "categoria": string|null, "data": "AAAA-MM-DD"}], "aviso": string|null}',
   ].join('\n');
 
-  const interaction = await getClient().interactions.create({
-    model: env.geminiModel,
-    system_instruction: systemInstruction,
-    input: [
-      { type: 'image', data: imageBase64, mime_type: mimeType },
-      { type: 'text', text: 'Extraia os lançamentos desta imagem.' },
-    ],
-    response_format: {
-      type: 'text',
-      mime_type: 'application/json',
-      schema: IMAGE_EXTRACTION_SCHEMA,
-    },
+  const msg = await getClient().messages.create({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 2048,
+    system,
+    messages: [{
+      role: 'user',
+      content: [
+        { type: 'image', source: { type: 'base64', media_type: mimeType as 'image/jpeg', data: imageBase64 } },
+        { type: 'text', text: 'Extraia os lançamentos desta imagem.' },
+      ],
+    }],
   });
 
-  if (!interaction.output_text) {
-    throw new Error('O Gemini não retornou texto na resposta.');
-  }
+  const block = msg.content[0];
+  if (block.type !== 'text') throw new Error('Claude não retornou texto.');
+  const parsed = parseJson(block.text) as { lancamentos?: unknown[]; aviso?: unknown };
 
-  let parsed: { lancamentos?: unknown[]; aviso?: unknown };
-  try {
-    parsed = JSON.parse(interaction.output_text);
-  } catch {
-    throw new Error('O Gemini não retornou um JSON válido.');
-  }
-
-  const expenses = Array.isArray(parsed.lancamentos)
-    ? parsed.lancamentos.map((item) => toParsedExpense(item, today))
-    : [];
-  const aviso = typeof parsed.aviso === 'string' ? parsed.aviso : null;
-
-  return { expenses, aviso };
+  return {
+    expenses: Array.isArray(parsed.lancamentos)
+      ? parsed.lancamentos.map((item) => toParsedExpense(item, today))
+      : [],
+    aviso: typeof parsed.aviso === 'string' ? parsed.aviso : null,
+  };
 }
 
 /**
- * Responde uma pergunta em linguagem natural sobre as finanças do usuário,
- * usando um resumo de dados reais (montado pelo backend a partir do banco)
- * como contexto — o Gemini não inventa números, só interpreta o que foi
- * fornecido em `dataContext`.
+ * Extrai lançamentos de despesa a partir do TEXTO de uma fatura de cartão em
+ * PDF (já extraído pelo backend com pdf-parse). Cobre tanto compras quanto
+ * financiamentos/parcelamentos que aparecem na fatura, e ignora pagamentos
+ * recebidos (que reduzem o saldo devedor, não são despesas).
  */
+export async function parseExpensesFromInvoiceText(
+  invoiceText: string,
+  categories: string[],
+  today: string,
+): Promise<{ expenses: ParsedExpense[]; aviso: string | null }> {
+  const system = [
+    'Você extrai lançamentos de despesa a partir do texto de uma fatura de cartão de crédito brasileira (ex.: Nubank, Itaú, etc.).',
+    `A data de hoje é ${today}, usada apenas como fallback se não houver nenhuma data no texto.`,
+    'As linhas de transação geralmente mostram só dia e mês abreviado (ex.: "03 ABR"), sem ano — procure o ano correto em outras partes do texto da fatura (ex.: "FATURA 08 MAI 2026", "Período vigente: 01 ABR a 01 MAI") e use-o para montar a data completa AAAA-MM-DD de cada transação.',
+    'Inclua tanto as compras normais quanto lançamentos de parcelamento/financiamento/empréstimo (ex.: seções "Pagamentos e Financiamentos", "Pix parcelado") que representam dinheiro que SAIU — use o valor total cobrado nesta fatura para cada um (o valor ao lado do nome/data, não o "valor da transação" isolado do parênteses).',
+    'NÃO inclua: pagamentos recebidos (valores negativos, ex.: "Pagamento em ... −R$ ..."), "saldo restante da fatura anterior" quando for R$ 0,00, nem totais/resumos gerais da fatura.',
+    'Escolha a categoria APENAS entre as listadas abaixo, pelo nome do estabelecimento. Se nenhuma se encaixar, use null.',
+    'Categorias:', categoryContext(categories),
+    'Responda SOMENTE com JSON: {"lancamentos": [{"valor": number, "descricao": string, "categoria": string|null, "data": "AAAA-MM-DD"}], "aviso": string|null}',
+    'Se o texto não tiver nenhuma transação reconhecível, retorne lancamentos como lista vazia e preencha aviso.',
+  ].join('\n');
+
+  const msg = await getClient().messages.create({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 8192,
+    system,
+    messages: [{ role: 'user', content: `Texto da fatura:\n\n${invoiceText}` }],
+  });
+
+  const block = msg.content[0];
+  if (block.type !== 'text') throw new Error('Claude não retornou texto.');
+  const parsed = parseJson(block.text) as { lancamentos?: unknown[]; aviso?: unknown };
+
+  return {
+    expenses: Array.isArray(parsed.lancamentos)
+      ? parsed.lancamentos.map((item) => toParsedExpense(item, today))
+      : [],
+    aviso: typeof parsed.aviso === 'string' ? parsed.aviso : null,
+  };
+}
+
+/**
+ * Extrai lançamentos de despesa a partir do TEXTO de um extrato/fatura em
+ * CSV exportado pelo banco. O formato de colunas varia muito entre bancos,
+ * então deixamos o Claude detectar as colunas em vez de um parser rígido.
+ */
+export async function parseExpensesFromCsvText(
+  csvText: string,
+  categories: string[],
+  today: string,
+): Promise<{ expenses: ParsedExpense[]; aviso: string | null }> {
+  const system = [
+    'Você extrai lançamentos de despesa a partir de um CSV de extrato/fatura de banco brasileiro.',
+    `A data de hoje é ${today}, usada apenas como fallback se não houver data em alguma linha.`,
+    'A primeira linha costuma ser o cabeçalho — identifique sozinho quais colunas são data, descrição/estabelecimento e valor (os nomes variam por banco).',
+    'Datas podem vir em formatos como DD/MM/AAAA ou AAAA-MM-DD — converta sempre para AAAA-MM-DD.',
+    'Inclua apenas despesas (compras, saques, parcelamentos). NÃO inclua pagamentos recebidos, estornos ou créditos (geralmente valores negativos numa coluna de despesas, ou marcados como "pagamento"/"crédito"/"estorno").',
+    'Escolha a categoria APENAS entre as listadas abaixo, pelo nome do estabelecimento/descrição. Se nenhuma se encaixar, use null.',
+    'Categorias:', categoryContext(categories),
+    'Responda SOMENTE com JSON: {"lancamentos": [{"valor": number, "descricao": string, "categoria": string|null, "data": "AAAA-MM-DD"}], "aviso": string|null}',
+    'Se o CSV não tiver nenhuma transação reconhecível, retorne lancamentos como lista vazia e preencha aviso.',
+  ].join('\n');
+
+  const msg = await getClient().messages.create({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 8192,
+    system,
+    messages: [{ role: 'user', content: `CSV:\n\n${csvText}` }],
+  });
+
+  const block = msg.content[0];
+  if (block.type !== 'text') throw new Error('Claude não retornou texto.');
+  const parsed = parseJson(block.text) as { lancamentos?: unknown[]; aviso?: unknown };
+
+  return {
+    expenses: Array.isArray(parsed.lancamentos)
+      ? parsed.lancamentos.map((item) => toParsedExpense(item, today))
+      : [],
+    aviso: typeof parsed.aviso === 'string' ? parsed.aviso : null,
+  };
+}
+
+export async function classifyAndParseMessage(
+  text: string,
+  categories: string[],
+  today: string,
+): Promise<ClassifiedMessage> {
+  const system = [
+    'Você é um assistente financeiro pessoal. Analise a mensagem e classifique a intenção.',
+    `A data de hoje é ${today}.`,
+    'Interprete valores em reais: "150", "150 reais", "R$ 150,00", "cento e cinquenta" = 150.0.',
+    'CALCULE multiplicações: "3 monsters a R$ 11" = 33.0, "2 cafés de 5 reais" = 10.0.',
+    'Categorias disponíveis (use APENAS estas para despesas):',
+    categoryContext(categories),
+    'Responda SOMENTE com JSON:',
+    '{"intent": "despesa"|"receita"|"pergunta"|"desconhecido", "valor": number|null, "descricao": string, "categoria": string|null, "data": "AAAA-MM-DD", "aviso": string|null}',
+    'intent: despesa=gastou; receita=recebeu/ganhou; pergunta=quer saber algo sobre finanças; desconhecido=outro.',
+    'valor: null para perguntas e desconhecido. categoria: apenas para despesas.',
+  ].join('\n');
+
+  const raw = await ask(system, text);
+  const p = parseJson(raw) as Record<string, unknown>;
+
+  const intent = ['despesa', 'receita', 'pergunta', 'desconhecido'].includes(p.intent as string)
+    ? (p.intent as ClassifiedMessage['intent'])
+    : 'desconhecido';
+
+  return {
+    intent,
+    valor: typeof p.valor === 'number' ? p.valor : null,
+    descricao: typeof p.descricao === 'string' ? p.descricao : '',
+    categoria: typeof p.categoria === 'string' ? p.categoria : null,
+    data: typeof p.data === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(p.data) ? p.data : today,
+    aviso: typeof p.aviso === 'string' ? p.aviso : null,
+  };
+}
+
 export async function answerFinancialQuestion(
   question: string,
   dataContext: string,
   today: string,
 ): Promise<string> {
-  const systemInstruction = [
+  const system = [
     'Você é um assistente financeiro pessoal. Responda em português brasileiro, de forma direta e curta (2-4 frases).',
     `A data de hoje é ${today}.`,
-    'Use APENAS os dados fornecidos abaixo para responder — não invente valores. Se a pergunta não puder ser respondida com esses dados, diga isso claramente.',
+    'Use APENAS os dados abaixo para responder — não invente valores. Se não puder responder, diga claramente.',
     'Formate valores em reais como R$ 1.234,56.',
     '--- DADOS DISPONÍVEIS ---',
     dataContext,
   ].join('\n');
 
-  const interaction = await getClient().interactions.create({
-    model: env.geminiModel,
-    system_instruction: systemInstruction,
-    input: question,
-  });
-
-  return interaction.output_text ?? 'Não consegui gerar uma resposta agora.';
+  return ask(system, question);
 }

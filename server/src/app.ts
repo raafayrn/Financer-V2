@@ -6,6 +6,8 @@ import { authRouter } from './routes/auth';
 import { categoriesRouter } from './routes/categories';
 import { budgetsRouter } from './routes/budgets';
 import { salaryRouter } from './routes/salary';
+import { voucherRouter } from './routes/voucher';
+import { walletBaseRouter } from './routes/walletBase';
 import { expensesRouter } from './routes/expenses';
 import { incomeRouter } from './routes/income';
 import { accountsRouter } from './routes/accounts';
@@ -29,6 +31,8 @@ export function createApp() {
   app.use('/api/categories', categoriesRouter);
   app.use('/api/budgets', budgetsRouter);
   app.use('/api/salary', salaryRouter);
+  app.use('/api/voucher', voucherRouter);
+  app.use('/api/wallet-base', walletBaseRouter);
   app.use('/api/expenses', expensesRouter);
   app.use('/api/income', incomeRouter);
   app.use('/api/accounts', accountsRouter);

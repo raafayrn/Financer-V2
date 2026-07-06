@@ -8,9 +8,11 @@
 // no cadastro (ver seedAccountsForUser em src/lib/accounts.ts):
 //   - CREDIT_CARD   ("Cartão de crédito")  — fatura mensal, fixos/variáveis
 //   - FOOD_VOUCHER  ("Vale-alimentação")   — gasto do vale (ex.: energéticos)
-//   - WALLET        ("Carteira (Pix)")     — saldo ACUMULATIVO (não reseta
-//                     por mês); sobe com Income.accountId = wallet e desce
-//                     com Expense.accountId = wallet.
+//   - WALLET        ("Carteira (Pix)")     — saldo do mês = MonthlyWalletBase
+//                     (base editável, ex.: o que sobrou/você já tinha) + soma
+//                     dos Income do mês com accountId = wallet − soma das
+//                     Expense do mês com accountId = wallet. NÃO acumula de
+//                     mês a mês automaticamente (o usuário reajusta a base).
 // `kind` identifica a conta de forma estável (não depender do nome, que o
 // usuário poderia editar no futuro).
 
@@ -33,6 +35,8 @@ model User {
   categories     Category[]
   budgets        MonthlyBudget[]
   salaries       MonthlySalary[]
+  vouchers       MonthlyVoucher[]
+  walletBases    MonthlyWalletBase[]
   expenses       Expense[]
   incomes        Income[]
   accounts       Account[]
@@ -72,6 +76,45 @@ model MonthlyBudget {
 // Salário fixo do mês — editado em Ajustes, igual ao orçamento. Renda do mês
 // = MonthlySalary.amount + soma dos Income daquele mês.
 model MonthlySalary {
+  id        String   @id @default(cuid())
+  userId    String
+  year      Int
+  month     Int
+  // Valor em centavos.
+  amount    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, year, month])
+  @@index([userId])
+}
+
+// Vale-alimentação (VR) fixo do mês — editado no dashboard, junto com o
+// salário. Renda do mês = MonthlySalary.amount + MonthlyVoucher.amount +
+// soma dos Income avulsos (excluindo os ligados à Carteira, já refletidos
+// no saldo acumulado dela).
+model MonthlyVoucher {
+  id        String   @id @default(cuid())
+  userId    String
+  year      Int
+  month     Int
+  // Valor em centavos.
+  amount    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, year, month])
+  @@index([userId])
+}
+
+// Saldo base da Carteira (Pix) do mês — editável pelo usuário (ex.: quanto
+// ele já tinha na carteira no início do mês). Some com os Income/Expense do
+// mês ligados à conta WALLET pra formar o saldo exibido no dashboard.
+model MonthlyWalletBase {
   id        String   @id @default(cuid())
   userId    String
   year      Int

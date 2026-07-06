@@ -31,7 +31,7 @@ export async function buildFinancialContext(
     monthSnapshot(userId, prevYear, prevMonth),
   ]);
 
-  const walletBalance = await walletBalanceSnapshot(userId);
+  const walletBalance = await walletBalanceForMonth(userId, year, month);
 
   return [
     `## ${monthName(month)}/${year} (mês atual)`,
@@ -41,16 +41,17 @@ export async function buildFinancialContext(
     previous,
     '',
     `## Carteira (Pix)`,
-    `Saldo acumulado atual: R$ ${walletBalance.toFixed(2)}`,
+    `Saldo do mês atual: R$ ${walletBalance.toFixed(2)}`,
   ].join('\n');
 }
 
 async function monthSnapshot(userId: string, year: number, month: number): Promise<string> {
   const { start, end } = monthRange(year, month);
 
-  const [budget, salary, expenses, incomes, categories, accounts] = await Promise.all([
+  const [budget, salary, voucher, expenses, incomes, categories, accounts] = await Promise.all([
     prisma.monthlyBudget.findUnique({ where: { userId_year_month: { userId, year, month } } }),
     prisma.monthlySalary.findUnique({ where: { userId_year_month: { userId, year, month } } }),
+    prisma.monthlyVoucher.findUnique({ where: { userId_year_month: { userId, year, month } } }),
     prisma.expense.findMany({
       where: { userId, date: { gte: start, lt: end } },
       select: {
@@ -67,12 +68,12 @@ async function monthSnapshot(userId: string, year: number, month: number): Promi
   ]);
 
   const summary = computeSummary(budget?.amount ?? 0, expenses, categories);
-  const income = computeIncomeSummary(salary?.amount ?? 0, incomes);
+  const income = computeIncomeSummary(salary?.amount ?? 0, voucher?.amount ?? 0, incomes);
   const accountKindById = new Map<string, AccountKind>(accounts.map((a) => [a.id, a.kind]));
   const accountBreakdown = computeAccountBreakdown(expenses, accountKindById);
 
   const lines: string[] = [];
-  lines.push(`Renda: R$ ${centsToReais(income.total).toFixed(2)} (salário R$ ${centsToReais(income.salary).toFixed(2)} + outros R$ ${centsToReais(income.extra).toFixed(2)})`);
+  lines.push(`Renda: R$ ${centsToReais(income.total).toFixed(2)} (salário R$ ${centsToReais(income.salary).toFixed(2)} + VR R$ ${centsToReais(income.voucher).toFixed(2)} + outros R$ ${centsToReais(income.extra).toFixed(2)})`);
   lines.push(`Gasto total: R$ ${centsToReais(accountBreakdown.total).toFixed(2)}`);
   lines.push(`  - Cartão fixo (recorrente): R$ ${centsToReais(accountBreakdown.fixed).toFixed(2)}`);
   lines.push(`  - Cartão variável: R$ ${centsToReais(accountBreakdown.variable).toFixed(2)}`);
@@ -98,10 +99,26 @@ async function monthSnapshot(userId: string, year: number, month: number): Promi
   return lines.join('\n');
 }
 
-async function walletBalanceSnapshot(userId: string): Promise<number> {
-  const [incomeAgg, expenseAgg] = await Promise.all([
-    prisma.income.aggregate({ where: { userId, account: { kind: 'WALLET' } }, _sum: { amount: true } }),
-    prisma.expense.aggregate({ where: { userId, account: { kind: 'WALLET' } }, _sum: { amount: true } }),
+/**
+ * Saldo da carteira (Pix) do mês: base editável + receitas de Pix do mês −
+ * gastos de Pix do mês. Mesma lógica usada em routes/summary.ts.
+ */
+async function walletBalanceForMonth(userId: string, year: number, month: number): Promise<number> {
+  const { start, end } = monthRange(year, month);
+  const [walletBase, accounts, incomes, expenses] = await Promise.all([
+    prisma.monthlyWalletBase.findUnique({ where: { userId_year_month: { userId, year, month } } }),
+    prisma.account.findMany({ where: { userId } }),
+    prisma.income.findMany({ where: { userId, date: { gte: start, lt: end } }, select: { amount: true, accountId: true } }),
+    prisma.expense.findMany({ where: { userId, date: { gte: start, lt: end } }, select: { amount: true, accountId: true } }),
   ]);
-  return centsToReais((incomeAgg._sum.amount ?? 0) - (expenseAgg._sum.amount ?? 0));
+
+  const accountKindById = new Map(accounts.map((a) => [a.id, a.kind]));
+  const walletIncome = incomes
+    .filter((i) => i.accountId && accountKindById.get(i.accountId) === 'WALLET')
+    .reduce((sum, i) => sum + i.amount, 0);
+  const walletExpense = expenses
+    .filter((e) => e.accountId && accountKindById.get(e.accountId) === 'WALLET')
+    .reduce((sum, e) => sum + e.amount, 0);
+
+  return centsToReais((walletBase?.amount ?? 0) + walletIncome - walletExpense);
 }

@@ -53,6 +53,7 @@ export interface CategorySpent {
 
 export interface IncomeSummary {
   salary: number;
+  voucher: number;
   extra: number;
   total: number;
 }
@@ -79,6 +80,7 @@ export interface Summary {
   accounts: AccountBreakdown;
   monthSurplus: number;
   walletBalance: number;
+  walletBase: number;
 }
 
 export interface MonthlyReport {
@@ -95,6 +97,12 @@ export interface ChatPreview {
   recurring: boolean;
 }
 
+export interface ChatIncomePreview {
+  description: string;
+  amount: number;
+  date: string;
+}
+
 export type ChatParseResult =
   | { ok: true; preview: ChatPreview }
   | { ok: false; message: string };
@@ -106,6 +114,12 @@ export type ChatImageParseResult =
 export interface ChatAskResult {
   answer: string;
 }
+
+export type ChatMessageResult =
+  | { ok: true; intent: 'despesa'; preview: ChatPreview }
+  | { ok: true; intent: 'receita'; incomePreview: ChatIncomePreview }
+  | { ok: true; intent: 'pergunta'; answer: string }
+  | { ok: false; message: string };
 
 export interface ExpenseInput {
   description: string;

@@ -1,3 +1,6 @@
+// Permite conexões HTTPS através de proxies com certificado auto-assinado (dev only).
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
 import { createApp } from './app';
 import { env } from './env';
 import { prisma } from './prisma';

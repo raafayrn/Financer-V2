@@ -17,11 +17,10 @@ export const env = {
   databaseUrl: required('DATABASE_URL'),
   jwtSecret: required('JWT_SECRET'),
   jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? '7d',
-  geminiApiKey: process.env.GEMINI_API_KEY ?? '',
-  geminiModel: process.env.GEMINI_MODEL ?? 'gemini-3.5-flash',
+  anthropicApiKey: process.env.ANTHROPIC_API_KEY ?? '',
   corsOrigin: process.env.CORS_ORIGIN ?? '*',
   // O chat em linguagem natural só fica disponível quando há chave configurada.
   get chatEnabled(): boolean {
-    return this.geminiApiKey.length > 0;
+    return this.anthropicApiKey.length > 0;
   },
 };

@@ -1,6 +1,8 @@
+import { AnimatePresence, motion } from 'framer-motion';
 import { useState, type FormEvent } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { ApiError } from '../api/client';
+import { springSheet, springSmooth, springTap } from '../lib/motion';
 
 export function LoginPage() {
   const { login, register } = useAuth();
@@ -30,25 +32,48 @@ export function LoginPage() {
 
   return (
     <div className="auth-screen">
-      <div className="auth-card">
-        <h1 className="auth-title">💰 Controle Financeiro</h1>
-        <p className="auth-subtitle">
-          {mode === 'login' ? 'Entre na sua conta' : 'Crie sua conta'}
-        </p>
+      <motion.div
+        className="auth-card"
+        initial={{ opacity: 0, y: 26, scale: 0.96 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={springSheet}
+      >
+        <h1 className="auth-title">Controle Financeiro</h1>
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.p
+            key={mode}
+            className="auth-subtitle"
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 6 }}
+            transition={springSmooth}
+          >
+            {mode === 'login' ? 'Entre na sua conta' : 'Crie sua conta'}
+          </motion.p>
+        </AnimatePresence>
 
         <form onSubmit={handleSubmit} className="auth-form">
-          {mode === 'register' && (
-            <label className="field">
-              <span>Nome</span>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                autoComplete="name"
-              />
-            </label>
-          )}
+          <AnimatePresence initial={false}>
+            {mode === 'register' && (
+              <motion.label
+                className="field"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={springSmooth}
+                style={{ overflow: 'hidden' }}
+              >
+                <span>Nome</span>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  autoComplete="name"
+                />
+              </motion.label>
+            )}
+          </AnimatePresence>
           <label className="field">
             <span>E-mail</span>
             <input
@@ -78,18 +103,20 @@ export function LoginPage() {
           </button>
         </form>
 
-        <button
+        <motion.button
           className="link-btn"
           onClick={() => {
             setMode(mode === 'login' ? 'register' : 'login');
             setError(null);
           }}
+          whileTap={{ scale: 0.97 }}
+          transition={springTap}
         >
           {mode === 'login'
             ? 'Não tem conta? Cadastre-se'
             : 'Já tem conta? Entrar'}
-        </button>
-      </div>
+        </motion.button>
+      </motion.div>
     </div>
   );
 }

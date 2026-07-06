@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import type { Account, Category, Expense, ExpenseInput } from '../api/types';
 import { ApiError } from '../api/client';
 import { todayIso } from '../utils/format';
+import { Modal } from './Modal';
 
 interface Props {
   categories: Category[];
@@ -73,8 +74,9 @@ export function ExpenseFormModal({
   }
 
   return (
-    <div className="modal-backdrop" onClick={onCancel}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+    <Modal onCancel={onCancel}>
+      {(close) => (
+        <>
         <h2 className="modal-title">
           {title}
           {progress && <span className="modal-progress">{progress}</span>}
@@ -154,7 +156,7 @@ export function ExpenseFormModal({
           {error && <div className="alert alert-error">{error}</div>}
 
           <div className="modal-actions">
-            <button type="button" className="btn-ghost" onClick={onCancel}>
+            <button type="button" className="btn-ghost" onClick={close}>
               Cancelar
             </button>
             {onSkip && (
@@ -167,7 +169,8 @@ export function ExpenseFormModal({
             </button>
           </div>
         </form>
-      </div>
-    </div>
+        </>
+      )}
+    </Modal>
   );
 }

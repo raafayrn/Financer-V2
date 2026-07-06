@@ -4,6 +4,7 @@ import type {
   Category,
   ChatAskResult,
   ChatImageParseResult,
+  ChatMessageResult,
   ChatParseResult,
   Expense,
   ExpenseInput,
@@ -109,6 +110,24 @@ export const api = {
       body: JSON.stringify({ amount }),
     }),
 
+  // Vale-alimentação (VR) fixo do mês
+  getVoucher: (year: number, month: number) =>
+    request<{ year: number; month: number; amount: number }>(`/voucher/${year}/${month}`),
+  setVoucher: (year: number, month: number, amount: number) =>
+    request<{ year: number; month: number; amount: number }>(`/voucher/${year}/${month}`, {
+      method: 'PUT',
+      body: JSON.stringify({ amount }),
+    }),
+
+  // Saldo base da carteira (Pix) do mês — editável, some com receitas/gastos do mês
+  getWalletBase: (year: number, month: number) =>
+    request<{ year: number; month: number; amount: number }>(`/wallet-base/${year}/${month}`),
+  setWalletBase: (year: number, month: number, amount: number) =>
+    request<{ year: number; month: number; amount: number }>(`/wallet-base/${year}/${month}`, {
+      method: 'PUT',
+      body: JSON.stringify({ amount }),
+    }),
+
   // Renda avulsa (ex.: vale-alimentação convertido)
   listIncome: (year: number, month: number) =>
     request<Income[]>(`/income?year=${year}&month=${month}`),
@@ -148,9 +167,24 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ imageBase64, mimeType }),
     }),
+  chatParseInvoicePdf: (pdfBase64: string) =>
+    request<ChatImageParseResult>('/chat/parse-invoice-pdf', {
+      method: 'POST',
+      body: JSON.stringify({ pdfBase64 }),
+    }),
+  chatParseFile: (fileBase64: string, mimeType: string, fileName: string) =>
+    request<ChatImageParseResult>('/chat/parse-file', {
+      method: 'POST',
+      body: JSON.stringify({ fileBase64, mimeType, fileName }),
+    }),
   chatAsk: (question: string) =>
     request<ChatAskResult>('/chat/ask', {
       method: 'POST',
       body: JSON.stringify({ question }),
+    }),
+  chatMessage: (text: string) =>
+    request<ChatMessageResult>('/chat/message', {
+      method: 'POST',
+      body: JSON.stringify({ text }),
     }),
 };

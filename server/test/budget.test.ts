@@ -188,18 +188,18 @@ describe('computeAccountBreakdown', () => {
 });
 
 describe('computeIncomeSummary', () => {
-  it('soma salário fixo com lançamentos avulsos', () => {
-    const result = computeIncomeSummary(420000, [{ amount: 50000 }, { amount: 15000 }]);
-    expect(result).toEqual({ salary: 420000, extra: 65000, total: 485000 });
+  it('soma salário fixo, VR fixo e lançamentos avulsos', () => {
+    const result = computeIncomeSummary(420000, 60000, [{ amount: 50000 }, { amount: 15000 }]);
+    expect(result).toEqual({ salary: 420000, voucher: 60000, extra: 65000, total: 545000 });
   });
 
   it('funciona sem lançamentos avulsos', () => {
-    const result = computeIncomeSummary(420000, []);
-    expect(result).toEqual({ salary: 420000, extra: 0, total: 420000 });
+    const result = computeIncomeSummary(420000, 60000, []);
+    expect(result).toEqual({ salary: 420000, voucher: 60000, extra: 0, total: 480000 });
   });
 
-  it('funciona sem salário definido', () => {
-    const result = computeIncomeSummary(0, [{ amount: 10000 }]);
-    expect(result).toEqual({ salary: 0, extra: 10000, total: 10000 });
+  it('funciona sem salário nem VR definidos', () => {
+    const result = computeIncomeSummary(0, 0, [{ amount: 10000 }]);
+    expect(result).toEqual({ salary: 0, voucher: 0, extra: 10000, total: 10000 });
   });
 });

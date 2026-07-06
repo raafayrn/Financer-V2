@@ -152,17 +152,20 @@ export function computeAccountBreakdown(
 export interface IncomeSummary {
   /** Salário fixo do mês, em centavos. */
   salary: number;
-  /** Soma dos lançamentos de renda avulsos do mês (ex.: vale convertido). */
+  /** Vale-alimentação (VR) fixo do mês, em centavos. */
+  voucher: number;
+  /** Soma dos lançamentos de renda avulsos do mês (excluindo os ligados à Carteira). */
   extra: number;
-  /** salary + extra. */
+  /** salary + voucher + extra. */
   total: number;
 }
 
-/** Soma o salário fixo do mês com os lançamentos de renda avulsos. */
+/** Soma o salário e o VR fixos do mês com os lançamentos de renda avulsos. */
 export function computeIncomeSummary(
   salary: number,
+  voucher: number,
   incomes: { amount: number }[],
 ): IncomeSummary {
   const extra = incomes.reduce((sum, i) => sum + i.amount, 0);
-  return { salary, extra, total: salary + extra };
+  return { salary, voucher, extra, total: salary + voucher + extra };
 }

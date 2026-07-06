@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api, ApiError } from '../api/client';
 import type { MonthlyReport } from '../api/types';
 import { formatCurrency, monthShort } from '../utils/format';
+import { ChevronLeftIcon, ChevronRightIcon } from '../components/icons';
 
 export function ReportsPage() {
   const now = new Date();
@@ -31,12 +32,12 @@ export function ReportsPage() {
       <h2 className="page-title">Relatórios</h2>
 
       <div className="year-nav">
-        <button className="month-arrow" onClick={() => setYear((y) => y - 1)}>
-          ‹
+        <button className="month-arrow" onClick={() => setYear((y) => y - 1)} aria-label="Ano anterior">
+          <ChevronLeftIcon />
         </button>
         <span className="month-label">{year}</span>
-        <button className="month-arrow" onClick={() => setYear((y) => y + 1)}>
-          ›
+        <button className="month-arrow" onClick={() => setYear((y) => y + 1)} aria-label="Próximo ano">
+          <ChevronRightIcon />
         </button>
       </div>
 

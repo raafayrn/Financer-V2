@@ -39,6 +39,15 @@ export const budgetUpsertSchema = z.object({
   amount: reais,
 });
 
+// Saldo base da carteira: pode ser exatamente 0 (diferente de salário/VR/
+// orçamento, que fazem mais sentido sempre positivos).
+export const walletBaseUpsertSchema = z.object({
+  amount: z
+    .number({ invalid_type_error: 'Valor deve ser um número.' })
+    .min(0, 'Valor não pode ser negativo.')
+    .max(1_000_000_000, 'Valor muito alto.'),
+});
+
 export const expenseCreateSchema = z.object({
   description: z.string().trim().min(1, 'Informe uma descrição.').max(200),
   amount: reais,
@@ -93,4 +102,21 @@ export const chatImageSchema = z.object({
   // Imagem em base64 (sem o prefixo data:...;base64,) e o mime type original.
   imageBase64: z.string().min(1, 'Envie uma imagem.'),
   mimeType: z.enum(['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']),
+});
+
+export const chatMessageSchema = z.object({
+  text: z.string().trim().min(1, 'Escreva uma mensagem.').max(1000),
+});
+
+export const chatInvoicePdfSchema = z.object({
+  // PDF em base64 (sem o prefixo data:...;base64,).
+  pdfBase64: z.string().min(1, 'Envie um arquivo PDF.'),
+});
+
+export const chatFileSchema = z.object({
+  // Arquivo em base64 (sem o prefixo data:...;base64,). Aceita foto,
+  // PDF, CSV ou OFX — o tipo é detectado pelo backend.
+  fileBase64: z.string().min(1, 'Envie um arquivo.'),
+  mimeType: z.string().min(1),
+  fileName: z.string().min(1),
 });

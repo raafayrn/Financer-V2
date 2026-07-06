@@ -1,152 +1,386 @@
+import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { api, ApiError } from '../api/client';
-import type { ChatPreview } from '../api/types';
+import type { ChatIncomePreview, ChatPreview } from '../api/types';
+import { formatCurrency } from '../utils/format';
+import { springBouncy, springSheet, springTap } from '../lib/motion';
 
 interface Props {
-  onPreview: (preview: ChatPreview) => void;
+  onSaved: () => void;
   onPreviews: (previews: ChatPreview[]) => void;
 }
 
-type Mode = 'launch' | 'ask';
+type MessageRole = 'user' | 'assistant';
 
-/**
- * Assistente: campo tipo chat com 3 capacidades — lançar por texto, lançar
- * por foto de comprovante/nota (pode extrair vários lançamentos de uma vez),
- * e responder perguntas sobre os dados financeiros reais do usuário. Nada é
- * salvo direto: lançamentos sempre passam por um preview de confirmação.
- */
-export function ChatBox({ onPreview, onPreviews }: Props) {
+interface TextMessage {
+  kind: 'text';
+  role: MessageRole;
+  text: string;
+}
+
+interface ExpenseCard {
+  kind: 'expense-card';
+  role: 'assistant';
+  preview: ChatPreview;
+  saved?: boolean;
+}
+
+interface IncomeCard {
+  kind: 'income-card';
+  role: 'assistant';
+  preview: ChatIncomePreview;
+  saved?: boolean;
+}
+
+type ChatMessage = TextMessage | ExpenseCard | IncomeCard;
+
+function ChatIcon() {
+  return (
+    <svg viewBox="0 0 24 24" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4H6.5A2.5 2.5 0 0 1 4 13.5v-8Z" />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 6l12 12M18 6 6 18" />
+    </svg>
+  );
+}
+
+function PaperclipIcon() {
+  return (
+    <svg viewBox="0 0 24 24" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8 12.5V7a4 4 0 1 1 8 0v9a2.5 2.5 0 0 1-5 0V8.5" />
+    </svg>
+  );
+}
+
+function SendIcon() {
+  return (
+    <svg viewBox="0 0 24 24" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 12 20 4l-6.5 16-2.5-7L4 12Z" />
+    </svg>
+  );
+}
+
+export function ChatBox({ onSaved, onPreviews }: Props) {
   const [enabled, setEnabled] = useState<boolean | null>(null);
-  const [mode, setMode] = useState<Mode>('launch');
+  const [open, setOpen] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [answer, setAnswer] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    api
-      .chatStatus()
+    api.chatStatus()
       .then((s) => setEnabled(s.enabled))
       .catch(() => setEnabled(false));
   }, []);
 
-  if (enabled === false) {
-    return null; // recurso indisponível (sem chave da API no servidor)
+  useEffect(() => {
+    if (open) {
+      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+      inputRef.current?.focus();
+    }
+  }, [open, messages]);
+
+  if (enabled === false) return null;
+
+  function addMessage(msg: ChatMessage) {
+    setMessages((prev) => [...prev, msg]);
+  }
+
+  function markSaved(index: number) {
+    setMessages((prev) =>
+      prev.map((m, i) =>
+        i === index && (m.kind === 'expense-card' || m.kind === 'income-card')
+          ? { ...m, saved: true }
+          : m,
+      ),
+    );
+  }
+
+  async function handleConfirmExpense(preview: ChatPreview, index: number) {
+    try {
+      await api.createExpense({
+        description: preview.description,
+        amount: preview.amount,
+        date: preview.date,
+        categoryId: preview.categoryId ?? null,
+        accountId: null,
+        recurring: preview.recurring,
+      });
+      markSaved(index);
+      addMessage({ kind: 'text', role: 'assistant', text: '✅ Despesa lançada com sucesso!' });
+      onSaved();
+    } catch (err) {
+      addMessage({
+        kind: 'text',
+        role: 'assistant',
+        text: err instanceof ApiError ? err.message : 'Erro ao salvar a despesa.',
+      });
+    }
+  }
+
+  async function handleConfirmIncome(preview: ChatIncomePreview, index: number) {
+    try {
+      await api.createIncome({
+        description: preview.description,
+        amount: preview.amount,
+        date: preview.date,
+        accountId: null,
+      });
+      markSaved(index);
+      addMessage({ kind: 'text', role: 'assistant', text: '✅ Receita lançada com sucesso!' });
+      onSaved();
+    } catch (err) {
+      addMessage({
+        kind: 'text',
+        role: 'assistant',
+        text: err instanceof ApiError ? err.message : 'Erro ao salvar a receita.',
+      });
+    }
   }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!text.trim()) return;
+    const trimmed = text.trim();
+    if (!trimmed || loading) return;
+
+    setText('');
+    addMessage({ kind: 'text', role: 'user', text: trimmed });
     setLoading(true);
-    setMessage(null);
-    setAnswer(null);
+
     try {
-      if (mode === 'ask') {
-        const result = await api.chatAsk(text.trim());
-        setAnswer(result.answer);
-      } else {
-        const result = await api.chatParse(text.trim());
-        if (result.ok) {
-          onPreview(result.preview);
-          setText('');
-        } else {
-          setMessage(result.message);
-        }
+      const result = await api.chatMessage(trimmed);
+
+      if (!result.ok) {
+        addMessage({ kind: 'text', role: 'assistant', text: result.message });
+        return;
+      }
+
+      if (result.intent === 'pergunta') {
+        addMessage({ kind: 'text', role: 'assistant', text: result.answer });
+        return;
+      }
+
+      if (result.intent === 'despesa') {
+        addMessage({ kind: 'expense-card', role: 'assistant', preview: result.preview });
+        return;
+      }
+
+      if (result.intent === 'receita') {
+        addMessage({ kind: 'income-card', role: 'assistant', preview: result.incomePreview });
+        return;
       }
     } catch (err) {
-      setMessage(err instanceof ApiError ? err.message : 'Erro ao processar.');
+      addMessage({
+        kind: 'text',
+        role: 'assistant',
+        text: err instanceof ApiError ? err.message : 'Erro ao processar.',
+      });
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleImageSelected(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    e.target.value = ''; // permite selecionar o mesmo arquivo de novo depois
+    e.target.value = '';
     if (!file) return;
 
+    const icon = file.type.startsWith('image/') ? '📷' : '📎';
+    addMessage({ kind: 'text', role: 'user', text: `${icon} ${file.name}` });
     setLoading(true);
-    setMessage(null);
-    setAnswer(null);
+
     try {
-      const { base64, mimeType } = await fileToBase64(file);
-      const result = await api.chatParseImage(base64, mimeType);
+      const { base64 } = await fileToBase64(file);
+      const result = await api.chatParseFile(base64, file.type, file.name);
       if (result.ok) {
+        addMessage({
+          kind: 'text',
+          role: 'assistant',
+          text: `Encontrei ${result.previews.length} lançamento(s) no arquivo. Abrindo para confirmação...`,
+        });
         onPreviews(result.previews);
+        setOpen(false);
       } else {
-        setMessage(result.message);
+        addMessage({ kind: 'text', role: 'assistant', text: result.message });
       }
     } catch (err) {
-      setMessage(err instanceof ApiError ? err.message : 'Erro ao processar a imagem.');
+      addMessage({
+        kind: 'text',
+        role: 'assistant',
+        text: err instanceof ApiError ? err.message : 'Erro ao processar o arquivo.',
+      });
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="chat-bar">
-      <div className="chat-bar-inner">
-        <form onSubmit={handleSubmit} className="chatbox-form">
-          <div className="chatbox-modes">
-            <button
-              type="button"
-              className={`chip ${mode === 'launch' ? 'chip-active' : ''}`}
-              onClick={() => setMode('launch')}
-            >
-              Lançar
-            </button>
-            <button
-              type="button"
-              className={`chip ${mode === 'ask' ? 'chip-active' : ''}`}
-              onClick={() => setMode('ask')}
-            >
-              Perguntar
-            </button>
+    <>
+      <motion.button
+        className="chat-fab"
+        onClick={() => setOpen((o) => !o)}
+        title="Assistente financeiro"
+        aria-label="Abrir assistente"
+        whileTap={{ scale: 0.9 }}
+        transition={springTap}
+      >
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.span
+            key={open ? 'close' : 'chat'}
+            initial={{ rotate: -90, opacity: 0, scale: 0.6 }}
+            animate={{ rotate: 0, opacity: 1, scale: 1 }}
+            exit={{ rotate: 90, opacity: 0, scale: 0.6 }}
+            transition={springTap}
+            style={{ display: 'flex' }}
+          >
+            {open ? <CloseIcon /> : <ChatIcon />}
+          </motion.span>
+        </AnimatePresence>
+      </motion.button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            className="chat-panel"
+            style={{ transformOrigin: 'bottom right' }}
+            initial={{ opacity: 0, scale: 0.4, y: 40 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.4, y: 30 }}
+            transition={springSheet}
+          >
+          <div className="chat-panel-header">
+            <span className="chat-panel-title">Assistente</span>
+            <span className="chat-panel-hint">Gasto, receita ou pergunta</span>
           </div>
 
-          <input
-            type="text"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder={mode === 'ask' ? 'Sua pergunta' : 'Descreva o gasto'}
-            disabled={loading || enabled === null}
-            maxLength={500}
-          />
-          {mode === 'launch' && (
-            <>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={handleImageSelected}
-                hidden
-              />
-              <button
-                type="button"
-                className="icon-btn-outline"
-                title="Anexar foto de comprovante"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={loading || enabled === null}
+          <div className="chat-messages">
+            {messages.length === 0 && (
+              <div className="chat-empty">
+                Exemplos:<br />
+                <em>"gastei 50 no mercado"</em><br />
+                <em>"vendi 3 monsters a 11 reais"</em><br />
+                <em>"quanto gastei esse mês?"</em>
+              </div>
+            )}
+            <AnimatePresence initial={false}>
+            {messages.map((msg, i) => (
+              <motion.div
+                key={i}
+                className={`chat-bubble-wrap ${msg.role}`}
+                layout
+                initial={{ opacity: 0, y: 14, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={springBouncy}
               >
-                📷
-              </button>
-            </>
-          )}
-          <button type="submit" className="btn-primary" disabled={loading || !text.trim()}>
-            {loading ? '…' : mode === 'ask' ? 'Perguntar' : 'Interpretar'}
-          </button>
-        </form>
+                {msg.kind === 'text' && (
+                  <div className={`chat-bubble ${msg.role}`}>{msg.text}</div>
+                )}
+                {msg.kind === 'expense-card' && (
+                  <div className="chat-card">
+                    <div className="chat-card-label">Despesa detectada</div>
+                    <div className="chat-card-desc">{msg.preview.description}</div>
+                    <div className="chat-card-amount">{formatCurrency(msg.preview.amount)}</div>
+                    <div className="chat-card-meta">{msg.preview.date}</div>
+                    {msg.preview.suggestedCategoryName && (
+                      <div className="chat-card-cat">Categoria: {msg.preview.suggestedCategoryName}</div>
+                    )}
+                    {msg.saved ? (
+                      <div className="chat-card-saved">Lançado ✓</div>
+                    ) : (
+                      <button
+                        className="btn-primary btn-sm chat-card-btn"
+                        onClick={() => handleConfirmExpense(msg.preview, i)}
+                      >
+                        Confirmar e lançar
+                      </button>
+                    )}
+                  </div>
+                )}
+                {msg.kind === 'income-card' && (
+                  <div className="chat-card chat-card-income">
+                    <div className="chat-card-label">Receita detectada</div>
+                    <div className="chat-card-desc">{msg.preview.description}</div>
+                    <div className="chat-card-amount">{formatCurrency(msg.preview.amount)}</div>
+                    <div className="chat-card-meta">{msg.preview.date}</div>
+                    {msg.saved ? (
+                      <div className="chat-card-saved">Lançado ✓</div>
+                    ) : (
+                      <button
+                        className="btn-primary btn-sm chat-card-btn"
+                        onClick={() => handleConfirmIncome(msg.preview, i)}
+                      >
+                        Confirmar e lançar
+                      </button>
+                    )}
+                  </div>
+                )}
+              </motion.div>
+            ))}
+            {loading && (
+              <motion.div
+                className="chat-bubble-wrap assistant"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={springTap}
+              >
+                <div className="chat-bubble assistant chat-typing">
+                  <span /><span /><span />
+                </div>
+              </motion.div>
+            )}
+            </AnimatePresence>
+            <div ref={messagesEndRef} />
+          </div>
 
-        {message && <div className="alert alert-warning chatbox-msg">{message}</div>}
-        {answer && <div className="alert alert-info chatbox-msg">{answer}</div>}
-      </div>
-    </div>
+          <form onSubmit={handleSubmit} className="chat-input-row">
+            <input
+              ref={inputRef}
+              type="text"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="Digite aqui..."
+              disabled={loading || enabled === null}
+              maxLength={1000}
+              className="chat-input"
+            />
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,application/pdf,.pdf,.csv,text/csv,.ofx,application/x-ofx"
+              onChange={handleFileSelected}
+              hidden
+            />
+            <button
+              type="button"
+              className="icon-btn-outline"
+              title="Anexar foto, PDF, CSV ou OFX"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={loading || enabled === null}
+            >
+              <PaperclipIcon />
+            </button>
+            <button type="submit" className="btn-primary btn-sm" disabled={loading || !text.trim()}>
+              <SendIcon />
+            </button>
+          </form>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 
-/** Converte um File para base64 puro (sem o prefixo data:...;base64,). */
 function fileToBase64(file: File): Promise<{ base64: string; mimeType: string }> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

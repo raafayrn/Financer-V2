@@ -1,4 +1,6 @@
+import { motion } from 'framer-motion';
 import type { BudgetStatus } from '../api/types';
+import { springFill } from '../lib/motion';
 
 export function ProgressBar({
   percent,
@@ -10,9 +12,11 @@ export function ProgressBar({
   const width = Math.min(percent, 1) * 100;
   return (
     <div className="progress-track">
-      <div
+      <motion.div
         className={`progress-fill status-${status}`}
-        style={{ width: `${width}%` }}
+        initial={false}
+        animate={{ width: `${width}%` }}
+        transition={springFill}
       />
     </div>
   );
