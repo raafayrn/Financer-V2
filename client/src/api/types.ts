@@ -88,6 +88,46 @@ export interface MonthlyReport {
   months: { month: number; spent: number; budget: number }[];
 }
 
+export interface ReportsOverviewMonth {
+  month: number;
+  spent: number;
+  budget: number;
+  income: number;
+  fixed: number;
+}
+
+export interface ReportsOverviewCategory {
+  categoryId: string | null;
+  categoryName: string;
+  color: string;
+  spent: number;
+  percent: number;
+}
+
+export interface ReportsTopExpense {
+  id: string;
+  description: string;
+  amount: number;
+  date: string;
+  categoryName: string;
+}
+
+export interface ReportsOverview {
+  year: number;
+  months: ReportsOverviewMonth[];
+  byCategory: ReportsOverviewCategory[];
+  topExpenses: ReportsTopExpense[];
+  totals: {
+    spentYear: number;
+    incomeYear: number;
+    avgMonthlySpent: number;
+    savingsRate: number;
+    recurringMonthlyAvg: number;
+    expenseCount: number;
+    monthsOverBudget: number;
+  };
+}
+
 export interface ChatPreview {
   description: string;
   amount: number;
@@ -120,6 +160,50 @@ export type ChatMessageResult =
   | { ok: true; intent: 'receita'; incomePreview: ChatIncomePreview }
   | { ok: true; intent: 'pergunta'; answer: string }
   | { ok: false; message: string };
+
+export type InvestmentType =
+  | 'RENDA_FIXA'
+  | 'TESOURO_DIRETO'
+  | 'ACOES'
+  | 'FUNDOS'
+  | 'CRIPTO'
+  | 'POUPANCA'
+  | 'OUTRO';
+
+export type InvestmentKind = 'APORTE' | 'RESGATE';
+
+export interface Investment {
+  id: string;
+  description: string;
+  type: InvestmentType;
+  kind: InvestmentKind;
+  amount: number; // reais
+  date: string; // AAAA-MM-DD
+  notes: string | null;
+  createdAt: string;
+}
+
+export interface InvestmentInput {
+  description: string;
+  type: InvestmentType;
+  kind: InvestmentKind;
+  amount: number;
+  date: string;
+  notes?: string | null;
+}
+
+export interface InvestmentSummary {
+  year: number;
+  totalBalance: number;
+  byType: { type: InvestmentType; amount: number }[];
+  months: { month: number; contributed: number; withdrawn: number; net: number }[];
+  totals: {
+    contributedYear: number;
+    withdrawnYear: number;
+    netYear: number;
+    entryCount: number;
+  };
+}
 
 export interface ExpenseInput {
   description: string;

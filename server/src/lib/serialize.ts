@@ -35,3 +35,27 @@ export function serializeExpense(e: ExpenseRow) {
 export function serializeCategory(c: CategoryRow) {
   return { id: c.id, name: c.name, color: c.color };
 }
+
+interface InvestmentRow {
+  id: string;
+  description: string;
+  type: string;
+  kind: string;
+  amount: number;
+  date: Date;
+  notes: string | null;
+  createdAt: Date;
+}
+
+export function serializeInvestment(i: InvestmentRow) {
+  return {
+    id: i.id,
+    description: i.description,
+    type: i.type,
+    kind: i.kind,
+    amount: centsToReais(i.amount),
+    date: i.date.toISOString().slice(0, 10),
+    notes: i.notes,
+    createdAt: i.createdAt.toISOString(),
+  };
+}

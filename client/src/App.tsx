@@ -5,7 +5,7 @@ import { Layout } from './components/Layout';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { ReportsPage } from './pages/ReportsPage';
-import { SettingsPage } from './pages/SettingsPage';
+import { InvestmentsPage } from './pages/InvestmentsPage';
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -33,7 +33,7 @@ export default function App() {
         <Route element={<Layout />}>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/relatorios" element={<ReportsPage />} />
-          <Route path="/ajustes" element={<SettingsPage />} />
+          <Route path="/investimentos" element={<InvestmentsPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { springSheet, springSmooth, springTap } from '../lib/motion';
+import { PiggyBankIcon } from './icons';
 
 function HomeIcon() {
   return (
@@ -22,19 +23,10 @@ function ChartIcon() {
   );
 }
 
-function GearIcon() {
-  return (
-    <svg viewBox="0 0 24 24" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="3.2" />
-      <path d="M19.4 13.5a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.04 1.56V19.5a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.04-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1.04H4.5a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.56-1.04 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H10.6a1.7 1.7 0 0 0 1.04-1.56V4.5a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1.04 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.1c.24.7.82 1.24 1.56 1.04h.1a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.56 1.04Z" />
-    </svg>
-  );
-}
-
 const NAV_ITEMS = [
   { to: '/', end: true, icon: HomeIcon, label: 'Início' },
   { to: '/relatorios', end: false, icon: ChartIcon, label: 'Relatórios' },
-  { to: '/ajustes', end: false, icon: GearIcon, label: 'Ajustes' },
+  { to: '/investimentos', end: false, icon: PiggyBankIcon, label: 'Investimentos' },
 ];
 
 function isItemActive(pathname: string, item: (typeof NAV_ITEMS)[number]) {

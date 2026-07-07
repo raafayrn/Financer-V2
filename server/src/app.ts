@@ -15,6 +15,7 @@ import { walletRouter } from './routes/wallet';
 import { summaryRouter } from './routes/summary';
 import { reportsRouter } from './routes/reports';
 import { chatRouter } from './routes/chat';
+import { investmentsRouter } from './routes/investments';
 
 export function createApp() {
   const app = express();
@@ -40,6 +41,7 @@ export function createApp() {
   app.use('/api/summary', summaryRouter);
   app.use('/api/reports', reportsRouter);
   app.use('/api/chat', chatRouter);
+  app.use('/api/investments', investmentsRouter);
 
   app.use((_req, res) => {
     res.status(404).json({ error: 'Rota não encontrada.' });

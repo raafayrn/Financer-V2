@@ -22,6 +22,8 @@ import { IncomeFormModal } from '../components/IncomeFormModal';
 import { IncomeSourcesModal } from '../components/IncomeSourcesModal';
 import { Dropdown } from '../components/Dropdown';
 import { formatCurrency, formatDayMonth, monthShort } from '../utils/format';
+import { ChevronDownIcon, GearIcon, RepeatIcon } from '../components/icons';
+import { ManageModal } from '../components/ManageModal';
 
 function EditIcon() {
   return (
@@ -91,7 +93,8 @@ type ModalState =
   | { kind: 'chat-batch'; previews: ChatPreview[]; index: number }
   | { kind: 'income'; defaultAccountId?: string }
   | { kind: 'edit-income'; income: Income }
-  | { kind: 'income-sources' };
+  | { kind: 'income-sources' }
+  | { kind: 'manage' };
 
 type LedgerItem =
   | { kind: 'expense'; data: Expense }
@@ -118,6 +121,8 @@ export function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modal, setModal] = useState<ModalState>({ kind: 'closed' });
+  const [carrying, setCarrying] = useState(false);
+  const [listCollapsed, setListCollapsed] = useState(false);
 
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -177,6 +182,60 @@ export function DashboardPage() {
     if (!confirm('Excluir este lançamento?')) return;
     await api.deleteExpense(id);
     await load();
+  }
+
+  /** Copia as despesas recorrentes do mês anterior para o mês em exibição (evitando duplicar descrições já lançadas). */
+  async function handleCarryRecurring() {
+    let prevYear = year;
+    let prevMonth = month - 1;
+    if (prevMonth < 1) {
+      prevMonth = 12;
+      prevYear -= 1;
+    }
+
+    setCarrying(true);
+    try {
+      const prevExpenses = await api.listExpenses(prevYear, prevMonth);
+      const recurring = prevExpenses.filter((e) => e.recurring);
+
+      const existingDescriptions = new Set(expenses.map((e) => e.description.trim().toLowerCase()));
+      const toCreate = recurring.filter((e) => !existingDescriptions.has(e.description.trim().toLowerCase()));
+
+      if (recurring.length === 0) {
+        alert('Nenhuma despesa recorrente encontrada no mês anterior.');
+        return;
+      }
+      if (toCreate.length === 0) {
+        alert('As despesas recorrentes do mês anterior já foram lançadas neste mês.');
+        return;
+      }
+      if (
+        !confirm(
+          `Trazer ${toCreate.length} despesa${toCreate.length > 1 ? 's' : ''} recorrente${toCreate.length > 1 ? 's' : ''} do mês anterior para este mês?`,
+        )
+      ) {
+        return;
+      }
+
+      const daysInMonth = new Date(year, month, 0).getDate();
+      for (const e of toCreate) {
+        const day = Math.min(Number(e.date.slice(8, 10)), daysInMonth);
+        const newDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        await api.createExpense({
+          description: e.description,
+          amount: e.amount,
+          date: newDate,
+          categoryId: e.categoryId,
+          accountId: e.accountId,
+          recurring: true,
+        });
+      }
+      await load();
+    } catch (err) {
+      alert(err instanceof ApiError ? err.message : 'Erro ao trazer despesas recorrentes.');
+    } finally {
+      setCarrying(false);
+    }
   }
   async function handleCreateIncome(data: IncomeInput) {
     await api.createIncome(data);
@@ -272,6 +331,17 @@ export function DashboardPage() {
 
   return (
     <div className="page">
+      <div className="dashboard-manage-row">
+        <motion.button
+          className="icon-btn-outline"
+          title="Gerenciar categorias e orçamento"
+          onClick={() => setModal({ kind: 'manage' })}
+          whileTap={{ scale: 0.9 }}
+          transition={springTap}
+        >
+          <GearIcon />
+        </motion.button>
+      </div>
       <MonthNavigator />
 
       {loading && !summary ? (
@@ -281,7 +351,13 @@ export function DashboardPage() {
       ) : error ? (
         <div className="alert alert-error">{error}</div>
       ) : summary ? (
-        <>
+        <div className="dashboard-content">
+          <motion.div
+            className="dashboard-stack"
+            animate={{ opacity: loading ? 0.45 : 1 }}
+            transition={springSmooth}
+            style={{ pointerEvents: loading ? 'none' : 'auto' }}
+          >
           <motion.div
             className="overview-grid"
             variants={overviewContainer}
@@ -426,8 +502,42 @@ export function DashboardPage() {
           {/* Lista de lançamentos (despesas + receitas juntas) */}
           <section className="card">
             <div className="section-head">
-              <h3 className="section-title">Lançamentos ({filteredLedger.length})</h3>
+              <div className="section-head-start">
+                <motion.button
+                  className="icon-btn-outline"
+                  title={listCollapsed ? 'Expandir lançamentos' : 'Minimizar lançamentos'}
+                  aria-expanded={!listCollapsed}
+                  onClick={() => setListCollapsed((c) => !c)}
+                  whileTap={{ scale: 0.9 }}
+                  transition={springTap}
+                >
+                  <motion.span
+                    style={{ display: 'flex' }}
+                    animate={{ rotate: listCollapsed ? -90 : 0 }}
+                    transition={springTap}
+                  >
+                    <ChevronDownIcon />
+                  </motion.span>
+                </motion.button>
+                <h3 className="section-title">Lançamentos ({filteredLedger.length})</h3>
+              </div>
               <div className="section-head-actions">
+                <motion.button
+                  className="icon-btn-outline"
+                  title="Trazer recorrentes do mês anterior"
+                  onClick={handleCarryRecurring}
+                  disabled={carrying}
+                  whileTap={{ scale: 0.9 }}
+                  transition={springTap}
+                >
+                  <motion.span
+                    style={{ display: 'flex' }}
+                    animate={carrying ? { rotate: 360 } : { rotate: 0 }}
+                    transition={carrying ? { duration: 0.8, repeat: Infinity, ease: 'linear' } : springTap}
+                  >
+                    <RepeatIcon />
+                  </motion.span>
+                </motion.button>
                 <motion.button
                   className={`icon-btn-outline ${filtersActive ? 'icon-btn-outline-active' : ''}`}
                   title="Filtrar lançamentos"
@@ -539,6 +649,15 @@ export function DashboardPage() {
             )}
             </AnimatePresence>
 
+            <AnimatePresence initial={false}>
+            {!listCollapsed && (
+              <motion.div
+                style={{ overflow: 'hidden' }}
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={springSheet}
+              >
             {filteredLedger.length === 0 ? (
               <p className="empty">
                 {ledger.length === 0 ? 'Nenhum lançamento neste mês.' : 'Nenhum lançamento com esses filtros.'}
@@ -641,6 +760,9 @@ export function DashboardPage() {
                 </AnimatePresence>
               </ul>
             )}
+              </motion.div>
+            )}
+            </AnimatePresence>
           </section>
 
           {/* Gráfico: gasto nos últimos meses */}
@@ -668,7 +790,22 @@ export function DashboardPage() {
               })}
             </div>
           </section>
-        </>
+          </motion.div>
+
+          <AnimatePresence>
+            {loading && (
+              <motion.div
+                className="loading-overlay"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={springTap}
+              >
+                <div className="spinner" />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       ) : null}
 
       {/* Modais */}
@@ -729,6 +866,14 @@ export function DashboardPage() {
           initialWalletBase={summary.walletBase}
           onCancel={() => setModal({ kind: 'closed' })}
           onSubmit={handleSaveIncomeSources}
+        />
+      )}
+      {modal.kind === 'manage' && (
+        <ManageModal
+          year={year}
+          month={month}
+          onCancel={() => setModal({ kind: 'closed' })}
+          onCategoriesChanged={() => void load()}
         />
       )}
     </div>

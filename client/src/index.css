@@ -130,6 +130,27 @@ select option {
     transform: rotate(360deg);
   }
 }
+.dashboard-content {
+  position: relative;
+}
+.dashboard-manage-row {
+  display: flex;
+  justify-content: flex-end;
+}
+.dashboard-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 96px;
+  z-index: 5;
+}
 
 /* ---------- Layout ---------- */
 .layout {
@@ -275,6 +296,11 @@ select option {
 }
 .section-head .section-title {
   margin: 0;
+}
+.section-head-start {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 .section-head-actions {
   display: flex;
@@ -446,6 +472,9 @@ select option {
   flex-direction: column;
   gap: 2px;
 }
+.dropdown-menu-portal {
+  z-index: 60;
+}
 .dropdown-item {
   text-align: left;
   padding: 10px 12px;
@@ -525,6 +554,49 @@ select option {
   letter-spacing: -0.01em;
   text-align: center;
   min-width: 148px;
+}
+.month-label-trigger {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  border-radius: 10px;
+  padding: 4px 8px;
+  transition: background 0.15s ease;
+}
+.month-label-trigger:hover {
+  background: var(--surface-2);
+}
+.month-picker {
+  width: 240px;
+  padding: 14px;
+  gap: 12px;
+}
+.month-picker-year {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+.month-arrow-small {
+  width: 30px;
+  height: 30px;
+}
+.month-arrow-small svg {
+  width: 14px;
+  height: 14px;
+}
+.month-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+.month-picker-item {
+  text-align: center;
+  padding: 10px 0;
 }
 .month-year {
   color: var(--text-muted);
@@ -1319,6 +1391,12 @@ select option {
   flex-wrap: wrap;
   align-items: center;
 }
+.manage-section {
+  margin-bottom: 20px;
+}
+.manage-section:last-of-type {
+  margin-bottom: 8px;
+}
 .inline-form input,
 .cat-form input {
   flex: 1;
@@ -1563,6 +1641,15 @@ select option {
 }
 .legend-box.budget {
   background: var(--surface-2);
+}
+.legend-box.income {
+  background: var(--ok);
+}
+.chart-income {
+  width: 40%;
+  background: var(--ok);
+  border-radius: 4px 4px 0 0;
+  min-height: 2px;
 }
 
 /* =====================================================================

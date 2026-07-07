@@ -3,6 +3,7 @@ import type { Account, Category, Expense, ExpenseInput } from '../api/types';
 import { ApiError } from '../api/client';
 import { todayIso } from '../utils/format';
 import { Modal } from './Modal';
+import { Dropdown } from './Dropdown';
 
 interface Props {
   categories: Category[];
@@ -121,27 +122,27 @@ export function ExpenseFormModal({
           </div>
 
           <div className="field-row">
-            <label className="field">
+            <div className="field">
               <span>Categoria</span>
-              <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-                <option value="">Sem categoria</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="field">
+              <Dropdown
+                value={categoryId}
+                onChange={setCategoryId}
+                ariaLabel="Categoria"
+                options={[
+                  { value: '', label: 'Sem categoria' },
+                  ...categories.map((c) => ({ value: c.id, label: c.name })),
+                ]}
+              />
+            </div>
+            <div className="field">
               <span>Conta</span>
-              <select value={accountId} onChange={(e) => setAccountId(e.target.value)}>
-                {accounts.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <Dropdown
+                value={accountId}
+                onChange={setAccountId}
+                ariaLabel="Conta"
+                options={accounts.map((a) => ({ value: a.id, label: a.name }))}
+              />
+            </div>
           </div>
 
           <label className="checkbox">

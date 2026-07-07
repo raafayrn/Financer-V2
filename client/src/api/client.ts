@@ -10,7 +10,11 @@ import type {
   ExpenseInput,
   Income,
   IncomeInput,
+  Investment,
+  InvestmentInput,
+  InvestmentSummary,
   MonthlyReport,
+  ReportsOverview,
   Summary,
   User,
 } from './types';
@@ -149,11 +153,23 @@ export const api = {
     request<Expense>(`/expenses/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteExpense: (id: string) => request<void>(`/expenses/${id}`, { method: 'DELETE' }),
 
+  // Investimentos
+  listInvestments: () => request<Investment[]>('/investments'),
+  getInvestmentSummary: (year: number) =>
+    request<InvestmentSummary>(`/investments/summary?year=${year}`),
+  createInvestment: (data: InvestmentInput) =>
+    request<Investment>('/investments', { method: 'POST', body: JSON.stringify(data) }),
+  updateInvestment: (id: string, data: Partial<InvestmentInput>) =>
+    request<Investment>(`/investments/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteInvestment: (id: string) => request<void>(`/investments/${id}`, { method: 'DELETE' }),
+
   // Resumo e relatórios
   getSummary: (year: number, month: number) =>
     request<Summary>(`/summary?year=${year}&month=${month}`),
   getMonthlyReport: (year: number) =>
     request<MonthlyReport>(`/reports/monthly?year=${year}`),
+  getReportsOverview: (year: number) =>
+    request<ReportsOverview>(`/reports/overview?year=${year}`),
 
   // Chat (linguagem natural / imagem / perguntas)
   chatStatus: () => request<{ enabled: boolean }>('/chat/status'),

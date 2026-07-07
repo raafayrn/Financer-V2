@@ -113,6 +113,41 @@ export const chatInvoicePdfSchema = z.object({
   pdfBase64: z.string().min(1, 'Envie um arquivo PDF.'),
 });
 
+export const investmentTypeSchema = z.enum([
+  'RENDA_FIXA',
+  'TESOURO_DIRETO',
+  'ACOES',
+  'FUNDOS',
+  'CRIPTO',
+  'POUPANCA',
+  'OUTRO',
+]);
+
+export const investmentKindSchema = z.enum(['APORTE', 'RESGATE']);
+
+export const investmentCreateSchema = z.object({
+  description: z.string().trim().min(1, 'Informe uma descrição.').max(200),
+  type: investmentTypeSchema,
+  kind: investmentKindSchema.optional(),
+  amount: reais,
+  date: isoDate,
+  notes: z.string().trim().max(500).nullable().optional(),
+});
+
+export const investmentUpdateSchema = z
+  .object({
+    description: z.string().trim().min(1).max(200),
+    type: investmentTypeSchema,
+    kind: investmentKindSchema,
+    amount: reais,
+    date: isoDate,
+    notes: z.string().trim().max(500).nullable(),
+  })
+  .partial()
+  .refine((data) => Object.keys(data).length > 0, {
+    message: 'Envie ao menos um campo para atualizar.',
+  });
+
 export const chatFileSchema = z.object({
   // Arquivo em base64 (sem o prefixo data:...;base64,). Aceita foto,
   // PDF, CSV ou OFX — o tipo é detectado pelo backend.

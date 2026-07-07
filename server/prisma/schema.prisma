@@ -40,6 +40,7 @@ model User {
   expenses       Expense[]
   incomes        Income[]
   accounts       Account[]
+  investments    Investment[]
 }
 
 model Category {
@@ -187,6 +188,42 @@ model Income {
 
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   account Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+  @@index([userId, date])
+}
+
+enum InvestmentType {
+  RENDA_FIXA
+  TESOURO_DIRETO
+  ACOES
+  FUNDOS
+  CRIPTO
+  POUPANCA
+  OUTRO
+}
+
+// Registro de aportes/resgates de investimentos. `amount` é sempre positivo;
+// `kind` indica se foi um aporte (soma ao total investido) ou um resgate
+// (subtrai). O saldo total por tipo é a soma dos aportes menos os resgates.
+enum InvestmentKind {
+  APORTE
+  RESGATE
+}
+
+model Investment {
+  id          String         @id @default(cuid())
+  userId      String
+  description String
+  type        InvestmentType
+  kind        InvestmentKind @default(APORTE)
+  // Valor em centavos, sempre positivo.
+  amount      Int
+  date        DateTime
+  notes       String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, date])
 }
