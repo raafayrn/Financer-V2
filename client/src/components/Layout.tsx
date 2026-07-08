@@ -35,7 +35,7 @@ function isItemActive(pathname: string, item: (typeof NAV_ITEMS)[number]) {
 }
 
 export function Layout() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
@@ -91,15 +91,6 @@ export function Layout() {
             {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
           </motion.button>
           <span className="user-name">{user?.name}</span>
-          <motion.button
-            className="btn-ghost btn-sm"
-            onClick={logout}
-            title="Sair"
-            whileTap={{ scale: 0.95 }}
-            transition={springTap}
-          >
-            Sair
-          </motion.button>
         </div>
       </header>
 
@@ -129,15 +120,6 @@ export function Layout() {
               {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
             </motion.button>
             <span className="user-name">{user?.name}</span>
-            <motion.button
-              className="btn-ghost"
-              onClick={logout}
-              title="Sair"
-              whileTap={{ scale: 0.95 }}
-              transition={springTap}
-            >
-              Sair
-            </motion.button>
           </div>
         </div>
       </header>

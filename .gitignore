@@ -14,6 +14,14 @@ build/
 *.db-journal
 server/prisma/*.db
 server/prisma/*.db-journal
+server/test/test.db
+server/test/test.db-journal
+
+# Backups locais do banco (gerados por scripts/backup-db.ps1)
+/backups/
+
+# Ícone do atalho de área de trabalho (gerado por scripts/generate-ico.ps1)
+/Financer.ico
 
 # Logs
 *.log

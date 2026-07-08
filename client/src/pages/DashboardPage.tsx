@@ -287,6 +287,24 @@ export function DashboardPage() {
       setModal({ kind: 'chat-batch', previews: modal.previews, index: nextIndex });
     }
   }
+  // Lança este e todos os demais lançamentos do lote de uma vez, sem revisar um a um.
+  async function handleAcceptAllBatch() {
+    if (modal.kind !== 'chat-batch') return;
+    const remaining = modal.previews.slice(modal.index);
+    const defaultAccountId = accounts.find((a) => a.kind === 'CREDIT_CARD')?.id ?? null;
+    for (const preview of remaining) {
+      await api.createExpense({
+        description: preview.description,
+        amount: preview.amount,
+        date: preview.date,
+        categoryId: preview.categoryId,
+        accountId: defaultAccountId,
+        recurring: preview.recurring,
+      });
+    }
+    setModal({ kind: 'closed' });
+    await load();
+  }
 
   const walletAccountId = accounts.find((a) => a.kind === 'WALLET')?.id;
   const accountById = new Map(accounts.map((a) => [a.id, a]));
@@ -833,6 +851,7 @@ export function DashboardPage() {
           onCancel={() => setModal({ kind: 'closed' })}
           onSubmit={handleBatchSubmit}
           onSkip={advanceBatch}
+          onAcceptAll={handleAcceptAllBatch}
         />
       )}
       {modal.kind === 'income' && (

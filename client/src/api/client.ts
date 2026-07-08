@@ -82,6 +82,7 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+  autoLogin: () => request<AuthResponse>('/auth/auto', { method: 'POST' }),
   me: () => request<User>('/auth/me'),
 
   // Categorias

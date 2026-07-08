@@ -16,6 +16,8 @@ interface Props {
   onSubmit: (data: ExpenseInput) => Promise<void>;
   /** Quando definido, mostra um botão "Pular" (fluxo de confirmação em lote). */
   onSkip?: () => void;
+  /** Quando definido, mostra um botão "Aceitar todos" (lança este e os demais do lote sem revisar um a um). */
+  onAcceptAll?: () => Promise<void>;
 }
 
 /** Conta padrão para lançamentos sem conta definida (compra no cartão). */
@@ -36,6 +38,7 @@ export function ExpenseFormModal({
   onCancel,
   onSubmit,
   onSkip,
+  onAcceptAll,
 }: Props) {
   const [description, setDescription] = useState(initial?.description ?? '');
   const [amount, setAmount] = useState(
@@ -49,6 +52,7 @@ export function ExpenseFormModal({
   const [recurring, setRecurring] = useState(initial?.recurring ?? false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [acceptingAll, setAcceptingAll] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -71,6 +75,18 @@ export function ExpenseFormModal({
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Erro ao salvar.');
       setSubmitting(false);
+    }
+  }
+
+  async function handleAcceptAll() {
+    if (!onAcceptAll) return;
+    setError(null);
+    setAcceptingAll(true);
+    try {
+      await onAcceptAll();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Erro ao lançar todos.');
+      setAcceptingAll(false);
     }
   }
 
@@ -157,15 +173,25 @@ export function ExpenseFormModal({
           {error && <div className="alert alert-error">{error}</div>}
 
           <div className="modal-actions">
-            <button type="button" className="btn-ghost" onClick={close}>
+            <button type="button" className="btn-ghost" onClick={close} disabled={acceptingAll}>
               Cancelar
             </button>
             {onSkip && (
-              <button type="button" className="btn-ghost" onClick={onSkip} disabled={submitting}>
+              <button type="button" className="btn-ghost" onClick={onSkip} disabled={submitting || acceptingAll}>
                 Pular
               </button>
             )}
-            <button type="submit" className="btn-primary" disabled={submitting}>
+            {onAcceptAll && (
+              <button
+                type="button"
+                className="btn-ghost"
+                onClick={handleAcceptAll}
+                disabled={submitting || acceptingAll}
+              >
+                {acceptingAll ? 'Lançando…' : 'Aceitar todos'}
+              </button>
+            )}
+            <button type="submit" className="btn-primary" disabled={submitting || acceptingAll}>
               {submitting ? 'Salvando…' : 'Salvar'}
             </button>
           </div>

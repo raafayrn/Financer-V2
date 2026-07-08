@@ -15,7 +15,7 @@ function monthName(month: number): string {
 /**
  * Monta um resumo em texto dos dados financeiros reais do usuário (mês atual
  * + mês anterior, para permitir perguntas comparativas), para servir de
- * contexto ao Gemini responder perguntas sem inventar números.
+ * contexto ao Claude responder perguntas sem inventar números.
  */
 export async function buildFinancialContext(
   userId: string,

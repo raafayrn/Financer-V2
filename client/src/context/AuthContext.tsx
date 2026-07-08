@@ -24,11 +24,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Ao carregar, tenta restaurar a sessão a partir do token salvo.
+  // Ao carregar, tenta restaurar a sessão a partir do token salvo. Sem token,
+  // faz login automático (app de uso pessoal, sem tela de login) — se não
+  // houver nenhuma conta ainda, cai de volta para o fluxo normal de login/cadastro.
   useEffect(() => {
     const token = getToken();
     if (!token) {
-      setLoading(false);
+      api
+        .autoLogin()
+        .then((res) => {
+          setToken(res.token);
+          setUser(res.user);
+        })
+        .catch(() => {})
+        .finally(() => setLoading(false));
       return;
     }
     api
