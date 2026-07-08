@@ -1,8 +1,9 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { springSheet, springSmooth, springTap } from '../lib/motion';
-import { PiggyBankIcon } from './icons';
+import { GearIcon, MoonIcon, PiggyBankIcon, SunIcon } from './icons';
 
 function HomeIcon() {
   return (
@@ -35,7 +36,10 @@ function isItemActive(pathname: string, item: (typeof NAV_ITEMS)[number]) {
 
 export function Layout() {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const location = useLocation();
+  const navigate = useNavigate();
+  const isDashboard = location.pathname === '/';
 
   return (
     <div className="layout">
@@ -66,6 +70,26 @@ export function Layout() {
           })}
         </nav>
         <div className="navbar-desktop-right">
+          {isDashboard && (
+            <motion.button
+              className="icon-btn-outline"
+              title="Gerenciar categorias e orçamento"
+              onClick={() => navigate('/?manage=1')}
+              whileTap={{ scale: 0.9 }}
+              transition={springTap}
+            >
+              <GearIcon />
+            </motion.button>
+          )}
+          <motion.button
+            className="icon-btn-outline"
+            title={theme === 'dark' ? 'Ativar modo claro' : 'Ativar modo escuro'}
+            onClick={toggleTheme}
+            whileTap={{ scale: 0.9 }}
+            transition={springTap}
+          >
+            {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+          </motion.button>
           <span className="user-name">{user?.name}</span>
           <motion.button
             className="btn-ghost btn-sm"
@@ -84,6 +108,26 @@ export function Layout() {
         <div className="topbar-inner">
           <span className="brand">Financer</span>
           <div className="topbar-right">
+            {isDashboard && (
+              <motion.button
+                className="icon-btn-outline"
+                title="Gerenciar categorias e orçamento"
+                onClick={() => navigate('/?manage=1')}
+                whileTap={{ scale: 0.9 }}
+                transition={springTap}
+              >
+                <GearIcon />
+              </motion.button>
+            )}
+            <motion.button
+              className="icon-btn-outline"
+              title={theme === 'dark' ? 'Ativar modo claro' : 'Ativar modo escuro'}
+              onClick={toggleTheme}
+              whileTap={{ scale: 0.9 }}
+              transition={springTap}
+            >
+              {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+            </motion.button>
             <span className="user-name">{user?.name}</span>
             <motion.button
               className="btn-ghost"

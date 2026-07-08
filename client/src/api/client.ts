@@ -141,9 +141,6 @@ export const api = {
     request<Income>(`/income/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteIncome: (id: string) => request<void>(`/income/${id}`, { method: 'DELETE' }),
 
-  // Saldo da carteira (Pix) — acumulado, não é por mês
-  getWallet: () => request<{ balance: number }>('/wallet'),
-
   // Despesas
   listExpenses: (year: number, month: number) =>
     request<Expense[]>(`/expenses?year=${year}&month=${month}`),

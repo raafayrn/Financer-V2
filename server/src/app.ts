@@ -11,7 +11,6 @@ import { walletBaseRouter } from './routes/walletBase';
 import { expensesRouter } from './routes/expenses';
 import { incomeRouter } from './routes/income';
 import { accountsRouter } from './routes/accounts';
-import { walletRouter } from './routes/wallet';
 import { summaryRouter } from './routes/summary';
 import { reportsRouter } from './routes/reports';
 import { chatRouter } from './routes/chat';
@@ -37,7 +36,6 @@ export function createApp() {
   app.use('/api/expenses', expensesRouter);
   app.use('/api/income', incomeRouter);
   app.use('/api/accounts', accountsRouter);
-  app.use('/api/wallet', walletRouter);
   app.use('/api/summary', summaryRouter);
   app.use('/api/reports', reportsRouter);
   app.use('/api/chat', chatRouter);

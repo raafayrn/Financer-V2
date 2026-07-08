@@ -13,7 +13,6 @@ interface MonthContextValue {
   goPrev: () => void;
   goNext: () => void;
   setYearMonth: (year: number, month: number) => void;
-  isCurrent: boolean;
 }
 
 const MonthContext = createContext<MonthContextValue | null>(null);
@@ -48,11 +47,9 @@ export function MonthProvider({ children }: { children: ReactNode }) {
     setMonth(m);
   }, []);
 
-  const isCurrent = year === now.getFullYear() && month === now.getMonth() + 1;
-
   const value = useMemo(
-    () => ({ year, month, goPrev, goNext, setYearMonth, isCurrent }),
-    [year, month, goPrev, goNext, setYearMonth, isCurrent],
+    () => ({ year, month, goPrev, goNext, setYearMonth }),
+    [year, month, goPrev, goNext, setYearMonth],
   );
 
   return <MonthContext.Provider value={value}>{children}</MonthContext.Provider>;

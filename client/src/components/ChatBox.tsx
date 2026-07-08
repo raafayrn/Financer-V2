@@ -199,7 +199,7 @@ export function ChatBox({ onSaved, onPreviews }: Props) {
     setLoading(true);
 
     try {
-      const { base64 } = await fileToBase64(file);
+      const base64 = await fileToBase64(file);
       const result = await api.chatParseFile(base64, file.type, file.name);
       if (result.ok) {
         addMessage({
@@ -381,13 +381,12 @@ export function ChatBox({ onSaved, onPreviews }: Props) {
   );
 }
 
-function fileToBase64(file: File): Promise<{ base64: string; mimeType: string }> {
+function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
       const result = reader.result as string;
-      const base64 = result.slice(result.indexOf(',') + 1);
-      resolve({ base64, mimeType: file.type || 'image/jpeg' });
+      resolve(result.slice(result.indexOf(',') + 1));
     };
     reader.onerror = () => reject(new Error('Não foi possível ler a imagem.'));
     reader.readAsDataURL(file);

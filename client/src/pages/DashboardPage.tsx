@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { api, ApiError } from '../api/client';
 import { springSheet, springSmooth, springTap } from '../lib/motion';
 import type {
@@ -22,24 +23,8 @@ import { IncomeFormModal } from '../components/IncomeFormModal';
 import { IncomeSourcesModal } from '../components/IncomeSourcesModal';
 import { Dropdown } from '../components/Dropdown';
 import { formatCurrency, formatDayMonth, monthShort } from '../utils/format';
-import { ChevronDownIcon, GearIcon, RepeatIcon } from '../components/icons';
+import { ChevronDownIcon, EditIcon, RepeatIcon, TrashIcon } from '../components/icons';
 import { ManageModal } from '../components/ManageModal';
-
-function EditIcon() {
-  return (
-    <svg viewBox="0 0 24 24" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" />
-    </svg>
-  );
-}
-
-function TrashIcon() {
-  return (
-    <svg viewBox="0 0 24 24" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 7h16M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2m-9 0 1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13" />
-    </svg>
-  );
-}
 
 function FilterIcon() {
   return (
@@ -123,6 +108,18 @@ export function DashboardPage() {
   const [modal, setModal] = useState<ModalState>({ kind: 'closed' });
   const [carrying, setCarrying] = useState(false);
   const [listCollapsed, setListCollapsed] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get('manage') === '1') {
+      setModal({ kind: 'manage' });
+      setSearchParams((prev) => {
+        prev.delete('manage');
+        return prev;
+      }, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -130,7 +127,10 @@ export function DashboardPage() {
   const [recurringOnly, setRecurringOnly] = useState(false);
   const [sortMode, setSortMode] = useState<SortMode>('date-desc');
 
+  const loadRequestRef = useRef(0);
+
   const load = useCallback(async () => {
+    const requestId = ++loadRequestRef.current;
     setLoading(true);
     setError(null);
     try {
@@ -141,24 +141,29 @@ export function DashboardPage() {
         api.listCategories(),
         api.listAccounts(),
       ]);
+
+      const wanted = lastMonths(year, month, 6);
+      const years = Array.from(new Set(wanted.map((w) => w.year)));
+      const reports = await Promise.all(years.map((y) => api.getMonthlyReport(y)));
+
+      if (requestId !== loadRequestRef.current) return; // uma requisição mais nova já resolveu
+
       setSummary(s);
       setExpenses(e);
       setIncomes(inc);
       setCategories(c);
       setAccounts(a);
 
-      const wanted = lastMonths(year, month, 6);
-      const years = Array.from(new Set(wanted.map((w) => w.year)));
-      const reports = await Promise.all(years.map((y) => api.getMonthlyReport(y)));
       const spentByKey = new Map<string, number>();
       for (const r of reports) {
         for (const m of r.months) spentByKey.set(`${r.year}-${m.month}`, m.spent);
       }
       setTrend(wanted.map((w) => ({ year: w.year, month: w.month, spent: spentByKey.get(`${w.year}-${w.month}`) ?? 0 })));
     } catch (err) {
+      if (requestId !== loadRequestRef.current) return;
       setError(err instanceof ApiError ? err.message : 'Erro ao carregar dados.');
     } finally {
-      setLoading(false);
+      if (requestId === loadRequestRef.current) setLoading(false);
     }
   }, [year, month]);
 
@@ -331,17 +336,6 @@ export function DashboardPage() {
 
   return (
     <div className="page">
-      <div className="dashboard-manage-row">
-        <motion.button
-          className="icon-btn-outline"
-          title="Gerenciar categorias e orçamento"
-          onClick={() => setModal({ kind: 'manage' })}
-          whileTap={{ scale: 0.9 }}
-          transition={springTap}
-        >
-          <GearIcon />
-        </motion.button>
-      </div>
       <MonthNavigator />
 
       {loading && !summary ? (

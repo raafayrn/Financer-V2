@@ -34,7 +34,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
     --bg: #1c212b;
     --bg-blob-1: rgba(10, 132, 255, 0.28);
     --bg-blob-2: rgba(48, 209, 88, 0.14);
@@ -61,6 +61,36 @@
     --shadow: 0 12px 30px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.3);
     --shadow-float: 0 10px 30px rgba(0, 0, 0, 0.55);
   }
+}
+
+/* Override manual — vence a preferência do sistema quando o usuário escolhe
+   explicitamente um tema pelo botão da navbar (ver ThemeContext). */
+:root[data-theme='dark'] {
+  --bg: #1c212b;
+  --bg-blob-1: rgba(10, 132, 255, 0.28);
+  --bg-blob-2: rgba(48, 209, 88, 0.14);
+  --bg-blob-3: rgba(191, 90, 242, 0.16);
+  --surface: rgba(41, 46, 58, 0.55);
+  --surface-solid: #262b36;
+  --surface-2: rgba(148, 163, 184, 0.14);
+  --menu-bg: rgba(30, 34, 44, 0.94);
+  --text: #f5f5f7;
+  --text-muted: #9aa5b8;
+  --border: rgba(148, 163, 184, 0.14);
+  --primary: #0a84ff;
+  --primary-hover: #409cff;
+  --primary-contrast: #ffffff;
+
+  --ok: #30d158;
+  --ok-bg: rgba(48, 209, 88, 0.18);
+  --warning: #ff9f0a;
+  --warning-bg: rgba(255, 159, 10, 0.16);
+  --over: #ff453a;
+  --over-bg: rgba(255, 69, 58, 0.18);
+  --info-bg: rgba(10, 132, 255, 0.16);
+
+  --shadow: 0 12px 30px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-float: 0 10px 30px rgba(0, 0, 0, 0.55);
 }
 
 * {
@@ -133,10 +163,6 @@ select option {
 .dashboard-content {
   position: relative;
 }
-.dashboard-manage-row {
-  display: flex;
-  justify-content: flex-end;
-}
 .dashboard-stack {
   display: flex;
   flex-direction: column;
@@ -194,7 +220,7 @@ select option {
   max-width: var(--maxw);
   width: 100%;
   margin: 0 auto;
-  padding: 20px 16px 168px;
+  padding: 12px 16px 168px;
 }
 
 .bottom-nav {
@@ -1744,7 +1770,7 @@ select option {
     width: 96%;
     max-width: var(--maxw-desktop);
     margin: 0 auto;
-    padding: 24px 0 72px;
+    padding: 14px 0 72px;
   }
 
   /* Página mais densa: menos espaço entre cards */

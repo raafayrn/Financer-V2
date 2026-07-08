@@ -21,7 +21,3 @@ export const springSmooth: Transition = { type: 'spring', mass: 0.8, stiffness: 
 
 /** Barras de progresso e preenchimentos — mais lenta, sem oscilar. */
 export const springFill: Transition = { type: 'spring', mass: 1, stiffness: 120, damping: 22 };
-
-/** Escala usada no `whileTap` de elementos pressionáveis. */
-export const tapScale = { scale: 0.97 };
-export const tapScaleSmall = { scale: 0.94 };

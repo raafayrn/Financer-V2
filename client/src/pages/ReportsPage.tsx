@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api, ApiError } from '../api/client';
 import type { ReportsOverview } from '../api/types';
 import { formatCurrency, formatDayMonth, monthShort } from '../utils/format';
@@ -23,14 +23,25 @@ export function ReportsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const loadRequestRef = useRef(0);
+
   useEffect(() => {
+    const requestId = ++loadRequestRef.current;
     setLoading(true);
     setError(null);
     api
       .getReportsOverview(year)
-      .then(setOverview)
-      .catch((err) => setError(err instanceof ApiError ? err.message : 'Erro ao carregar.'))
-      .finally(() => setLoading(false));
+      .then((data) => {
+        if (requestId !== loadRequestRef.current) return;
+        setOverview(data);
+      })
+      .catch((err) => {
+        if (requestId !== loadRequestRef.current) return;
+        setError(err instanceof ApiError ? err.message : 'Erro ao carregar.');
+      })
+      .finally(() => {
+        if (requestId === loadRequestRef.current) setLoading(false);
+      });
   }, [year]);
 
   const maxValue = overview

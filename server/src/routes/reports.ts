@@ -153,6 +153,11 @@ reportsRouter.get(
     const recurringTotal = fixedByMonth.reduce((s, v) => s + v, 0);
     const monthsOverBudget = months.filter((m) => m.budget > 0 && m.spent > m.budget).length;
 
+    // Ano corrente: só os meses já decorridos entram na média (evita subestimar
+    // a média mensal em um ano ainda incompleto). Anos passados usam os 12 meses.
+    const { year: currentYear, month: currentMonth } = currentYearMonth();
+    const elapsedMonths = year === currentYear ? currentMonth : year < currentYear ? 12 : 0;
+
     res.json({
       year,
       months,
@@ -161,9 +166,9 @@ reportsRouter.get(
       totals: {
         spentYear: centsToReais(totalSpentYear),
         incomeYear: centsToReais(totalIncomeYear),
-        avgMonthlySpent: centsToReais(totalSpentYear / 12),
+        avgMonthlySpent: elapsedMonths > 0 ? centsToReais(totalSpentYear / elapsedMonths) : 0,
         savingsRate: totalIncomeYear > 0 ? (totalIncomeYear - totalSpentYear) / totalIncomeYear : 0,
-        recurringMonthlyAvg: centsToReais(recurringTotal / 12),
+        recurringMonthlyAvg: elapsedMonths > 0 ? centsToReais(recurringTotal / elapsedMonths) : 0,
         expenseCount: expenses.length,
         monthsOverBudget,
       },
