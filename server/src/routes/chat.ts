@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
 import { prisma } from '../prisma';
 import { requireAuth } from '../auth/middleware';
 import { asyncHandler, HttpError, parseBody } from '../lib/http';
@@ -18,12 +19,12 @@ import {
   parseExpensesFromCsvText,
   answerFinancialQuestion,
   classifyAndParseMessage,
-} from '../services/gemini';
+} from '../services/claude';
 import { PDFParse } from 'pdf-parse';
 import { decodeText, parseOfxExpenses } from '../lib/statementParsers';
 import { buildFinancialContext } from '../lib/financialContext';
 import { currentYearMonth } from '../lib/month';
-import type { ParsedExpense } from '../services/gemini';
+import type { ParsedExpense } from '../services/claude';
 
 export const chatRouter = Router();
 
@@ -33,6 +34,18 @@ chatRouter.use(requireAuth);
 chatRouter.get('/status', (_req, res) => {
   res.json({ enabled: env.chatEnabled });
 });
+
+// Cada chamada às rotas abaixo custa créditos na API da Anthropic — limita
+// para evitar uso excessivo (acidental ou malicioso) por usuário autenticado.
+const chatCallLimiter = rateLimit({
+  windowMs: 60_000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.userId ?? req.ip ?? 'unknown',
+  message: { ok: false, message: 'Muitas mensagens em pouco tempo. Aguarde um minuto e tente novamente.' },
+});
+chatRouter.use(chatCallLimiter);
 
 /** Casa a categoria sugerida pela IA com uma categoria real do usuário (case-insensitive). */
 function matchCategory(
@@ -55,6 +68,50 @@ function toPreview(parsed: ParsedExpense, categories: { id: string; name: string
   };
 }
 
+/** Lança 503 se a chave da Anthropic não estiver configurada. */
+function requireChatEnabled(message: string) {
+  if (!env.chatEnabled) {
+    throw new HttpError(503, message);
+  }
+}
+
+async function fetchCategories(userId: string) {
+  return prisma.category.findMany({
+    where: { userId },
+    select: { id: true, name: true },
+    orderBy: { name: 'asc' },
+  });
+}
+
+/** Filtra despesas com valor válido e devolve o mesmo formato de resposta em todas as rotas de parse. */
+function respondWithExpenses(
+  res: import('express').Response,
+  result: { expenses: ParsedExpense[]; aviso: string | null },
+  categories: { id: string; name: string }[],
+  fallbackText: string,
+  emptyMessage: string,
+) {
+  const valid = result.expenses.filter((e) => e.valor !== null && e.valor > 0);
+  if (valid.length === 0) {
+    res.json({ ok: false, message: result.aviso ?? emptyMessage });
+    return;
+  }
+  res.json({ ok: true, previews: valid.map((e) => toPreview(e, categories, fallbackText)) });
+}
+
+/** Extrai o texto de um PDF em base64, lançando um erro amigável se falhar. */
+async function readPdfText(pdfBase64: string): Promise<string> {
+  try {
+    const parser = new PDFParse({ data: Buffer.from(pdfBase64, 'base64') });
+    const result = await parser.getText();
+    await parser.destroy();
+    return result.text;
+  } catch (err) {
+    console.error('Falha ao ler o PDF:', err);
+    throw new HttpError(400, 'Não foi possível ler esse PDF. Verifique se o arquivo não está corrompido.');
+  }
+}
+
 /**
  * Interpreta uma frase em linguagem natural e devolve um PREVIEW do lançamento
  * para o usuário confirmar/editar. NÃO salva nada no banco.
@@ -63,21 +120,14 @@ function toPreview(parsed: ParsedExpense, categories: { id: string; name: string
 chatRouter.post(
   '/parse',
   asyncHandler(async (req, res) => {
-    if (!env.chatEnabled) {
-      throw new HttpError(
-        503,
-        'Lançamento por chat indisponível: a chave da API do Gemini não está configurada no servidor.',
-      );
-    }
+    requireChatEnabled(
+      'Lançamento por chat indisponível: a chave da API da Anthropic (Claude) não está configurada no servidor.',
+    );
 
     const { text } = parseBody(chatParseSchema, req.body);
     const userId = req.userId!;
 
-    const categories = await prisma.category.findMany({
-      where: { userId },
-      select: { id: true, name: true },
-      orderBy: { name: 'asc' },
-    });
+    const categories = await fetchCategories(userId);
 
     const today = new Date().toISOString().slice(0, 10);
 
@@ -89,7 +139,7 @@ chatRouter.post(
         today,
       );
     } catch (err) {
-      console.error('Falha ao chamar a API do Gemini:', err);
+      console.error('Falha ao chamar a API da Anthropic (Claude):', err);
       throw new HttpError(
         502,
         'Não foi possível interpretar a mensagem agora. Tente novamente ou lance manualmente.',
@@ -119,49 +169,28 @@ chatRouter.post(
 chatRouter.post(
   '/parse-image',
   asyncHandler(async (req, res) => {
-    if (!env.chatEnabled) {
-      throw new HttpError(
-        503,
-        'Lançamento por chat indisponível: a chave da API do Gemini não está configurada no servidor.',
-      );
-    }
+    requireChatEnabled(
+      'Lançamento por chat indisponível: a chave da API da Anthropic (Claude) não está configurada no servidor.',
+    );
 
     const { imageBase64, mimeType } = parseBody(chatImageSchema, req.body);
     const userId = req.userId!;
 
-    const categories = await prisma.category.findMany({
-      where: { userId },
-      select: { id: true, name: true },
-      orderBy: { name: 'asc' },
-    });
-
+    const categories = await fetchCategories(userId);
     const today = new Date().toISOString().slice(0, 10);
 
     let result;
     try {
       result = await parseExpensesFromImage(imageBase64, mimeType, categories.map((c) => c.name), today);
     } catch (err) {
-      console.error('Falha ao chamar a API do Gemini (imagem):', err);
+      console.error('Falha ao chamar a API da Anthropic (Claude) (imagem):', err);
       throw new HttpError(
         502,
         'Não foi possível interpretar a imagem agora. Tente novamente ou lance manualmente.',
       );
     }
 
-    const valid = result.expenses.filter((e) => e.valor !== null && e.valor > 0);
-
-    if (valid.length === 0) {
-      res.json({
-        ok: false,
-        message: result.aviso ?? 'Não consegui identificar nenhuma despesa nessa imagem.',
-      });
-      return;
-    }
-
-    res.json({
-      ok: true,
-      previews: valid.map((e) => toPreview(e, categories, 'Compra')),
-    });
+    respondWithExpenses(res, result, categories, 'Compra', 'Não consegui identificar nenhuma despesa nessa imagem.');
   }),
 );
 
@@ -174,26 +203,12 @@ chatRouter.post(
 chatRouter.post(
   '/parse-invoice-pdf',
   asyncHandler(async (req, res) => {
-    if (!env.chatEnabled) {
-      throw new HttpError(
-        503,
-        'Lançamento por chat indisponível: a chave da API não está configurada no servidor.',
-      );
-    }
+    requireChatEnabled('Lançamento por chat indisponível: a chave da API não está configurada no servidor.');
 
     const { pdfBase64 } = parseBody(chatInvoicePdfSchema, req.body);
     const userId = req.userId!;
 
-    let invoiceText: string;
-    try {
-      const parser = new PDFParse({ data: Buffer.from(pdfBase64, 'base64') });
-      const result = await parser.getText();
-      await parser.destroy();
-      invoiceText = result.text;
-    } catch (err) {
-      console.error('Falha ao ler o PDF da fatura:', err);
-      throw new HttpError(400, 'Não foi possível ler esse PDF. Verifique se o arquivo não está corrompido.');
-    }
+    const invoiceText = await readPdfText(pdfBase64);
 
     if (!invoiceText.trim()) {
       res.json({
@@ -203,12 +218,7 @@ chatRouter.post(
       return;
     }
 
-    const categories = await prisma.category.findMany({
-      where: { userId },
-      select: { id: true, name: true },
-      orderBy: { name: 'asc' },
-    });
-
+    const categories = await fetchCategories(userId);
     const today = new Date().toISOString().slice(0, 10);
 
     let result;
@@ -222,20 +232,7 @@ chatRouter.post(
       );
     }
 
-    const valid = result.expenses.filter((e) => e.valor !== null && e.valor > 0);
-
-    if (valid.length === 0) {
-      res.json({
-        ok: false,
-        message: result.aviso ?? 'Não consegui identificar nenhuma transação nessa fatura.',
-      });
-      return;
-    }
-
-    res.json({
-      ok: true,
-      previews: valid.map((e) => toPreview(e, categories, 'Fatura')),
-    });
+    respondWithExpenses(res, result, categories, 'Fatura', 'Não consegui identificar nenhuma transação nessa fatura.');
   }),
 );
 
@@ -249,22 +246,13 @@ chatRouter.post(
 chatRouter.post(
   '/parse-file',
   asyncHandler(async (req, res) => {
-    if (!env.chatEnabled) {
-      throw new HttpError(
-        503,
-        'Lançamento por chat indisponível: a chave da API não está configurada no servidor.',
-      );
-    }
+    requireChatEnabled('Lançamento por chat indisponível: a chave da API não está configurada no servidor.');
 
     const { fileBase64, mimeType, fileName } = parseBody(chatFileSchema, req.body);
     const userId = req.userId!;
     const today = new Date().toISOString().slice(0, 10);
 
-    const categories = await prisma.category.findMany({
-      where: { userId },
-      select: { id: true, name: true },
-      orderBy: { name: 'asc' },
-    });
+    const categories = await fetchCategories(userId);
 
     const ext = (fileName.split('.').pop() ?? '').toLowerCase();
     const isImage = mimeType.startsWith('image/');
@@ -281,27 +269,13 @@ chatRouter.post(
         console.error('Falha ao chamar a API do Claude (imagem):', err);
         throw new HttpError(502, 'Não foi possível interpretar a imagem agora. Tente novamente ou lance manualmente.');
       }
-      const valid = result.expenses.filter((e) => e.valor !== null && e.valor > 0);
-      if (valid.length === 0) {
-        res.json({ ok: false, message: result.aviso ?? 'Não consegui identificar nenhuma despesa nessa imagem.' });
-        return;
-      }
-      res.json({ ok: true, previews: valid.map((e) => toPreview(e, categories, 'Compra')) });
+      respondWithExpenses(res, result, categories, 'Compra', 'Não consegui identificar nenhuma despesa nessa imagem.');
       return;
     }
 
     // --- Fatura em PDF ---
     if (isPdf) {
-      let invoiceText: string;
-      try {
-        const parser = new PDFParse({ data: Buffer.from(fileBase64, 'base64') });
-        const parsed = await parser.getText();
-        await parser.destroy();
-        invoiceText = parsed.text;
-      } catch (err) {
-        console.error('Falha ao ler o PDF:', err);
-        throw new HttpError(400, 'Não foi possível ler esse PDF. Verifique se o arquivo não está corrompido.');
-      }
+      const invoiceText = await readPdfText(fileBase64);
       if (!invoiceText.trim()) {
         res.json({
           ok: false,
@@ -316,12 +290,7 @@ chatRouter.post(
         console.error('Falha ao chamar a API do Claude (PDF):', err);
         throw new HttpError(502, 'Não foi possível interpretar a fatura agora. Tente novamente ou lance manualmente.');
       }
-      const valid = result.expenses.filter((e) => e.valor !== null && e.valor > 0);
-      if (valid.length === 0) {
-        res.json({ ok: false, message: result.aviso ?? 'Não consegui identificar nenhuma transação nessa fatura.' });
-        return;
-      }
-      res.json({ ok: true, previews: valid.map((e) => toPreview(e, categories, 'Fatura')) });
+      respondWithExpenses(res, result, categories, 'Fatura', 'Não consegui identificar nenhuma transação nessa fatura.');
       return;
     }
 
@@ -360,12 +329,7 @@ chatRouter.post(
         console.error('Falha ao chamar a API do Claude (CSV):', err);
         throw new HttpError(502, 'Não foi possível interpretar o CSV agora. Tente novamente ou lance manualmente.');
       }
-      const valid = result.expenses.filter((e) => e.valor !== null && e.valor > 0);
-      if (valid.length === 0) {
-        res.json({ ok: false, message: result.aviso ?? 'Não consegui identificar nenhuma transação nesse CSV.' });
-        return;
-      }
-      res.json({ ok: true, previews: valid.map((e) => toPreview(e, categories, 'Transação')) });
+      respondWithExpenses(res, result, categories, 'Transação', 'Não consegui identificar nenhuma transação nesse CSV.');
       return;
     }
 
@@ -384,12 +348,9 @@ chatRouter.post(
 chatRouter.post(
   '/ask',
   asyncHandler(async (req, res) => {
-    if (!env.chatEnabled) {
-      throw new HttpError(
-        503,
-        'Assistente indisponível: a chave da API do Gemini não está configurada no servidor.',
-      );
-    }
+    requireChatEnabled(
+      'Assistente indisponível: a chave da API da Anthropic (Claude) não está configurada no servidor.',
+    );
 
     const { question } = parseBody(chatAskSchema, req.body);
     const userId = req.userId!;
@@ -402,7 +363,7 @@ chatRouter.post(
     try {
       answer = await answerFinancialQuestion(question, context, today);
     } catch (err) {
-      console.error('Falha ao chamar a API do Gemini (pergunta):', err);
+      console.error('Falha ao chamar a API da Anthropic (Claude) (pergunta):', err);
       throw new HttpError(502, 'Não foi possível responder agora. Tente novamente.');
     }
 
@@ -418,22 +379,15 @@ chatRouter.post(
 chatRouter.post(
   '/message',
   asyncHandler(async (req, res) => {
-    if (!env.chatEnabled) {
-      throw new HttpError(
-        503,
-        'Assistente indisponível: a chave da API do Gemini não está configurada no servidor.',
-      );
-    }
+    requireChatEnabled(
+      'Assistente indisponível: a chave da API da Anthropic (Claude) não está configurada no servidor.',
+    );
 
     const { text } = parseBody(chatMessageSchema, req.body);
     const userId = req.userId!;
     const today = new Date().toISOString().slice(0, 10);
 
-    const categories = await prisma.category.findMany({
-      where: { userId },
-      select: { id: true, name: true },
-      orderBy: { name: 'asc' },
-    });
+    const categories = await fetchCategories(userId);
 
     let classified;
     try {

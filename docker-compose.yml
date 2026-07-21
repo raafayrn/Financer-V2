@@ -6,11 +6,10 @@ services:
       # Caminho absoluto para o banco fora de /app/prisma (assim o volume não
       # esconde o schema.prisma da imagem).
       DATABASE_URL: "file:/data/dev.db"
-      JWT_SECRET: "${JWT_SECRET:-troque-este-segredo-em-producao}"
+      JWT_SECRET: "${JWT_SECRET:?defina JWT_SECRET no .env — veja server/.env.example}"
       JWT_EXPIRES_IN: "7d"
-      GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
-      GEMINI_MODEL: "${GEMINI_MODEL:-gemini-3.5-flash}"
-      CORS_ORIGIN: "*"
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
+      CORS_ORIGIN: "${CORS_ORIGIN:-*}"
     volumes:
       # Persiste o arquivo SQLite entre reinícios do container.
       - db-data:/data

@@ -107,7 +107,7 @@ function SubTabs({ section, layoutId, variant }: { section: Section; layoutId: s
 }
 
 export function Layout() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
@@ -165,9 +165,6 @@ export function Layout() {
             {gearButton}
             {themeButton}
             <span className="user-name">{user?.name}</span>
-            <motion.button className="btn-ghost btn-sm" onClick={logout} title="Sair" whileTap={{ scale: 0.95 }} transition={springTap}>
-              Sair
-            </motion.button>
           </div>
         </div>
         {section.items.length > 1 && (
@@ -184,9 +181,6 @@ export function Layout() {
           <div className="topbar-right">
             {gearButton}
             {themeButton}
-            <motion.button className="btn-ghost" onClick={logout} title="Sair" whileTap={{ scale: 0.95 }} transition={springTap}>
-              Sair
-            </motion.button>
           </div>
         </div>
         {section.items.length > 1 && (

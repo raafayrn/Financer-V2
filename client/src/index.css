@@ -247,13 +247,13 @@ select option {
   -webkit-backdrop-filter: var(--blur);
   border-top: 0.5px solid var(--border);
   display: flex;
-  justify-content: space-around;
   padding: 8px 0 max(8px, env(safe-area-inset-bottom));
   z-index: 10;
 }
 .nav-item {
   position: relative;
   display: flex;
+  flex: 1;
   flex-direction: column;
   align-items: center;
   gap: 3px;
@@ -261,7 +261,7 @@ select option {
   color: var(--text-muted);
   font-size: 0.68rem;
   font-weight: 500;
-  padding: 4px 18px;
+  padding: 4px 8px;
   border-radius: 10px;
   transition: color 0.25s cubic-bezier(0.22, 1, 0.36, 1);
   /* Também usado como <button> (seções na barra inferior) */

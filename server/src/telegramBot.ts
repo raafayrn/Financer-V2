@@ -3,7 +3,7 @@ import { env } from './env';
 import { reaisToCents } from './lib/money';
 import { currentYearMonth } from './lib/month';
 import { buildFinancialContext } from './lib/financialContext';
-import { classifyAndParseMessage, answerFinancialQuestion } from './services/gemini';
+import { classifyAndParseMessage, answerFinancialQuestion } from './services/claude';
 import { consumePairingCode, createPending, takePending } from './lib/telegramPairing';
 import {
   getUpdates,

@@ -53,6 +53,26 @@ authRouter.post(
   }),
 );
 
+// Login automático para uso pessoal/local: como o app roda no PC do próprio
+// usuário (sem risco de acesso por terceiros), loga como o único usuário
+// cadastrado sem pedir e-mail/senha. Se não houver nenhum usuário ainda,
+// devolve 404 e o frontend cai de volta para a tela de login/cadastro normal.
+authRouter.post(
+  '/auto',
+  asyncHandler(async (_req, res) => {
+    const user = await prisma.user.findFirst({ orderBy: { createdAt: 'asc' } });
+    if (!user) throw new HttpError(404, 'Nenhuma conta cadastrada ainda.');
+
+    await ensureAccountsForUser(prisma, user.id);
+
+    const token = signToken({ userId: user.id });
+    res.json({
+      token,
+      user: { id: user.id, name: user.name, email: user.email },
+    });
+  }),
+);
+
 authRouter.get(
   '/me',
   requireAuth,

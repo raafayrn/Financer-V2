@@ -8,7 +8,7 @@ O foco é **mostrar de forma clara quanto você ainda pode gastar no mês**, com
 
 - **Destaque visual**: o número "ainda posso gastar" é o maior elemento da tela, com cores de status (verde / amarelo / vermelho).
 - **Lançamentos manuais** de despesas, com edição e exclusão.
-- **Lançamento por chat em linguagem natural** (ex.: _"gastei 150 na loja de materiais ontem"_) interpretado pela API do Gemini, com **preview para confirmar/editar antes de salvar**.
+- **Lançamento por chat em linguagem natural** (ex.: _"gastei 150 na loja de materiais ontem"_) interpretado pela API da Anthropic (Claude), com **preview para confirmar/editar antes de salvar**.
 - **Orçamento por mês** (histórico independente por mês), navegação entre meses e relatório comparativo mês a mês.
 - Responsivo (mobile-first) e com **modo escuro automático**.
 
@@ -22,14 +22,14 @@ O foco é **mostrar de forma clara quanto você ainda pode gastar no mês**, com
 | Backend   | Node.js + Express + TypeScript                                       |
 | Banco     | Prisma ORM + SQLite (troca simples para PostgreSQL)                  |
 | Auth      | E-mail/senha, senha com **bcrypt**, sessão via **JWT**              |
-| IA (chat) | API do Gemini via `@google/genai` — **só no backend**                |
+| IA (chat) | API da Anthropic (Claude) via `@anthropic-ai/sdk` — **só no backend** |
 | Testes    | Vitest (regras de cálculo de orçamento)                             |
 
 Estrutura:
 
 ```
 .
-├── server/     # API Express + Prisma + integração Gemini
+├── server/     # API Express + Prisma + integração Claude
 ├── client/     # SPA React + Vite
 ├── docker-compose.yml
 └── README.md
@@ -44,7 +44,7 @@ Todos os valores monetários são armazenados em **centavos (inteiros)** no banc
 - **Node.js 20+** e **npm 10+** (para rodar localmente).  
   _Este projeto foi gerado em uma máquina sem Node instalado — instale a partir de <https://nodejs.org> antes de rodar._
 - (Opcional) **Docker + Docker Compose**, para subir tudo com um comando.
-- (Opcional) Uma **chave da API do Gemini** (<https://aistudio.google.com/apikey>) para habilitar o lançamento por chat. Sem ela, o app funciona normalmente, apenas sem o campo de chat.
+- (Opcional) Uma **chave da API da Anthropic** (<https://console.anthropic.com/>) para habilitar o lançamento por chat. Sem ela, o app funciona normalmente, apenas sem o campo de chat.
 
 ---
 
@@ -60,7 +60,7 @@ npm install
 cp server/.env.example server/.env
 #   Edite server/.env e defina ao menos JWT_SECRET (gere um valor aleatório):
 #   node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
-#   Opcional: GEMINI_API_KEY para habilitar o chat.
+#   Opcional: ANTHROPIC_API_KEY para habilitar o chat.
 
 # 3. Criar o banco SQLite e as tabelas
 npm run prisma:migrate --workspace server        # cria migração inicial + banco
@@ -96,8 +96,8 @@ Acesse **http://localhost:5173**. O Vite faz proxy de `/api` para o backend auto
 Requer apenas Docker. Na raiz do projeto:
 
 ```bash
-# (opcional) exporte a chave do Gemini para habilitar o chat
-export GEMINI_API_KEY="AIza..."
+# (opcional) exporte a chave da Anthropic para habilitar o chat
+export ANTHROPIC_API_KEY="sk-ant-..."
 export JWT_SECRET="um-segredo-longo-e-aleatorio"
 
 docker compose up --build
@@ -110,6 +110,16 @@ docker compose up --build
 
 Para parar: `docker compose down` (adicione `-v` para apagar também o banco).
 
+### Backup do banco
+
+Como o SQLite fica num único host (sem replicação), vale fazer backups periódicos do volume:
+
+```powershell
+powershell -File scripts/backup-db.ps1
+```
+
+Copia `dev.db` do container para `backups/` (timestamped, mantém os 30 mais recentes). Para automatizar, crie uma tarefa no **Agendador de Tarefas do Windows** apontando para esse comando (ex.: diariamente às 3h).
+
 ---
 
 ## Variáveis de ambiente (backend — `server/.env`)
@@ -120,11 +130,10 @@ Para parar: `docker compose down` (adicione `-v` para apagar também o banco).
 | `DATABASE_URL`      | sim         | Conexão do Prisma. Padrão SQLite: `file:./dev.db`.                        |
 | `JWT_SECRET`        | **sim**     | Segredo para assinar os tokens JWT. Use um valor longo e aleatório.       |
 | `JWT_EXPIRES_IN`    | não (7d)    | Validade do token (`7d`, `24h`, ...).                                     |
-| `GEMINI_API_KEY`    | não         | Chave da API do Gemini. Ausente = chat em linguagem natural desligado.    |
-| `GEMINI_MODEL`      | não         | Modelo do Gemini usado na interpretação. Padrão: `gemini-3.5-flash`.      |
+| `ANTHROPIC_API_KEY` | não         | Chave da API da Anthropic (Claude). Ausente = chat em linguagem natural desligado. |
 | `CORS_ORIGIN`       | não (\*)    | Origem permitida no CORS (URL do frontend).                               |
 
-> 🔒 A chave do Gemini fica **apenas no backend**. O frontend nunca a recebe: ele só envia o texto para `/api/chat/parse` e recebe o preview estruturado.
+> 🔒 A chave da Anthropic fica **apenas no backend**. O frontend nunca a recebe: ele só envia o texto para `/api/chat/parse` e recebe o preview estruturado.
 
 Para trocar para **PostgreSQL**: altere `provider = "postgresql"` em `server/prisma/schema.prisma`, ajuste `DATABASE_URL` e rode `npm run prisma:migrate --workspace server`.
 
@@ -132,11 +141,15 @@ Para trocar para **PostgreSQL**: altere `provider = "postgresql"` em `server/pri
 
 ## Testes
 
-Testes das regras de cálculo de orçamento (total gasto, quanto resta, status verde/amarelo/vermelho, agrupamento por categoria, conversão de centavos):
+Testes unitários (regras de cálculo de orçamento) e de integração (rotas HTTP de auth, chat e despesas, via Supertest contra um SQLite de teste dedicado em `server/test/test.db`):
 
 ```bash
 npm run test --workspace server
 ```
+
+## Scripts de manutenção
+
+Utilitários administrativos (listar usuários, redefinir senha) em [`server/scripts/`](server/scripts/README.md).
 
 ---
 
