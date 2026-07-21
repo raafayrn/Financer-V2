@@ -1,9 +1,18 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import type { ComponentType } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { springSheet, springSmooth, springTap } from '../lib/motion';
-import { GearIcon, MoonIcon, PiggyBankIcon, SunIcon } from './icons';
+import {
+  BookIcon,
+  GearIcon,
+  HeartPulseIcon,
+  MoonIcon,
+  PiggyBankIcon,
+  SunIcon,
+  WalletIcon,
+} from './icons';
 
 function HomeIcon() {
   return (
@@ -24,14 +33,77 @@ function ChartIcon() {
   );
 }
 
-const NAV_ITEMS = [
-  { to: '/', end: true, icon: HomeIcon, label: 'Início' },
-  { to: '/relatorios', end: false, icon: ChartIcon, label: 'Relatórios' },
-  { to: '/investimentos', end: false, icon: PiggyBankIcon, label: 'Investimentos' },
+type NavItem = { to: string; end: boolean; icon: ComponentType; label: string };
+type Section = { id: string; label: string; home: string; icon: ComponentType; items: NavItem[] };
+
+// As 3 seções do planner. As seções são a navegação primária (barra inferior no
+// mobile / pills no topo do desktop); os `items` são as sub-abas de cada uma.
+const SECTIONS: Section[] = [
+  {
+    id: 'financas',
+    label: 'Finanças',
+    home: '/',
+    icon: WalletIcon,
+    items: [
+      { to: '/', end: true, icon: HomeIcon, label: 'Início' },
+      { to: '/relatorios', end: false, icon: ChartIcon, label: 'Relatórios' },
+      { to: '/investimentos', end: false, icon: PiggyBankIcon, label: 'Investimentos' },
+    ],
+  },
+  {
+    id: 'saude',
+    label: 'Saúde',
+    home: '/saude',
+    icon: HeartPulseIcon,
+    items: [{ to: '/saude', end: false, icon: HeartPulseIcon, label: 'Saúde' }],
+  },
+  {
+    id: 'estudos',
+    label: 'Estudos',
+    home: '/estudos',
+    icon: BookIcon,
+    items: [{ to: '/estudos', end: false, icon: BookIcon, label: 'Estudos' }],
+  },
 ];
 
-function isItemActive(pathname: string, item: (typeof NAV_ITEMS)[number]) {
+function sectionForPath(pathname: string): Section {
+  if (pathname.startsWith('/saude')) return SECTIONS[1];
+  if (pathname.startsWith('/estudos')) return SECTIONS[2];
+  return SECTIONS[0];
+}
+
+function isItemActive(pathname: string, item: NavItem) {
   return item.end ? pathname === item.to : pathname.startsWith(item.to);
+}
+
+/** Sub-abas da seção ativa como controle segmentado (mobile) ou linha (desktop). */
+function SubTabs({ section, layoutId, variant }: { section: Section; layoutId: string; variant: 'segment' | 'row' }) {
+  const location = useLocation();
+  if (section.items.length < 2) return null; // seções de 1 aba não precisam de sub-nav
+  return (
+    <div className={variant === 'segment' ? 'subtabs-segment' : 'subtabs-row'}>
+      {section.items.map((item) => {
+        const active = isItemActive(location.pathname, item);
+        return (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            end={item.end}
+            className={variant === 'segment' ? 'subtab-seg-item' : 'subtab-row-item'}
+          >
+            {active && (
+              <motion.span
+                layoutId={layoutId}
+                className={variant === 'segment' ? 'subtab-seg-pill' : 'subtab-row-underline'}
+                transition={springSheet}
+              />
+            )}
+            <span style={{ position: 'relative' }}>{item.label}</span>
+          </NavLink>
+        );
+      })}
+    </div>
+  );
 }
 
 export function Layout() {
@@ -40,106 +112,88 @@ export function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
   const isDashboard = location.pathname === '/';
+  const section = sectionForPath(location.pathname);
+
+  const gearButton = isDashboard && (
+    <motion.button
+      className="icon-btn-outline"
+      title="Gerenciar categorias e orçamento"
+      onClick={() => navigate('/?manage=1')}
+      whileTap={{ scale: 0.9 }}
+      transition={springTap}
+    >
+      <GearIcon />
+    </motion.button>
+  );
+
+  const themeButton = (
+    <motion.button
+      className="icon-btn-outline"
+      title={theme === 'dark' ? 'Ativar modo claro' : 'Ativar modo escuro'}
+      onClick={toggleTheme}
+      whileTap={{ scale: 0.9 }}
+      transition={springTap}
+    >
+      {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+    </motion.button>
+  );
 
   return (
     <div className="layout">
-      {/* Navbar — visível apenas no desktop (ver index.css) */}
+      {/* Navbar — desktop (2 níveis: seções em cima, sub-abas embaixo) */}
       <header className="navbar-desktop">
-        <span className="brand">Financer</span>
-        <nav className="navbar-desktop-nav">
-          {NAV_ITEMS.map((item) => {
-            const active = isItemActive(location.pathname, item);
-            return (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.end}
-                className="navbar-desktop-item"
-                style={{ position: 'relative' }}
+        <div className="navbar-desktop-top">
+          <span className="brand">Orbit</span>
+          <nav className="navbar-desktop-sections">
+            {SECTIONS.map((s) => (
+              <button
+                key={s.id}
+                className={`navbar-section-item${s.id === section.id ? ' active' : ''}`}
+                onClick={() => navigate(s.home)}
               >
-                {active && (
-                  <motion.span
-                    layoutId="navbar-pill"
-                    className="navbar-desktop-pill"
-                    transition={springSheet}
-                  />
+                {s.id === section.id && (
+                  <motion.span layoutId="desktop-section-pill" className="navbar-section-pill" transition={springSheet} />
                 )}
-                <span style={{ position: 'relative' }}>{item.label}</span>
-              </NavLink>
-            );
-          })}
-        </nav>
-        <div className="navbar-desktop-right">
-          {isDashboard && (
-            <motion.button
-              className="icon-btn-outline"
-              title="Gerenciar categorias e orçamento"
-              onClick={() => navigate('/?manage=1')}
-              whileTap={{ scale: 0.9 }}
-              transition={springTap}
-            >
-              <GearIcon />
-            </motion.button>
-          )}
-          <motion.button
-            className="icon-btn-outline"
-            title={theme === 'dark' ? 'Ativar modo claro' : 'Ativar modo escuro'}
-            onClick={toggleTheme}
-            whileTap={{ scale: 0.9 }}
-            transition={springTap}
-          >
-            {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
-          </motion.button>
-          <span className="user-name">{user?.name}</span>
-          <motion.button
-            className="btn-ghost btn-sm"
-            onClick={logout}
-            title="Sair"
-            whileTap={{ scale: 0.95 }}
-            transition={springTap}
-          >
-            Sair
-          </motion.button>
-        </div>
-      </header>
-
-      {/* Topo — visível apenas no mobile (ver index.css) */}
-      <header className="topbar">
-        <div className="topbar-inner">
-          <span className="brand">Financer</span>
-          <div className="topbar-right">
-            {isDashboard && (
-              <motion.button
-                className="icon-btn-outline"
-                title="Gerenciar categorias e orçamento"
-                onClick={() => navigate('/?manage=1')}
-                whileTap={{ scale: 0.9 }}
-                transition={springTap}
-              >
-                <GearIcon />
-              </motion.button>
-            )}
-            <motion.button
-              className="icon-btn-outline"
-              title={theme === 'dark' ? 'Ativar modo claro' : 'Ativar modo escuro'}
-              onClick={toggleTheme}
-              whileTap={{ scale: 0.9 }}
-              transition={springTap}
-            >
-              {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
-            </motion.button>
+                <span className="navbar-section-icon">
+                  <s.icon />
+                </span>
+                <span style={{ position: 'relative' }}>{s.label}</span>
+              </button>
+            ))}
+          </nav>
+          <div className="navbar-desktop-right">
+            {gearButton}
+            {themeButton}
             <span className="user-name">{user?.name}</span>
-            <motion.button
-              className="btn-ghost"
-              onClick={logout}
-              title="Sair"
-              whileTap={{ scale: 0.95 }}
-              transition={springTap}
-            >
+            <motion.button className="btn-ghost btn-sm" onClick={logout} title="Sair" whileTap={{ scale: 0.95 }} transition={springTap}>
               Sair
             </motion.button>
           </div>
         </div>
+        {section.items.length > 1 && (
+          <div className="navbar-desktop-sub">
+            <SubTabs section={section} layoutId="desktop-subtab-underline" variant="row" />
+          </div>
+        )}
+      </header>
+
+      {/* Topo — mobile (marca + controles; sub-abas logo abaixo) */}
+      <header className="topbar">
+        <div className="topbar-inner">
+          <span className="brand">Orbit</span>
+          <div className="topbar-right">
+            {gearButton}
+            {themeButton}
+            <motion.button className="btn-ghost" onClick={logout} title="Sair" whileTap={{ scale: 0.95 }} transition={springTap}>
+              Sair
+            </motion.button>
+          </div>
+        </div>
+        {section.items.length > 1 && (
+          <div className="topbar-subtabs">
+            <SubTabs section={section} layoutId="mobile-subtab-pill" variant="segment" />
+          </div>
+        )}
       </header>
 
       <main className="content">
@@ -156,24 +210,22 @@ export function Layout() {
         </AnimatePresence>
       </main>
 
-      {/* Menu inferior — visível apenas no mobile (ver index.css) */}
+      {/* Menu inferior — mobile: SEÇÕES (navegação primária) */}
       <nav className="bottom-nav">
-        {NAV_ITEMS.map((item) => {
-          const active = isItemActive(location.pathname, item);
+        {SECTIONS.map((s) => {
+          const active = s.id === section.id;
           return (
-            <NavLink key={item.to} to={item.to} end={item.end} className="nav-item">
-              {active && (
-                <motion.span
-                  layoutId="bottom-nav-pill"
-                  className="nav-item-pill"
-                  transition={springSheet}
-                />
-              )}
+            <button
+              key={s.id}
+              className={`nav-item${active ? ' active' : ''}`}
+              onClick={() => navigate(s.home)}
+            >
+              {active && <motion.span layoutId="bottom-nav-pill" className="nav-item-pill" transition={springSheet} />}
               <span className="nav-icon">
-                <item.icon />
+                <s.icon />
               </span>
-              <span style={{ position: 'relative' }}>{item.label}</span>
-            </NavLink>
+              <span style={{ position: 'relative' }}>{s.label}</span>
+            </button>
           );
         })}
       </nav>

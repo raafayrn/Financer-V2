@@ -15,6 +15,10 @@ import { summaryRouter } from './routes/summary';
 import { reportsRouter } from './routes/reports';
 import { chatRouter } from './routes/chat';
 import { investmentsRouter } from './routes/investments';
+import { telegramRouter } from './routes/telegram';
+import { workoutsRouter } from './routes/workouts';
+import { waterRouter } from './routes/water';
+import { studiesRouter } from './routes/studies';
 
 export function createApp() {
   const app = express();
@@ -40,6 +44,10 @@ export function createApp() {
   app.use('/api/reports', reportsRouter);
   app.use('/api/chat', chatRouter);
   app.use('/api/investments', investmentsRouter);
+  app.use('/api/telegram', telegramRouter);
+  app.use('/api/workouts', workoutsRouter);
+  app.use('/api/water', waterRouter);
+  app.use('/api/studies', studiesRouter);
 
   app.use((_req, res) => {
     res.status(404).json({ error: 'Rota não encontrada.' });

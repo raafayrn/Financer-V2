@@ -15,6 +15,17 @@ export interface Category {
   color: string;
 }
 
+export interface TelegramStatus {
+  enabled: boolean;
+  botUsername: string | null;
+  linked: boolean;
+}
+
+export interface TelegramPairResult {
+  code: string;
+  botUsername: string | null;
+}
+
 export type AccountKind = 'CREDIT_CARD' | 'FOOD_VOUCHER' | 'WALLET';
 
 export interface Account {
@@ -212,6 +223,193 @@ export interface ExpenseInput {
   categoryId: string | null;
   accountId?: string | null;
   recurring: boolean;
+}
+
+// ============================================================
+// Saúde — Treinos
+// ============================================================
+
+export type WorkoutKind = 'STRENGTH' | 'CARDIO' | 'MIXED' | 'REST';
+
+export interface WorkoutExercise {
+  id: string;
+  dayId: string;
+  name: string;
+  muscleGroup: string | null;
+  targetSets: number | null;
+  targetReps: string | null;
+  order: number;
+}
+
+export interface WorkoutDay {
+  id: string;
+  weekday: number; // 0=Dom ... 6=Sáb
+  name: string;
+  kind: WorkoutKind;
+  exercises: WorkoutExercise[];
+}
+
+export interface WorkoutSet {
+  id: string;
+  sessionId: string;
+  exerciseName: string;
+  muscleGroup: string | null;
+  setIndex: number;
+  weightKg: number | null;
+  reps: number | null;
+}
+
+export interface WorkoutSetInput {
+  exerciseName: string;
+  muscleGroup?: string | null;
+  setIndex?: number;
+  weightKg?: number | null;
+  reps?: number | null;
+}
+
+export interface WorkoutSession {
+  id: string;
+  date: string;
+  dayId: string | null;
+  title: string;
+  kind: WorkoutKind;
+  notes: string | null;
+  durationMin: number | null;
+  distanceKm: number | null;
+  sets: WorkoutSet[];
+  createdAt: string;
+}
+
+export interface WorkoutSessionInput {
+  date: string;
+  dayId?: string | null;
+  title: string;
+  kind?: WorkoutKind;
+  notes?: string | null;
+  durationMin?: number | null;
+  distanceKm?: number | null;
+  sets?: WorkoutSetInput[];
+}
+
+export interface WorkoutToday {
+  date: string;
+  weekday: number;
+  day: WorkoutDay | null;
+  session: WorkoutSession | null;
+}
+
+export interface WorkoutSummary {
+  thisWeekCount: number;
+  weekStreak: number;
+  totalSessions: number;
+  weeks: { weekStart: string; count: number }[];
+  volumeByMuscle: { muscle: string; sets: number }[];
+  exercises: {
+    name: string;
+    pr: number;
+    lastWeight: number;
+    lastDate: string;
+    setCount: number;
+  }[];
+}
+
+export interface ExerciseHistory {
+  name: string;
+  points: { date: string; maxWeight: number; topReps: number }[];
+}
+
+export interface BodyMetric {
+  id: string;
+  date: string;
+  weightKg: number | null;
+  bodyFat: number | null;
+  waistCm: number | null;
+  chestCm: number | null;
+  armCm: number | null;
+  hipCm: number | null;
+  thighCm: number | null;
+  notes: string | null;
+}
+
+export interface BodyMetricInput {
+  date: string;
+  weightKg?: number | null;
+  bodyFat?: number | null;
+  waistCm?: number | null;
+  chestCm?: number | null;
+  armCm?: number | null;
+  hipCm?: number | null;
+  thighCm?: number | null;
+  notes?: string | null;
+}
+
+// ============================================================
+// Saúde — Água
+// ============================================================
+
+export interface WaterDay {
+  date: string;
+  goalMl: number;
+  consumedMl: number;
+  percent: number;
+  entries: { id: string; date: string; amountMl: number; createdAt: string }[];
+}
+
+export interface WaterHistory {
+  goalMl: number;
+  days: { date: string; consumedMl: number }[];
+}
+
+// ============================================================
+// Estudos
+// ============================================================
+
+export interface Topic {
+  id: string;
+  subjectId: string;
+  name: string;
+  done: boolean;
+  order: number;
+}
+
+export interface Subject {
+  id: string;
+  name: string;
+  color: string;
+  order: number;
+  topics: Topic[];
+  topicCount: number;
+  doneCount: number;
+  progress: number;
+}
+
+export interface Exam {
+  id: string;
+  subjectId: string | null;
+  title: string;
+  date: string;
+  notes: string | null;
+}
+
+export interface StudyTask {
+  id: string;
+  subjectId: string | null;
+  title: string;
+  dueDate: string | null;
+  done: boolean;
+}
+
+export interface StudiesOverview {
+  subjects: Subject[];
+  upcomingExams: Exam[];
+  pendingTasks: StudyTask[];
+  totals: {
+    subjectCount: number;
+    totalTopics: number;
+    doneTopics: number;
+    overallProgress: number;
+    pendingTaskCount: number;
+  };
 }
 
 export interface IncomeInput {

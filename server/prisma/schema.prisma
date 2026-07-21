@@ -26,11 +26,14 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String
-  name         String
-  createdAt    DateTime @default(now())
+  id             String   @id @default(cuid())
+  email          String   @unique
+  passwordHash   String
+  name           String
+  // Chat ID do Telegram vinculado (via código de pareamento gerado no app).
+  // Permite lançar despesas/receitas e tirar dúvidas pelo bot do Telegram.
+  telegramChatId String?  @unique
+  createdAt      DateTime @default(now())
 
   categories     Category[]
   budgets        MonthlyBudget[]
@@ -41,6 +44,21 @@ model User {
   incomes        Income[]
   accounts       Account[]
   investments    Investment[]
+
+  // Saúde — Treinos
+  workoutDays      WorkoutDay[]
+  workoutExercises WorkoutExercise[]
+  workoutSessions  WorkoutSession[]
+  workoutSets      WorkoutSetLog[]
+  bodyMetrics      BodyMetric[]
+  // Saúde — Água
+  waterGoal        WaterGoal?
+  waterEntries     WaterEntry[]
+  // Estudos
+  subjects         Subject[]
+  topics           Topic[]
+  exams            Exam[]
+  studyTasks       StudyTask[]
 }
 
 model Category {
@@ -226,4 +244,221 @@ model Investment {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, date])
+}
+
+// ============================================================
+// SAÚDE — Treinos
+// ============================================================
+// Datas (date) são armazenadas às 12:00 UTC para evitar drift de fuso, igual
+// aos lançamentos financeiros.
+
+enum WorkoutKind {
+  STRENGTH // musculação
+  CARDIO   // corrida/cardio
+  MIXED    // misto (musculação + cardio no mesmo dia)
+  REST     // descanso
+}
+
+// Template semanal: o que treinar em cada dia da semana
+// (weekday: 0 = Domingo ... 6 = Sábado). Define o "calendário semanal".
+model WorkoutDay {
+  id        String      @id @default(cuid())
+  userId    String
+  weekday   Int
+  name      String
+  kind      WorkoutKind @default(STRENGTH)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercises WorkoutExercise[]
+  sessions  WorkoutSession[]
+
+  @@unique([userId, weekday])
+  @@index([userId])
+}
+
+// Exercício previsto no template de um dia (musculação: séries/reps alvo).
+model WorkoutExercise {
+  id          String   @id @default(cuid())
+  userId      String
+  dayId       String
+  name        String
+  muscleGroup String?
+  targetSets  Int?
+  targetReps  String? // ex.: "8-12"
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  day  WorkoutDay @relation(fields: [dayId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([dayId])
+}
+
+// Sessão de treino efetivamente realizada numa data. dayId é o dia-template
+// usado (pode ser nulo para um treino avulso fora da rotina).
+model WorkoutSession {
+  id          String      @id @default(cuid())
+  userId      String
+  date        DateTime
+  dayId       String?
+  title       String
+  kind        WorkoutKind @default(STRENGTH)
+  notes       String?
+  durationMin Int? // duração total (útil para cardio)
+  distanceKm  Float? // distância (cardio/corrida)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  user User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  day  WorkoutDay?     @relation(fields: [dayId], references: [id], onDelete: SetNull)
+  sets WorkoutSetLog[]
+
+  @@index([userId, date])
+}
+
+// Série registrada (carga + repetições). Base para a evolução de carga e PRs
+// (recordes): consultar por exerciseName ao longo do tempo.
+model WorkoutSetLog {
+  id           String   @id @default(cuid())
+  userId       String
+  sessionId    String
+  exerciseName String
+  muscleGroup  String?
+  setIndex     Int      @default(1)
+  weightKg     Float?
+  reps         Int?
+  createdAt    DateTime @default(now())
+
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([userId, exerciseName])
+  @@index([sessionId])
+}
+
+// Peso corporal e medidas por data (um registro por dia).
+model BodyMetric {
+  id        String   @id @default(cuid())
+  userId    String
+  date      DateTime
+  weightKg  Float?
+  bodyFat   Float? // percentual de gordura
+  waistCm   Float?
+  chestCm   Float?
+  armCm     Float?
+  hipCm     Float?
+  thighCm   Float?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+// ============================================================
+// SAÚDE — Água
+// ============================================================
+
+// Meta diária de hidratação em ml. Um registro por usuário (upsert).
+model WaterGoal {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  goalMl    Int      @default(3000)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Cada registro rápido de água (ex.: +250ml). O consumo do dia é a soma das
+// entries daquela data.
+model WaterEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  date      DateTime
+  amountMl  Int
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+}
+
+// ============================================================
+// ESTUDOS
+// ============================================================
+
+// Matéria/disciplina. Progresso = tópicos concluídos / total de tópicos.
+model Subject {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  color     String   @default("#007aff")
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topics Topic[]
+  exams  Exam[]
+  tasks  StudyTask[]
+
+  @@index([userId])
+}
+
+// Assunto/tópico de uma matéria (checklist).
+model Topic {
+  id        String   @id @default(cuid())
+  userId    String
+  subjectId String
+  name      String
+  done      Boolean  @default(false)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([subjectId])
+}
+
+// Prova/avaliação com data — usada na contagem regressiva.
+model Exam {
+  id        String   @id @default(cuid())
+  userId    String
+  subjectId String?
+  title     String
+  date      DateTime
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject Subject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+
+  @@index([userId, date])
+}
+
+// Tarefa/entrega (trabalho, exercício) com prazo opcional.
+model StudyTask {
+  id        String    @id @default(cuid())
+  userId    String
+  subjectId String?
+  title     String
+  dueDate   DateTime?
+  done      Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject Subject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
 }

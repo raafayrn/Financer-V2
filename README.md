@@ -1,6 +1,10 @@
-# 💰 Controle Financeiro
+# 🪐 Orbit
 
-App pessoal de controle financeiro cujo foco é **mostrar de forma clara quanto você ainda pode gastar no mês**, com base no orçamento mensal definido e no total já acumulado na fatura do cartão.
+Planner de vida pessoal que reúne **Finanças**, **Saúde** (treinos e água) e **Estudos** num só lugar.
+
+## Finanças
+
+O foco é **mostrar de forma clara quanto você ainda pode gastar no mês**, com base no orçamento mensal definido e no total já acumulado na fatura do cartão.
 
 - **Destaque visual**: o número "ainda posso gastar" é o maior elemento da tela, com cores de status (verde / amarelo / vermelho).
 - **Lançamentos manuais** de despesas, com edição e exclusão.

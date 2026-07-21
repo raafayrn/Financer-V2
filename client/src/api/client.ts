@@ -1,11 +1,15 @@
 import type {
   Account,
   AuthResponse,
+  BodyMetric,
+  BodyMetricInput,
   Category,
   ChatAskResult,
   ChatImageParseResult,
   ChatMessageResult,
   ChatParseResult,
+  Exam,
+  ExerciseHistory,
   Expense,
   ExpenseInput,
   Income,
@@ -15,8 +19,22 @@ import type {
   InvestmentSummary,
   MonthlyReport,
   ReportsOverview,
+  StudiesOverview,
+  StudyTask,
+  Subject,
   Summary,
+  TelegramPairResult,
+  TelegramStatus,
+  Topic,
   User,
+  WaterDay,
+  WaterHistory,
+  WorkoutDay,
+  WorkoutExercise,
+  WorkoutSession,
+  WorkoutSessionInput,
+  WorkoutSummary,
+  WorkoutToday,
 } from './types';
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? '/api';
@@ -200,4 +218,103 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ text }),
     }),
+
+  // Integração com Telegram
+  getTelegramStatus: () => request<TelegramStatus>('/telegram/status'),
+  pairTelegram: () => request<TelegramPairResult>('/telegram/pair', { method: 'POST' }),
+  unlinkTelegram: () => request<void>('/telegram/unlink', { method: 'POST' }),
+
+  // ---------- Saúde: Treinos ----------
+  getWorkoutPlan: () => request<WorkoutDay[]>('/workouts/plan'),
+  setWorkoutDay: (weekday: number, data: { name: string; kind?: string }) =>
+    request<WorkoutDay>(`/workouts/plan/${weekday}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteWorkoutDay: (weekday: number) =>
+    request<void>(`/workouts/plan/${weekday}`, { method: 'DELETE' }),
+  addWorkoutExercise: (
+    weekday: number,
+    data: { name: string; muscleGroup?: string | null; targetSets?: number | null; targetReps?: string | null },
+  ) =>
+    request<WorkoutExercise>(`/workouts/plan/${weekday}/exercises`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  updateWorkoutExercise: (
+    id: string,
+    data: Partial<{ name: string; muscleGroup: string | null; targetSets: number | null; targetReps: string | null; order: number }>,
+  ) => request<WorkoutExercise>(`/workouts/exercises/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteWorkoutExercise: (id: string) =>
+    request<void>(`/workouts/exercises/${id}`, { method: 'DELETE' }),
+
+  getWorkoutToday: () => request<WorkoutToday>('/workouts/today'),
+  listWorkoutSessions: (from?: string, to?: string) => {
+    const q = new URLSearchParams();
+    if (from) q.set('from', from);
+    if (to) q.set('to', to);
+    const qs = q.toString();
+    return request<WorkoutSession[]>(`/workouts/sessions${qs ? `?${qs}` : ''}`);
+  },
+  createWorkoutSession: (data: WorkoutSessionInput) =>
+    request<WorkoutSession>('/workouts/sessions', { method: 'POST', body: JSON.stringify(data) }),
+  updateWorkoutSession: (id: string, data: Partial<WorkoutSessionInput>) =>
+    request<WorkoutSession>(`/workouts/sessions/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteWorkoutSession: (id: string) =>
+    request<void>(`/workouts/sessions/${id}`, { method: 'DELETE' }),
+
+  getWorkoutSummary: () => request<WorkoutSummary>('/workouts/summary'),
+  getExerciseHistory: (name: string) =>
+    request<ExerciseHistory>(`/workouts/exercises/${encodeURIComponent(name)}/history`),
+
+  listBodyMetrics: () => request<BodyMetric[]>('/workouts/body'),
+  upsertBodyMetric: (data: BodyMetricInput) =>
+    request<BodyMetric>('/workouts/body', { method: 'PUT', body: JSON.stringify(data) }),
+  deleteBodyMetric: (id: string) => request<void>(`/workouts/body/${id}`, { method: 'DELETE' }),
+
+  // ---------- Saúde: Água ----------
+  getWaterDay: (date?: string) =>
+    request<WaterDay>(`/water/day${date ? `?date=${date}` : ''}`),
+  getWaterHistory: (days = 14) => request<WaterHistory>(`/water/history?days=${days}`),
+  setWaterGoal: (goalMl: number) =>
+    request<{ goalMl: number }>('/water/goal', { method: 'PUT', body: JSON.stringify({ goalMl }) }),
+  addWaterEntry: (amountMl: number, date?: string) =>
+    request<WaterDay['entries'][number]>('/water/entries', {
+      method: 'POST',
+      body: JSON.stringify({ amountMl, ...(date ? { date } : {}) }),
+    }),
+  deleteWaterEntry: (id: string) => request<void>(`/water/entries/${id}`, { method: 'DELETE' }),
+
+  // ---------- Estudos ----------
+  getStudiesOverview: () => request<StudiesOverview>('/studies/overview'),
+  listSubjects: () => request<Subject[]>('/studies/subjects'),
+  createSubject: (data: { name: string; color?: string }) =>
+    request<Subject>('/studies/subjects', { method: 'POST', body: JSON.stringify(data) }),
+  updateSubject: (id: string, data: Partial<{ name: string; color: string; order: number }>) =>
+    request<Subject>(`/studies/subjects/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteSubject: (id: string) => request<void>(`/studies/subjects/${id}`, { method: 'DELETE' }),
+
+  addTopic: (subjectId: string, data: { name: string }) =>
+    request<Topic>(`/studies/subjects/${subjectId}/topics`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  updateTopic: (id: string, data: Partial<{ name: string; done: boolean; order: number }>) =>
+    request<Topic>(`/studies/topics/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteTopic: (id: string) => request<void>(`/studies/topics/${id}`, { method: 'DELETE' }),
+
+  listExams: () => request<Exam[]>('/studies/exams'),
+  createExam: (data: { title: string; date: string; subjectId?: string | null; notes?: string | null }) =>
+    request<Exam>('/studies/exams', { method: 'POST', body: JSON.stringify(data) }),
+  updateExam: (
+    id: string,
+    data: Partial<{ title: string; date: string; subjectId: string | null; notes: string | null }>,
+  ) => request<Exam>(`/studies/exams/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteExam: (id: string) => request<void>(`/studies/exams/${id}`, { method: 'DELETE' }),
+
+  listStudyTasks: () => request<StudyTask[]>('/studies/tasks'),
+  createStudyTask: (data: { title: string; dueDate?: string | null; subjectId?: string | null }) =>
+    request<StudyTask>('/studies/tasks', { method: 'POST', body: JSON.stringify(data) }),
+  updateStudyTask: (
+    id: string,
+    data: Partial<{ title: string; dueDate: string | null; subjectId: string | null; done: boolean }>,
+  ) => request<StudyTask>(`/studies/tasks/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteStudyTask: (id: string) => request<void>(`/studies/tasks/${id}`, { method: 'DELETE' }),
 };

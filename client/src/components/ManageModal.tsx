@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { api, ApiError } from '../api/client';
-import type { Category } from '../api/types';
+import type { Category, TelegramStatus } from '../api/types';
 import { formatCurrency, monthName } from '../utils/format';
 import { springSmooth, springTap } from '../lib/motion';
 import { Modal } from './Modal';
@@ -106,6 +106,44 @@ export function ManageModal({ year, month, onCancel, onCategoriesChanged }: Prop
     onCategoriesChanged();
   }
 
+  // --- Telegram ---
+  const [telegramStatus, setTelegramStatus] = useState<TelegramStatus | null>(null);
+  const [pairCode, setPairCode] = useState<string | null>(null);
+  const [telegramError, setTelegramError] = useState<string | null>(null);
+
+  const loadTelegramStatus = useCallback(async () => {
+    try {
+      setTelegramStatus(await api.getTelegramStatus());
+    } catch {
+      setTelegramStatus(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadTelegramStatus();
+  }, [loadTelegramStatus]);
+
+  async function generatePairCode() {
+    setTelegramError(null);
+    try {
+      const res = await api.pairTelegram();
+      setPairCode(res.code);
+    } catch (err) {
+      setTelegramError(err instanceof ApiError ? err.message : 'Erro ao gerar código.');
+    }
+  }
+
+  async function unlinkTelegram() {
+    setTelegramError(null);
+    try {
+      await api.unlinkTelegram();
+      setPairCode(null);
+      await loadTelegramStatus();
+    } catch (err) {
+      setTelegramError(err instanceof ApiError ? err.message : 'Erro ao desvincular.');
+    }
+  }
+
   return (
     <Modal onCancel={onCancel}>
       {(close) => (
@@ -200,6 +238,48 @@ export function ManageModal({ year, month, onCancel, onCategoriesChanged }: Prop
                 </AnimatePresence>
               </ul>
             )}
+          </section>
+
+          <section className="manage-section">
+            <h3 className="section-title">Telegram</h3>
+            {!telegramStatus ? (
+              <p className="hint">Carregando...</p>
+            ) : !telegramStatus.enabled ? (
+              <p className="hint">Integração com Telegram não configurada no servidor.</p>
+            ) : telegramStatus.linked ? (
+              <>
+                <p className="hint">✅ Conectado. Você pode lançar gastos/receitas e tirar dúvidas pelo bot.</p>
+                <button type="button" className="btn-ghost btn-sm" onClick={unlinkTelegram}>
+                  Desvincular
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="hint">
+                  Gere um código e envie para{' '}
+                  {telegramStatus.botUsername ? <strong>@{telegramStatus.botUsername}</strong> : 'o bot'} no Telegram
+                  para lançar gastos e receitas por mensagem.
+                </p>
+                {pairCode ? (
+                  <p className="hint">
+                    Envie no Telegram: <strong>/start {pairCode}</strong>
+                    <br />
+                    (código válido por 10 minutos)
+                  </p>
+                ) : (
+                  <motion.button
+                    type="button"
+                    className="btn-primary btn-sm"
+                    onClick={generatePairCode}
+                    whileTap={{ scale: 0.95 }}
+                    transition={springTap}
+                  >
+                    Gerar código
+                  </motion.button>
+                )}
+              </>
+            )}
+            {telegramError && <div className="alert alert-error">{telegramError}</div>}
           </section>
 
           <div className="modal-actions">

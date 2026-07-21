@@ -6,6 +6,8 @@ import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { InvestmentsPage } from './pages/InvestmentsPage';
+import { SaudePage } from './pages/SaudePage';
+import { EstudosPage } from './pages/EstudosPage';
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -34,6 +36,8 @@ export default function App() {
           <Route path="/" element={<DashboardPage />} />
           <Route path="/relatorios" element={<ReportsPage />} />
           <Route path="/investimentos" element={<InvestmentsPage />} />
+          <Route path="/saude" element={<SaudePage />} />
+          <Route path="/estudos" element={<EstudosPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

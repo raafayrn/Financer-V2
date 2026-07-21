@@ -38,7 +38,7 @@ export function LoginPage() {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={springSheet}
       >
-        <h1 className="auth-title">Controle Financeiro</h1>
+        <h1 className="auth-title">Orbit</h1>
         <AnimatePresence mode="wait" initial={false}>
           <motion.p
             key={mode}

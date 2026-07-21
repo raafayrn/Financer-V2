@@ -4,6 +4,7 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 import { createApp } from './app';
 import { env } from './env';
 import { prisma } from './prisma';
+import { startTelegramBot, stopTelegramBot } from './telegramBot';
 
 async function main() {
   const app = createApp();
@@ -11,10 +12,16 @@ async function main() {
   const server = app.listen(env.port, () => {
     console.log(`API rodando em http://localhost:${env.port}`);
     console.log(`Lançamento por chat: ${env.chatEnabled ? 'habilitado' : 'desabilitado'}`);
+    console.log(`Bot do Telegram: ${env.telegramEnabled ? 'habilitado' : 'desabilitado'}`);
   });
+
+  if (env.telegramEnabled) {
+    startTelegramBot().catch((err) => console.error('Bot do Telegram encerrou com erro:', err));
+  }
 
   const shutdown = async () => {
     console.log('Encerrando...');
+    stopTelegramBot();
     server.close();
     await prisma.$disconnect();
     process.exit(0);

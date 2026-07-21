@@ -128,6 +128,20 @@ select {
   font-family: inherit;
   font-size: 16px; /* evita zoom no iOS */
 }
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-muted);
+}
+/* Remove as setinhas de <input type="number"> (visual mais limpo, consistente) */
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
 
 /* O menu nativo de <option> não herda as variáveis de tema por padrão em
    alguns navegadores (texto claro em fundo claro, ilegível). Forçamos aqui. */
@@ -250,6 +264,11 @@ select option {
   padding: 4px 18px;
   border-radius: 10px;
   transition: color 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  /* Também usado como <button> (seções na barra inferior) */
+  border: none;
+  background: none;
+  font-family: inherit;
+  cursor: pointer;
 }
 .nav-item.active {
   color: var(--primary);
@@ -1690,11 +1709,10 @@ select option {
     display: none;
   }
 
-  /* Navbar minimalista no topo — flutuante, como um card */
+  /* Navbar flutuante em 2 níveis: seções em cima, sub-abas embaixo */
   .navbar-desktop {
     display: flex;
-    align-items: center;
-    gap: 32px;
+    flex-direction: column;
     position: sticky;
     top: 16px;
     z-index: 10;
@@ -1707,52 +1725,99 @@ select option {
     border: 0.5px solid var(--border);
     border-radius: 20px;
     box-shadow: var(--shadow-float);
-    padding: 14px 28px;
+  }
+  .navbar-desktop-top {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    padding: 13px 28px;
   }
   .navbar-desktop .brand {
     font-size: 1.3rem;
   }
-  .navbar-desktop-nav {
+  /* Nível 1 — seções */
+  .navbar-desktop-sections {
     display: flex;
     gap: 4px;
     flex: 1;
   }
-  .navbar-desktop-item {
+  .navbar-section-item {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 9px;
-    padding: 10px 18px;
+    padding: 9px 18px;
     border-radius: 12px;
-    text-decoration: none;
+    border: none;
+    background: none;
+    font-family: inherit;
+    cursor: pointer;
     color: var(--text-muted);
     font-size: 1rem;
     font-weight: 600;
     transition: color 0.25s cubic-bezier(0.22, 1, 0.36, 1);
   }
-  .navbar-desktop-item svg {
+  .navbar-section-icon {
     position: relative;
     z-index: 1;
-    width: 21px;
-    height: 21px;
+    display: flex;
+  }
+  .navbar-section-icon svg {
+    width: 20px;
+    height: 20px;
     stroke: currentColor;
     fill: none;
   }
-  .navbar-desktop-item:hover {
-    background: var(--surface-2);
+  .navbar-section-item:hover {
+    color: var(--text);
   }
-  .navbar-desktop-item.active {
+  .navbar-section-item.active {
     color: var(--primary);
   }
-  .navbar-desktop-item.active svg {
+  .navbar-section-item.active .navbar-section-icon svg {
     fill: currentColor;
     fill-opacity: 0.12;
   }
-  .navbar-desktop-pill {
+  .navbar-section-pill {
     position: absolute;
     inset: 0;
     border-radius: 12px;
     background: var(--info-bg);
     z-index: 0;
+  }
+  /* Nível 2 — sub-abas */
+  .navbar-desktop-sub {
+    padding: 0 28px 4px;
+  }
+  .subtabs-row {
+    display: flex;
+    gap: 24px;
+    border-top: 0.5px solid var(--border);
+    padding-top: 8px;
+  }
+  .subtab-row-item {
+    position: relative;
+    text-decoration: none;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    font-weight: 600;
+    padding: 4px 2px 9px;
+    transition: color 0.2s ease;
+  }
+  .subtab-row-item:hover {
+    color: var(--text);
+  }
+  .subtab-row-item.active {
+    color: var(--primary);
+  }
+  .subtab-row-underline {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2.5px;
+    border-radius: 2px;
+    background: var(--primary);
   }
   .navbar-desktop-right {
     display: flex;
@@ -1826,5 +1891,786 @@ select option {
   }
   .chat-panel {
     bottom: 92px;
+  }
+}
+
+/* ============================================================
+   Sub-abas da seção — mobile (controle segmentado no topo)
+   ============================================================ */
+.topbar-subtabs {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 0 16px 12px;
+}
+.subtabs-segment {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  background: var(--surface-2);
+  border-radius: 13px;
+}
+.subtab-seg-item {
+  position: relative;
+  flex: 1;
+  text-align: center;
+  text-decoration: none;
+  color: var(--text-muted);
+  font-size: 0.86rem;
+  font-weight: 600;
+  padding: 7px 10px;
+  border-radius: 10px;
+  transition: color 0.2s ease;
+  white-space: nowrap;
+}
+.subtab-seg-item.active {
+  color: var(--primary);
+}
+.subtab-seg-pill {
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  background: var(--surface-solid);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  z-index: 0;
+}
+
+/* ============================================================
+   Mini gráfico de linha (evolução de carga / peso)
+   ============================================================ */
+.line-chart {
+  width: 100%;
+  height: 90px;
+  overflow: visible;
+}
+.line-chart-path {
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.line-chart-dot {
+  fill: var(--primary);
+}
+
+/* ============================================================
+   Água
+   ============================================================ */
+.water-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+.water-ring {
+  position: relative;
+  width: 210px;
+  max-width: 60vw;
+  aspect-ratio: 1;
+}
+.water-ring svg {
+  width: 100%;
+  height: 100%;
+}
+.water-ring-track {
+  fill: none;
+  stroke: var(--surface-2);
+  stroke-width: 14;
+}
+.water-ring-fill {
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 14;
+  stroke-linecap: round;
+}
+.water-ring-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+.water-ring-pct {
+  font-size: 2.4rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+.water-ring-amount {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+.water-ring-goal {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+.water-quick {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.water-quick-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 92px;
+  padding: 12px 14px;
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text);
+  cursor: pointer;
+}
+.water-quick-label {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+.water-quick-ml {
+  font-size: 0.8rem;
+  color: var(--primary);
+  font-weight: 600;
+}
+.water-custom {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  max-width: 340px;
+}
+.water-custom input {
+  flex: 1;
+}
+.water-goal-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.water-goal-input {
+  max-width: 120px;
+}
+
+/* ============================================================
+   Treinos — treino de hoje
+   ============================================================ */
+.today-card {
+  gap: 4px;
+}
+.today-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+.today-weekday {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: capitalize;
+}
+.today-title {
+  margin: 2px 0 0;
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.today-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.today-badge svg {
+  width: 15px;
+  height: 15px;
+  stroke: currentColor;
+  fill: none;
+}
+.today-badge.done {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+.today-badge.rest {
+  background: var(--surface-2);
+  color: var(--text-muted);
+}
+.today-ex-list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.today-ex-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 2px;
+  border-bottom: 0.5px solid var(--border);
+}
+.today-ex-row:last-child {
+  border-bottom: none;
+}
+.today-ex-name {
+  font-weight: 600;
+  flex: 1;
+  min-width: 0;
+}
+.today-ex-target {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.today-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+.today-actions .btn-primary,
+.today-actions .btn-primary.btn-sm {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.today-actions svg {
+  width: 17px;
+  height: 17px;
+  stroke: currentColor;
+  fill: none;
+}
+.flame-icon svg {
+  width: 20px;
+  height: 20px;
+  stroke: var(--warning);
+  fill: var(--warning);
+  fill-opacity: 0.15;
+}
+
+/* ============================================================
+   Treinos — evolução de carga
+   ============================================================ */
+.exercise-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.exercise-item {
+  border-bottom: 0.5px solid var(--border);
+}
+.exercise-item:last-child {
+  border-bottom: none;
+}
+.exercise-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 2px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text);
+}
+.exercise-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.exercise-name {
+  font-weight: 600;
+}
+.exercise-meta {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+.exercise-pr {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--primary);
+  background: var(--info-bg);
+  padding: 5px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.exercise-history {
+  padding: 6px 2px 14px;
+}
+
+/* ============================================================
+   Treinos — peso e medidas
+   ============================================================ */
+.body-latest {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.body-latest > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.body-latest .line-chart {
+  flex: 1;
+  min-width: 180px;
+}
+.body-fields {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+/* ============================================================
+   Treinos — modais (rotina / sessão)
+   ============================================================ */
+.weekday-tabs {
+  display: flex;
+  gap: 4px;
+  margin: 8px 0 16px;
+}
+.weekday-tab {
+  position: relative;
+  flex: 1;
+  padding: 9px 4px;
+  border: 0.5px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.weekday-tab.has-workout::after {
+  content: '';
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+.weekday-tab.active {
+  background: var(--primary);
+  color: var(--primary-contrast);
+  border-color: var(--primary);
+}
+.weekday-tab.active.has-workout::after {
+  background: var(--primary-contrast);
+}
+.workout-exercises {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.workout-ex-card {
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  background: var(--surface-2);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.workout-ex-head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.workout-ex-name {
+  flex: 1;
+  font-weight: 600;
+}
+.workout-sets {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.workout-set-head,
+.workout-set-row {
+  display: grid;
+  grid-template-columns: 34px 1fr 1fr 34px;
+  gap: 8px;
+  align-items: center;
+}
+/* Permite que os inputs encolham dentro do grid (senão o min-width intrínseco
+   do <input> estoura a largura e o campo "Reps" sai da tela). */
+.workout-set-head > *,
+.workout-set-row > * {
+  min-width: 0;
+}
+.workout-set-row input {
+  width: 100%;
+}
+.workout-set-head {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  padding: 0 2px;
+}
+.workout-set-idx {
+  text-align: center;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+.workout-add-set {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.workout-add-set svg,
+.plan-ex-add svg {
+  width: 15px;
+  height: 15px;
+  stroke: currentColor;
+  fill: none;
+}
+.plan-ex-list {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.plan-ex-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 2px;
+  border-bottom: 0.5px solid var(--border);
+}
+.plan-ex-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+.plan-ex-name {
+  font-weight: 600;
+}
+.plan-ex-meta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.plan-ex-add {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.plan-ex-add input {
+  min-width: 0;
+}
+.plan-ex-num {
+  max-width: 72px;
+}
+
+/* ============================================================
+   Estudos — provas
+   ============================================================ */
+.exam-list {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scroll-snap-type: x mandatory;
+}
+.exam-card {
+  position: relative;
+  flex: 0 0 auto;
+  min-width: 180px;
+  border: 0.5px solid var(--border);
+  border-left-width: 4px;
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  background: var(--surface-2);
+  scroll-snap-align: start;
+}
+.exam-countdown {
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+.exam-title {
+  font-weight: 700;
+  margin: 4px 0 8px;
+}
+.exam-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+.exam-subject {
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+.exam-actions {
+  display: flex;
+  gap: 2px;
+  margin-top: 10px;
+}
+
+/* ============================================================
+   Estudos — tarefas
+   ============================================================ */
+.task-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.task-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 2px;
+  border-bottom: 0.5px solid var(--border);
+}
+.task-row:last-child {
+  border-bottom: none;
+}
+.check-box {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.check-box.checked {
+  background: var(--ok);
+  border-color: var(--ok);
+}
+.check-box svg {
+  width: 15px;
+  height: 15px;
+  stroke: #fff;
+  fill: none;
+}
+.task-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.task-title {
+  font-weight: 600;
+}
+.task-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+}
+.task-meta .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* ============================================================
+   Estudos — matérias
+   ============================================================ */
+.subject-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.subject-card {
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  background: var(--surface-2);
+}
+.subject-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text);
+  text-align: left;
+  padding: 0;
+}
+.subject-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+  flex: 0 0 auto;
+}
+.subject-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.subject-name {
+  font-weight: 700;
+}
+.subject-progress-text {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.subject-chevron {
+  transition: transform 0.25s ease;
+  color: var(--text-muted);
+  display: flex;
+}
+.subject-chevron svg {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  fill: none;
+}
+.subject-chevron.open {
+  transform: rotate(180deg);
+}
+.subject-bar {
+  height: 7px;
+  border-radius: 999px;
+  background: var(--surface-solid);
+  overflow: hidden;
+  margin-top: 10px;
+}
+.subject-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.topic-list {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.topic-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 0.5px solid var(--border);
+}
+.topic-name {
+  flex: 1;
+  min-width: 0;
+}
+.topic-name.done {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+.topic-add {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.topic-add input {
+  flex: 1;
+  min-width: 0;
+}
+.subject-footer {
+  margin-top: 10px;
+}
+
+/* ============================================================
+   Inputs fora de .field (telas de Saúde/Estudos) — alinham ao tema
+   ============================================================ */
+.workout-ex-card input,
+.workout-set-row input,
+.plan-ex-add input,
+.topic-add input,
+.water-custom input,
+.water-goal-input {
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  border: none;
+}
+.workout-ex-card input:focus,
+.workout-set-row input:focus,
+.plan-ex-add input:focus,
+.topic-add input:focus,
+.water-custom input:focus,
+.water-goal-input:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: -1px;
+}
+/* Sobre fundo de modal/card translúcido (--surface): fundo surface-2 */
+.plan-ex-add input,
+.water-custom input,
+.water-goal-input {
+  background: var(--surface-2);
+}
+/* Dentro de cards surface-2 (exercício/matéria): fundo sólido + borda p/ contraste */
+.workout-ex-card input,
+.topic-add input {
+  background: var(--surface-solid);
+  border: 0.5px solid var(--border);
+}
+/* Inputs compactos de série (carga/reps) num grid apertado */
+.workout-set-row input {
+  padding: 9px 8px;
+  text-align: center;
+  background: var(--surface-solid);
+  border: 0.5px solid var(--border);
+}
+
+/* Botões com ícone inline (novas telas) */
+.btn-primary svg,
+.btn-ghost svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  fill: none;
+}
+
+@media (min-width: 880px) {
+  .body-fields {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .subject-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
   }
 }
