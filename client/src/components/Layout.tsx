@@ -36,9 +36,16 @@ function ChartIcon() {
 type NavItem = { to: string; end: boolean; icon: ComponentType; label: string };
 type Section = { id: string; label: string; home: string; icon: ComponentType; items: NavItem[] };
 
-// As 3 seções do planner. As seções são a navegação primária (barra inferior no
+// As 4 seções do planner. As seções são a navegação primária (barra inferior no
 // mobile / pills no topo do desktop); os `items` são as sub-abas de cada uma.
 const SECTIONS: Section[] = [
+  {
+    id: 'home',
+    label: 'Home',
+    home: '/home',
+    icon: HomeIcon,
+    items: [{ to: '/home', end: false, icon: HomeIcon, label: 'Home' }],
+  },
   {
     id: 'financas',
     label: 'Finanças',
@@ -67,9 +74,10 @@ const SECTIONS: Section[] = [
 ];
 
 function sectionForPath(pathname: string): Section {
-  if (pathname.startsWith('/saude')) return SECTIONS[1];
-  if (pathname.startsWith('/estudos')) return SECTIONS[2];
-  return SECTIONS[0];
+  if (pathname === '/home') return SECTIONS[0];
+  if (pathname.startsWith('/saude')) return SECTIONS[2];
+  if (pathname.startsWith('/estudos')) return SECTIONS[3];
+  return SECTIONS[1]; // /, /relatorios, /investimentos
 }
 
 function isItemActive(pathname: string, item: NavItem) {

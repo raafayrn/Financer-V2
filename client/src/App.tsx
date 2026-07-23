@@ -3,6 +3,7 @@ import { useAuth } from './context/AuthContext';
 import { MonthProvider } from './context/MonthContext';
 import { Layout } from './components/Layout';
 import { LoginPage } from './pages/LoginPage';
+import { HomePage } from './pages/HomePage';
 import { DashboardPage } from './pages/DashboardPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { InvestmentsPage } from './pages/InvestmentsPage';
@@ -33,13 +34,14 @@ export default function App() {
     <MonthProvider>
       <Routes>
         <Route element={<Layout />}>
+          <Route path="/home" element={<HomePage />} />
           <Route path="/" element={<DashboardPage />} />
           <Route path="/relatorios" element={<ReportsPage />} />
           <Route path="/investimentos" element={<InvestmentsPage />} />
           <Route path="/saude" element={<SaudePage />} />
           <Route path="/estudos" element={<EstudosPage />} />
         </Route>
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/home" replace />} />
       </Routes>
     </MonthProvider>
   );
