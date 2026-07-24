@@ -37,9 +37,33 @@ function formatMl(ml: number): string {
 
 const WEEKDAYS_PT = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
+// Quadro de horários fixo (segunda a sexta, 18:55–22:30)
+const CLASS_SCHEDULE: Record<number, { time: string; name: string }[]> = {
+  // 1=Seg 2=Ter 3=Qua 4=Qui 5=Sex
+  1: [
+    { time: '18:55–20:35', name: 'Cálculo Diferencial e Integral II' },
+    { time: '20:50–22:30', name: 'Estática em Engenharia' },
+  ],
+  2: [
+    { time: '18:55–20:35', name: 'Física Geral e Experimental II' },
+    { time: '20:50–22:30', name: 'Estática em Engenharia' },
+  ],
+  3: [
+    { time: '18:55–20:35', name: 'Cálculo Diferencial e Integral II' },
+    { time: '20:50–22:30', name: 'Física Geral e Experimental II' },
+  ],
+  4: [
+    { time: '18:55–20:35', name: 'Geometria e Álgebra Linear' },
+    { time: '20:50–22:30', name: 'Introdução à Ciência dos Materiais' },
+  ],
+  5: [
+    { time: '18:55–20:35', name: 'Desenho e Modelagem Geométrica' },
+    { time: '20:50–22:30', name: 'Geometria e Álgebra Linear' },
+  ],
+};
+
 const WATER_QUICK_ADDS = [
-  { label: 'Copo', ml: 200 },
-  { label: 'Garrafa', ml: 500 },
+  { label: 'Garrafa', ml: 600 },
 ];
 
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.07 } } };
@@ -173,7 +197,7 @@ export function HomePage() {
             Finanças
           </div>
 
-          <div className="card home-clickable" onClick={() => navigate('/')}>
+          <div className="card home-clickable" onClick={() => navigate('/financas')}>
             <p className="home-label">Ainda posso gastar</p>
             <p className="home-hero-value" style={{ color: remainingColor }}>
               {formatCurrency(summary?.remaining ?? 0)}
@@ -237,7 +261,27 @@ export function HomePage() {
             </div>
           </div>
 
-          <div className="card home-clickable" onClick={() => navigate('/')}>
+          <div className="card">
+            <p className="home-label" style={{ marginBottom: 8 }}>Fatura estimada (cartão)</p>
+            <div className="home-accounts">
+              <div>
+                <p className="home-label">Fixos</p>
+                <p className="home-account-val">{formatCurrency(summary?.accounts.fixed ?? 0)}</p>
+              </div>
+              <div>
+                <p className="home-label">Variáveis</p>
+                <p className="home-account-val">{formatCurrency(summary?.accounts.variable ?? 0)}</p>
+              </div>
+              <div>
+                <p className="home-label" style={{ fontWeight: 700 }}>Total</p>
+                <p className="home-account-val" style={{ fontWeight: 700, color: 'var(--over)' }}>
+                  {formatCurrency((summary?.accounts.fixed ?? 0) + (summary?.accounts.variable ?? 0))}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="card home-clickable" onClick={() => navigate('/financas')}>
             <p className="home-label" style={{ marginBottom: 8 }}>Últimos lançamentos</p>
             {recentEntries.length === 0 ? (
               <p className="home-sub">Nenhum lançamento este mês.</p>
@@ -314,7 +358,7 @@ export function HomePage() {
                   </span>
                   {workoutToday.session && <span className="home-tag-done">Feito</span>}
                 </div>
-                {!workoutToday.session && workoutToday.day.exercises.slice(0, 4).map((ex) => (
+                {!workoutToday.session && workoutToday.day.exercises.map((ex) => (
                   <div key={ex.id} className="home-list-item">
                     <span className="home-list-left">{ex.name}</span>
                     <span className="home-list-right">
@@ -322,9 +366,6 @@ export function HomePage() {
                     </span>
                   </div>
                 ))}
-                {!workoutToday.session && workoutToday.day.exercises.length > 4 && (
-                  <p className="home-sub">+{workoutToday.day.exercises.length - 4} exercícios</p>
-                )}
               </>
             ) : (
               <>
@@ -367,6 +408,57 @@ export function HomePage() {
           <div className="home-section-header">
             <span className="home-section-dot" style={{ background: 'var(--primary)' }} />
             Estudos
+          </div>
+
+          <div className="card">
+            {(() => {
+              const dow = new Date().getDay(); // 0=dom…6=sab
+              const todayClasses = CLASS_SCHEDULE[dow];
+              const now = new Date();
+              const hhmm = now.getHours() * 60 + now.getMinutes();
+              const dayLabel = WEEKDAYS_PT[dow];
+              return (
+                <>
+                  <p className="home-label" style={{ marginBottom: 8 }}>
+                    Aulas de hoje — <span style={{ color: 'var(--primary)' }}>{dayLabel}</span>
+                  </p>
+                  {!todayClasses ? (
+                    <p className="home-sub">Sem aulas hoje.</p>
+                  ) : (
+                    todayClasses.map((c) => {
+                      const [startStr] = c.time.split('–');
+                      const [sh, sm] = startStr.split(':').map(Number);
+                      const [, endStr] = c.time.split('–');
+                      const [eh, em] = endStr.split(':').map(Number);
+                      const startMin = sh * 60 + sm;
+                      const endMin = eh * 60 + em;
+                      const ongoing = hhmm >= startMin && hhmm < endMin;
+                      const done = hhmm >= endMin;
+                      return (
+                        <div key={c.time} className="home-list-item" style={{ opacity: done ? 0.45 : 1 }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            <span className="home-list-left" style={{ fontWeight: ongoing ? 700 : undefined }}>
+                              {c.name}
+                            </span>
+                            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{c.time}</span>
+                          </div>
+                          {ongoing && (
+                            <span className="home-chip" style={{ background: 'var(--ok-bg)', color: 'var(--ok)', flexShrink: 0 }}>
+                              Agora
+                            </span>
+                          )}
+                          {done && (
+                            <span className="home-chip" style={{ background: 'var(--surface-2)', color: 'var(--text-muted)', flexShrink: 0 }}>
+                              Concluída
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </>
+              );
+            })()}
           </div>
 
           <div className="card home-clickable" onClick={() => navigate('/estudos')}>

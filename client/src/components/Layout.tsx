@@ -42,17 +42,17 @@ const SECTIONS: Section[] = [
   {
     id: 'home',
     label: 'Home',
-    home: '/home',
+    home: '/',
     icon: HomeIcon,
-    items: [{ to: '/home', end: false, icon: HomeIcon, label: 'Home' }],
+    items: [{ to: '/', end: true, icon: HomeIcon, label: 'Home' }],
   },
   {
     id: 'financas',
     label: 'Finanças',
-    home: '/',
+    home: '/financas',
     icon: WalletIcon,
     items: [
-      { to: '/', end: true, icon: HomeIcon, label: 'Início' },
+      { to: '/financas', end: true, icon: HomeIcon, label: 'Início' },
       { to: '/relatorios', end: false, icon: ChartIcon, label: 'Relatórios' },
       { to: '/investimentos', end: false, icon: PiggyBankIcon, label: 'Investimentos' },
     ],
@@ -74,10 +74,10 @@ const SECTIONS: Section[] = [
 ];
 
 function sectionForPath(pathname: string): Section {
-  if (pathname === '/home') return SECTIONS[0];
+  if (pathname === '/') return SECTIONS[0];
   if (pathname.startsWith('/saude')) return SECTIONS[2];
   if (pathname.startsWith('/estudos')) return SECTIONS[3];
-  return SECTIONS[1]; // /, /relatorios, /investimentos
+  return SECTIONS[1]; // /financas, /relatorios, /investimentos
 }
 
 function isItemActive(pathname: string, item: NavItem) {

@@ -461,6 +461,10 @@ export function DashboardPage() {
                   <span>Variáveis (cartão)</span>
                   <span>{formatCurrency(summary.accounts.variable)}</span>
                 </li>
+                <li style={{ fontWeight: 600 }}>
+                  <span>Fatura estimada</span>
+                  <span>{formatCurrency(summary.accounts.fixed + summary.accounts.variable)}</span>
+                </li>
                 <li>
                   <span>Vale-alimentação</span>
                   <span>{formatCurrency(summary.accounts.foodVoucher)}</span>

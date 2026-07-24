@@ -34,14 +34,14 @@ export default function App() {
     <MonthProvider>
       <Routes>
         <Route element={<Layout />}>
-          <Route path="/home" element={<HomePage />} />
-          <Route path="/" element={<DashboardPage />} />
+          <Route path="/" element={<HomePage />} />
+          <Route path="/financas" element={<DashboardPage />} />
           <Route path="/relatorios" element={<ReportsPage />} />
           <Route path="/investimentos" element={<InvestmentsPage />} />
           <Route path="/saude" element={<SaudePage />} />
           <Route path="/estudos" element={<EstudosPage />} />
         </Route>
-        <Route path="*" element={<Navigate to="/home" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </MonthProvider>
   );

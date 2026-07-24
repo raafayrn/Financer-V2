@@ -27,9 +27,7 @@ const overviewItem = {
 
 // Botões rápidos de adição de água (ml).
 const QUICK_ADDS = [
-  { label: 'Copo', ml: 200 },
-  { label: 'Garrafa', ml: 500 },
-  { label: 'Grande', ml: 750 },
+  { label: 'Garrafa', ml: 600 },
 ];
 
 function formatMl(ml: number): string {
