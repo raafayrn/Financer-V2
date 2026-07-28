@@ -40,6 +40,7 @@ function WaterRing({ percent, consumedMl, goalMl }: { percent: number; consumedM
   const r = 82;
   const c = 2 * Math.PI * r;
   const dash = (Math.min(100, percent) / 100) * c;
+  const done = percent >= 100;
   return (
     <div className="water-ring">
       <svg viewBox="0 0 200 200">
@@ -48,7 +49,7 @@ function WaterRing({ percent, consumedMl, goalMl }: { percent: number; consumedM
           cx="100"
           cy="100"
           r={r}
-          className="water-ring-fill"
+          className={done ? 'water-ring-fill water-ring-fill--done' : 'water-ring-fill'}
           strokeDasharray={c}
           initial={false}
           animate={{ strokeDashoffset: c - dash }}
@@ -56,11 +57,41 @@ function WaterRing({ percent, consumedMl, goalMl }: { percent: number; consumedM
           transform="rotate(-90 100 100)"
         />
       </svg>
-      <div className="water-ring-center">
-        <span className="water-ring-pct">{percent}%</span>
-        <span className="water-ring-amount">{formatMl(consumedMl)}</span>
-        <span className="water-ring-goal">de {formatMl(goalMl)}</span>
-      </div>
+      <AnimatePresence mode="wait">
+        {done ? (
+          <motion.div
+            key="done"
+            className="water-ring-center"
+            initial={{ scale: 0.5, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.5, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+          >
+            <motion.span
+              className="water-ring-check"
+              initial={{ scale: 0 }}
+              animate={{ scale: [0, 1.3, 1] }}
+              transition={{ delay: 0.1, duration: 0.4 }}
+            >
+              ✓
+            </motion.span>
+            <span className="water-ring-done-label">Meta atingida!</span>
+            <span className="water-ring-amount">{formatMl(consumedMl)}</span>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="progress"
+            className="water-ring-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <span className="water-ring-pct">{percent}%</span>
+            <span className="water-ring-amount">{formatMl(consumedMl)}</span>
+            <span className="water-ring-goal">de {formatMl(goalMl)}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -101,6 +132,7 @@ export function SaudePage() {
   const [goalInput, setGoalInput] = useState('');
   const [customMl, setCustomMl] = useState('');
   const waterLoadRef = useRef(0);
+  const currentDateRef = useRef(new Date().toDateString());
 
   const loadWater = useCallback(async () => {
     const id = ++waterLoadRef.current;
@@ -120,6 +152,24 @@ export function SaudePage() {
   useEffect(() => {
     void loadWater();
   }, [loadWater]);
+
+  // Detecta troca de dia (verifica a cada minuto) e recarrega automaticamente.
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const today = new Date().toDateString();
+      if (today !== currentDateRef.current) {
+        currentDateRef.current = today;
+        void loadWater();
+      }
+    }, 60_000);
+    return () => clearInterval(interval);
+  }, [loadWater]);
+
+  async function resetWaterDay() {
+    if (!confirm('Resetar contagem de água de hoje?')) return;
+    await api.resetWaterDay();
+    await loadWater();
+  }
 
   async function addWater(ml: number) {
     if (!waterDay) return;
@@ -301,6 +351,9 @@ export function SaudePage() {
                     }}
                   >
                     Alterar meta
+                  </button>
+                  <button className="btn-ghost btn-sm" onClick={resetWaterDay}>
+                    Resetar dia
                   </button>
                 </>
               )}

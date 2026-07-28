@@ -2007,6 +2007,21 @@ select option {
   font-size: 0.82rem;
   color: var(--text-muted);
 }
+.water-ring-fill--done {
+  stroke: #22c55e;
+}
+.water-ring-check {
+  font-size: 2.8rem;
+  font-weight: 900;
+  color: #22c55e;
+  line-height: 1;
+}
+.water-ring-done-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #22c55e;
+  letter-spacing: 0.01em;
+}
 .water-quick {
   display: flex;
   gap: 10px;

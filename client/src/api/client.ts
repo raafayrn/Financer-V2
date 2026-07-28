@@ -282,6 +282,8 @@ export const api = {
       body: JSON.stringify({ amountMl, ...(date ? { date } : {}) }),
     }),
   deleteWaterEntry: (id: string) => request<void>(`/water/entries/${id}`, { method: 'DELETE' }),
+  resetWaterDay: (date?: string) =>
+    request<void>(`/water/day${date ? `?date=${date}` : ''}`, { method: 'DELETE' }),
 
   // ---------- Estudos ----------
   getStudiesOverview: () => request<StudiesOverview>('/studies/overview'),

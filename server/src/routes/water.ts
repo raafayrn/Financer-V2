@@ -116,3 +116,14 @@ waterRouter.delete(
     res.status(204).end();
   }),
 );
+
+// Apaga todos os registros de um dia (default: hoje). Usado para reset manual ou automático.
+waterRouter.delete(
+  '/day',
+  asyncHandler(async (req, res) => {
+    const dateStr = typeof req.query.date === 'string' ? req.query.date : todayIso();
+    const date = parseApiDate(dateStr);
+    await prisma.waterEntry.deleteMany({ where: { userId: req.userId!, date } });
+    res.status(204).end();
+  }),
+);
