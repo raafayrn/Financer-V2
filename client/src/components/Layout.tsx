@@ -1,12 +1,23 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import type { ComponentType } from 'react';
+import { useRef, type ComponentType } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { springSheet, springSmooth, springTap } from '../lib/motion';
+
+const ROUTE_ORDER = ['/', '/financas', '/relatorios', '/investimentos', '/saude', '/estudos'];
+function routeIndex(p: string) {
+  const i = ROUTE_ORDER.indexOf(p);
+  return i === -1 ? 0 : i;
+}
+
+const pageVariants = {
+  initial: (dir: number) => ({ opacity: 0, x: dir * 28, scale: 0.985, filter: 'blur(2px)' }),
+  animate: { opacity: 1, x: 0, scale: 1, filter: 'blur(0px)' },
+  exit: (dir: number) => ({ opacity: 0, x: dir * -18, scale: 0.99, filter: 'blur(2px)' }),
+};
 import {
   BookIcon,
-  GearIcon,
   HeartPulseIcon,
   MoonIcon,
   PiggyBankIcon,
@@ -119,20 +130,14 @@ export function Layout() {
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
-  const isDashboard = location.pathname === '/';
+  const prevPath = useRef(location.pathname);
+  const navDir = useRef(1);
+  if (prevPath.current !== location.pathname) {
+    navDir.current = routeIndex(location.pathname) >= routeIndex(prevPath.current) ? 1 : -1;
+    prevPath.current = location.pathname;
+  }
   const section = sectionForPath(location.pathname);
 
-  const gearButton = isDashboard && (
-    <motion.button
-      className="icon-btn-outline"
-      title="Gerenciar categorias e orçamento"
-      onClick={() => navigate('/?manage=1')}
-      whileTap={{ scale: 0.9 }}
-      transition={springTap}
-    >
-      <GearIcon />
-    </motion.button>
-  );
 
   const themeButton = (
     <motion.button
@@ -170,7 +175,6 @@ export function Layout() {
             ))}
           </nav>
           <div className="navbar-desktop-right">
-            {gearButton}
             {themeButton}
             <span className="user-name">{user?.name}</span>
           </div>
@@ -187,7 +191,6 @@ export function Layout() {
         <div className="topbar-inner">
           <span className="brand">Orbit</span>
           <div className="topbar-right">
-            {gearButton}
             {themeButton}
           </div>
         </div>
@@ -199,12 +202,14 @@ export function Layout() {
       </header>
 
       <main className="content">
-        <AnimatePresence mode="wait" initial={false}>
+        <AnimatePresence mode="wait" initial={false} custom={navDir.current}>
           <motion.div
             key={location.pathname}
-            initial={{ opacity: 0, y: 14, scale: 0.99 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.99 }}
+            custom={navDir.current}
+            variants={pageVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
             transition={springSmooth}
           >
             <Outlet />

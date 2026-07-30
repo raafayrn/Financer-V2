@@ -7,6 +7,12 @@ import { CheckIcon, ChevronDownIcon, EditIcon, PlusIcon, TrashIcon } from '../co
 import { ExamModal, StudyTaskModal } from '../components/StudyModals';
 import { springSmooth, springTap } from '../lib/motion';
 
+const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const WEEKDAYS_LONG = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const WEEKDAYS_FULL = ['Domingo','Segunda-Feira','Terça-Feira','Quarta-Feira','Quinta-Feira','Sexta-Feira','Sábado'];
+
+type StudiesTab = 'agenda' | 'provas' | 'tarefas' | 'materias';
+
 const overviewContainer = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
 const overviewItem = {
   hidden: { opacity: 0, y: 22, scale: 0.97 },
@@ -15,7 +21,6 @@ const overviewItem = {
 
 const SUBJECT_COLORS = ['#007aff', '#34c759', '#ff9500', '#af52de', '#ff2d55', '#5ac8fa', '#ffcc00', '#ff3b30'];
 
-/** Dias até uma data ISO (positivo = futuro). */
 function daysUntil(iso: string): number {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -32,10 +37,249 @@ function countdownLabel(iso: string): string {
   return `Faltam ${d} dias`;
 }
 
+function todayIsoStr() {
+  const t = new Date();
+  return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
+}
+
+// Horário fixo semanal (1=Seg … 5=Sex)
+const CLASS_SCHEDULE: Record<number, { time: string; name: string }[]> = {
+  1: [
+    { time: '18:55–20:35', name: 'Cálculo Diferencial e Integral II' },
+    { time: '20:50–22:30', name: 'Estática em Engenharia' },
+  ],
+  2: [
+    { time: '18:55–20:35', name: 'Física Geral e Experimental II' },
+    { time: '20:50–22:30', name: 'Estática em Engenharia' },
+  ],
+  3: [
+    { time: '18:55–20:35', name: 'Cálculo Diferencial e Integral II' },
+    { time: '20:50–22:30', name: 'Física Geral e Experimental II' },
+  ],
+  4: [
+    { time: '18:55–20:35', name: 'Geometria e Álgebra Linear' },
+    { time: '20:50–22:30', name: 'Introdução à Ciência dos Materiais' },
+  ],
+  5: [
+    { time: '18:55–20:35', name: 'Desenho e Modelagem Geométrica' },
+    { time: '20:50–22:30', name: 'Geometria e Álgebra Linear' },
+  ],
+};
+
+// ─── CALENDÁRIO AGENDA ────────────────────────────────────────────────────────
+interface AgendaCalendarProps {
+  exams: Exam[];
+  tasks: StudyTask[];
+  subjects: Subject[];
+  onExamEdit: (exam: Exam) => void;
+  onTaskEdit: (task: StudyTask) => void;
+  onAddExam: () => void;
+}
+
+function AgendaCalendar({ exams, tasks, subjects, onExamEdit, onTaskEdit, onAddExam }: AgendaCalendarProps) {
+  const today = new Date();
+  const [cal, setCal] = useState({ year: today.getFullYear(), month: today.getMonth() });
+  const [selectedIso, setSelectedIso] = useState<string>(todayIsoStr());
+
+  const todayStr = todayIsoStr();
+
+  function goToday() {
+    setCal({ year: today.getFullYear(), month: today.getMonth() });
+    setSelectedIso(todayStr);
+  }
+  function prev() {
+    setCal((c) => { const d = new Date(c.year, c.month - 1, 1); return { year: d.getFullYear(), month: d.getMonth() }; });
+  }
+  function next() {
+    setCal((c) => { const d = new Date(c.year, c.month + 1, 1); return { year: d.getFullYear(), month: d.getMonth() }; });
+  }
+
+  const firstDay = new Date(cal.year, cal.month, 1).getDay();
+  const daysInMonth = new Date(cal.year, cal.month + 1, 0).getDate();
+
+  function isoOf(day: number) {
+    return `${cal.year}-${String(cal.month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  }
+
+  const subjectById = (id: string | null) => subjects.find((s) => s.id === id);
+  const subjectByName = (name: string) => subjects.find((s) => s.name === name);
+
+  function classesForIso(iso: string) {
+    const dow = new Date(iso + 'T00:00:00').getDay(); // 0=Dom
+    return CLASS_SCHEDULE[dow] ?? [];
+  }
+
+  function eventsForDay(iso: string) {
+    const dayExams = exams.filter((e) => e.date === iso);
+    const dayTasks = tasks.filter((t) => t.dueDate === iso);
+    const dayClasses = classesForIso(iso);
+    return { dayExams, dayTasks, dayClasses };
+  }
+
+  const cells: (number | null)[] = [...Array(firstDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  const selDate = selectedIso ? new Date(selectedIso + 'T00:00:00') : null;
+  const { dayExams: selExams, dayTasks: selTasks, dayClasses: selClasses } = eventsForDay(selectedIso);
+
+  const upcomingExams = [...exams]
+    .filter((e) => daysUntil(e.date) >= 0)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(0, 5);
+
+  return (
+    <div className="agenda-layout">
+      {/* Calendário principal */}
+      <div className="agenda-main">
+        <div className="agenda-cal-header">
+          <h2 className="agenda-cal-month">
+            {MONTHS_PT[cal.month]} De {cal.year}
+          </h2>
+          <div className="agenda-cal-nav">
+            <button className="agenda-nav-btn agenda-today-btn" onClick={goToday}>Hoje</button>
+            <button className="agenda-nav-btn agenda-arrow" onClick={prev}>‹</button>
+            <button className="agenda-nav-btn agenda-arrow" onClick={next}>›</button>
+          </div>
+        </div>
+
+        <div className="agenda-grid">
+          {WEEKDAYS_LONG.map((w) => (
+            <div key={w} className="agenda-weekday">{w}</div>
+          ))}
+          {cells.map((day, i) => {
+            if (!day) return <div key={i} className="agenda-cell agenda-cell-empty" />;
+            const iso = isoOf(day);
+            const { dayExams, dayTasks, dayClasses } = eventsForDay(iso);
+            const isToday = iso === todayStr;
+            const isSel = iso === selectedIso;
+            const MAX_VISIBLE = 3;
+            const allEvents = [
+              ...dayExams.map((e) => {
+                const subj = subjectById(e.subjectId);
+                return { kind: 'exam' as const, label: subj ? `${subj.name} — ${e.title}` : e.title, color: subj?.color ?? 'var(--over)', id: e.id };
+              }),
+              ...dayTasks.map((t) => ({ kind: 'task' as const, label: t.title, color: 'var(--primary)', id: t.id })),
+              ...dayClasses.map((c, ci) => {
+                const subj = subjectByName(c.name);
+                return { kind: 'class' as const, label: c.name, color: subj?.color ? subj.color + 'aa' : 'var(--surface-2)', id: `class-${iso}-${ci}` };
+              }),
+            ];
+            const overflow = allEvents.length - MAX_VISIBLE;
+            return (
+              <div
+                key={i}
+                className={`agenda-cell${isToday ? ' agenda-today' : ''}${isSel ? ' agenda-selected' : ''}`}
+                onClick={() => setSelectedIso(iso)}
+              >
+                <span className={`agenda-day-num${isToday ? ' agenda-day-num-today' : ''}`}>{day}</span>
+                <div className="agenda-events">
+                  {allEvents.slice(0, MAX_VISIBLE).map((ev) => (
+                    <div
+                      key={ev.id}
+                      className={`agenda-event-pill${ev.kind === 'class' ? ' agenda-event-class' : ''}`}
+                      style={{ background: ev.color }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (ev.kind === 'exam') onExamEdit(exams.find((x) => x.id === ev.id)!);
+                        else if (ev.kind === 'task') onTaskEdit(tasks.find((x) => x.id === ev.id)!);
+                      }}
+                    >
+                      {ev.label}
+                    </div>
+                  ))}
+                  {overflow > 0 && (
+                    <div className="agenda-event-more">+{overflow}</div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Sidebar */}
+      <div className="agenda-sidebar">
+        {selDate && (
+          <div className="agenda-sidebar-date">
+            <span className="agenda-sidebar-weekday">{WEEKDAYS_FULL[selDate.getDay()]}</span>
+            <span className="agenda-sidebar-day">{selDate.getDate()} De {MONTHS_PT[selDate.getMonth()]}</span>
+          </div>
+        )}
+
+        <div className="agenda-sidebar-section">
+          <div className="agenda-sidebar-head">
+            <span className="agenda-sidebar-label">Agenda do dia</span>
+            <button className="btn-primary btn-sm" onClick={onAddExam}>+ Adicionar</button>
+          </div>
+          {selExams.length === 0 && selTasks.length === 0 && selClasses.length === 0 ? (
+            <p className="agenda-sidebar-empty">Nenhum evento.</p>
+          ) : (
+            <div className="agenda-sidebar-events">
+              {selClasses.map((c, ci) => {
+                const subj = subjectByName(c.name);
+                return (
+                  <div key={`class-${ci}`} className="agenda-sidebar-event" style={{ borderLeftColor: subj?.color ?? 'var(--text-muted)' }}>
+                    <span className="agenda-sidebar-event-label">{c.time}</span>
+                    <span className="agenda-sidebar-event-title">{c.name}</span>
+                  </div>
+                );
+              })}
+              {selExams.map((ex) => {
+                const subj = subjectById(ex.subjectId);
+                return (
+                  <div key={ex.id} className="agenda-sidebar-event exam-sidebar" style={{ borderLeftColor: subj?.color ?? 'var(--over)' }} onClick={() => onExamEdit(ex)}>
+                    <span className="agenda-sidebar-event-label">Prova</span>
+                    <span className="agenda-sidebar-event-title">{ex.title}</span>
+                    {subj && <span className="agenda-sidebar-event-sub">{subj.name}</span>}
+                  </div>
+                );
+              })}
+              {selTasks.map((t) => {
+                const subj = subjectById(t.subjectId);
+                return (
+                  <div key={t.id} className="agenda-sidebar-event task-sidebar" onClick={() => onTaskEdit(t)}>
+                    <span className="agenda-sidebar-event-label">Tarefa</span>
+                    <span className="agenda-sidebar-event-title">{t.title}</span>
+                    {subj && <span className="agenda-sidebar-event-sub">{subj.name}</span>}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {upcomingExams.length > 0 && (
+          <div className="agenda-sidebar-section">
+            <div className="agenda-sidebar-head">
+              <span className="agenda-sidebar-label">Próximas Provas</span>
+            </div>
+            <div className="agenda-sidebar-events">
+              {upcomingExams.map((ex) => {
+                const subj = subjectById(ex.subjectId);
+                return (
+                  <div key={ex.id} className="agenda-upcoming-exam" onClick={() => onExamEdit(ex)}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 1, flex: 1 }}>
+                      {subj && <span style={{ fontSize: '0.7rem', color: subj.color, fontWeight: 600 }}>{subj.name}</span>}
+                      <span className="agenda-upcoming-title">{ex.title}</span>
+                    </div>
+                    <span className="agenda-upcoming-countdown">{daysUntil(ex.date) === 0 ? 'Hoje' : `${daysUntil(ex.date)}d`}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── PÁGINA PRINCIPAL ─────────────────────────────────────────────────────────
 export function EstudosPage() {
   const [data, setData] = useState<StudiesOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState<StudiesTab>('agenda');
 
   const [addingSubject, setAddingSubject] = useState(false);
   const [subjectName, setSubjectName] = useState('');
@@ -60,9 +304,7 @@ export function EstudosPage() {
     }
   }, []);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  useEffect(() => { void load(); }, [load]);
 
   const subjects: Subject[] = data?.subjects ?? [];
 
@@ -123,230 +365,225 @@ export function EstudosPage() {
 
   const subjectById = (id: string | null) => subjects.find((s) => s.id === id);
 
+  const TABS: { id: StudiesTab; label: string }[] = [
+    { id: 'agenda', label: 'Agenda' },
+    { id: 'provas', label: 'Provas' },
+    { id: 'tarefas', label: 'Tarefas' },
+    { id: 'materias', label: 'Matérias' },
+  ];
+
   return (
     <div className="page">
-      <h2 className="page-title">Estudos</h2>
+      <div className="estudos-tabs">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            className={`estudos-tab${tab === t.id ? ' active' : ''}`}
+            onClick={() => setTab(t.id)}
+          >
+            {t.label}
+            {tab === t.id && <motion.span layoutId="estudos-tab-pill" className="estudos-tab-pill" transition={springSmooth} />}
+          </button>
+        ))}
+      </div>
 
       {loading && !data ? (
-        <div className="center-pad">
-          <div className="spinner" />
-        </div>
+        <div className="center-pad"><div className="spinner" /></div>
       ) : error ? (
         <div className="alert alert-error">{error}</div>
       ) : data ? (
-        <motion.div className="overview-grid" variants={overviewContainer} initial="hidden" animate="show">
-          {/* Próximas provas */}
-          <motion.section className="card overview-item overview-span-2" variants={overviewItem}>
-            <div className="section-head">
-              <h3 className="section-title">Próximas provas</h3>
-              <motion.button className="btn-primary btn-sm" onClick={() => setExamModal({})} whileTap={{ scale: 0.95 }} transition={springTap}>
-                + Prova
-              </motion.button>
-            </div>
-            {data.upcomingExams.length === 0 ? (
-              <p className="empty">Nenhuma prova marcada. Adicione as datas para não perder o prazo.</p>
-            ) : (
-              <div className="exam-list">
-                {data.upcomingExams.map((ex) => {
-                  const subj = subjectById(ex.subjectId);
-                  const d = daysUntil(ex.date);
-                  const urgent = d <= 3;
-                  return (
-                    <div key={ex.id} className="exam-card" style={{ borderColor: subj?.color ?? 'var(--border)' }}>
-                      <div className="exam-countdown" style={{ color: urgent ? 'var(--over)' : 'var(--primary)' }}>
-                        {countdownLabel(ex.date)}
-                      </div>
-                      <div className="exam-title">{ex.title}</div>
-                      <div className="exam-meta">
-                        {subj && <span className="exam-subject" style={{ background: subj.color }}>{subj.name}</span>}
-                        <span>{formatDayMonth(ex.date)}</span>
-                      </div>
-                      <div className="exam-actions">
-                        <button className="icon-btn" title="Editar" onClick={() => setExamModal({ exam: ex })}>
-                          <EditIcon />
-                        </button>
-                        <button className="icon-btn" title="Excluir" onClick={() => deleteExam(ex.id)}>
-                          <TrashIcon />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </motion.section>
+        <>
+          {/* ── AGENDA ── */}
+          {tab === 'agenda' && (
+            <AgendaCalendar
+              exams={data.upcomingExams}
+              tasks={data.pendingTasks}
+              subjects={subjects}
+              onExamEdit={(ex) => setExamModal({ exam: ex })}
+              onTaskEdit={(t) => setTaskModal({ task: t })}
+              onAddExam={() => setExamModal({})}
+            />
+          )}
 
-          {/* Tarefas pendentes */}
-          <motion.section className="card overview-item overview-span-2" variants={overviewItem}>
-            <div className="section-head">
-              <h3 className="section-title">Tarefas e entregas ({data.totals.pendingTaskCount})</h3>
-              <motion.button className="btn-primary btn-sm" onClick={() => setTaskModal({})} whileTap={{ scale: 0.95 }} transition={springTap}>
-                + Tarefa
-              </motion.button>
-            </div>
-            {data.pendingTasks.length === 0 ? (
-              <p className="empty">Tudo em dia! Nenhuma tarefa pendente. 🎉</p>
-            ) : (
-              <ul className="task-list">
-                <AnimatePresence initial={false}>
-                  {data.pendingTasks.map((t) => {
-                    const subj = subjectById(t.subjectId);
-                    const overdue = t.dueDate ? daysUntil(t.dueDate) < 0 : false;
-                    return (
-                      <motion.li
-                        key={t.id}
-                        className="task-row"
-                        layout
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={springSmooth}
-                        style={{ overflow: 'hidden' }}
-                      >
-                        <button className="check-box" onClick={() => toggleTask(t.id, true)} title="Concluir" />
-                        <div className="task-main">
-                          <span className="task-title">{t.title}</span>
-                          <span className="task-meta">
-                            {subj && <span className="dot" style={{ background: subj.color }} />}
-                            {subj?.name}
-                            {t.dueDate && (
-                              <span style={{ color: overdue ? 'var(--over)' : 'inherit' }}>
-                                {subj ? ' · ' : ''}
-                                {overdue ? 'Atrasada' : countdownLabel(t.dueDate)} ({formatDayMonth(t.dueDate)})
-                              </span>
-                            )}
-                          </span>
-                        </div>
-                        <div className="exp-actions">
-                          <button className="icon-btn" title="Editar" onClick={() => setTaskModal({ task: t })}>
-                            <EditIcon />
-                          </button>
-                          <button className="icon-btn" title="Excluir" onClick={() => deleteTask(t.id)}>
-                            <TrashIcon />
-                          </button>
-                        </div>
-                      </motion.li>
-                    );
-                  })}
-                </AnimatePresence>
-              </ul>
-            )}
-          </motion.section>
-
-          {/* Matérias */}
-          <motion.section className="card overview-item overview-span-2" variants={overviewItem}>
-            <div className="section-head">
-              <h3 className="section-title">Matérias</h3>
-              <span className="hint">{data.totals.overallProgress}% concluído no geral</span>
-            </div>
-
-            {subjects.length === 0 && !addingSubject ? (
-              <p className="empty">Adicione suas matérias e liste os assuntos para acompanhar o progresso.</p>
-            ) : (
-              <div className="subject-grid">
-                {subjects.map((s) => (
-                  <div key={s.id} className="subject-card">
-                    <button className="subject-head" onClick={() => setExpanded(expanded === s.id ? null : s.id)}>
-                      <span className="subject-color" style={{ background: s.color }} />
-                      <div className="subject-info">
-                        <span className="subject-name">{s.name}</span>
-                        <span className="subject-progress-text">
-                          {s.doneCount}/{s.topicCount} assuntos · {s.progress}%
-                        </span>
-                      </div>
-                      <span className={`subject-chevron${expanded === s.id ? ' open' : ''}`}>
-                        <ChevronDownIcon />
-                      </span>
-                    </button>
-                    <div className="subject-bar">
-                      <div className="subject-bar-fill" style={{ width: `${s.progress}%`, background: s.color }} />
-                    </div>
-
-                    <AnimatePresence initial={false}>
-                      {expanded === s.id && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                          transition={springSmooth}
-                          style={{ overflow: 'hidden' }}
-                        >
-                          <ul className="topic-list">
-                            {s.topics.map((t) => (
-                              <li key={t.id} className="topic-row">
-                                <button
-                                  className={`check-box${t.done ? ' checked' : ''}`}
-                                  onClick={() => toggleTopic(t.id, !t.done)}
-                                  title={t.done ? 'Desmarcar' : 'Concluir'}
-                                >
-                                  {t.done && <CheckIcon />}
-                                </button>
-                                <span className={`topic-name${t.done ? ' done' : ''}`}>{t.name}</span>
-                                <button className="icon-btn" title="Remover" onClick={() => deleteTopic(t.id)}>
-                                  <TrashIcon />
-                                </button>
-                              </li>
-                            ))}
-                          </ul>
-                          <form
-                            className="topic-add"
-                            onSubmit={(e) => {
-                              e.preventDefault();
-                              void addTopic(s.id);
-                            }}
-                          >
-                            <input
-                              type="text"
-                              value={topicInputs[s.id] ?? ''}
-                              onChange={(e) => setTopicInputs((p) => ({ ...p, [s.id]: e.target.value }))}
-                              placeholder="Novo assunto…"
-                            />
-                            <button type="submit" className="btn-primary btn-sm">
-                              <PlusIcon />
-                            </button>
-                          </form>
-                          <div className="subject-footer">
-                            <button className="btn-ghost btn-sm" onClick={() => deleteSubject(s.id)}>
-                              Excluir matéria
-                            </button>
+          {/* ── PROVAS ── */}
+          {tab === 'provas' && (
+            <motion.div className="overview-grid" variants={overviewContainer} initial="hidden" animate="show">
+              <motion.section className="card overview-item overview-span-2" variants={overviewItem}>
+                <div className="section-head">
+                  <h3 className="section-title">Próximas provas</h3>
+                  <motion.button className="btn-primary btn-sm" onClick={() => setExamModal({})} whileTap={{ scale: 0.95 }} transition={springTap}>
+                    + Prova
+                  </motion.button>
+                </div>
+                {data.upcomingExams.length === 0 ? (
+                  <p className="empty">Nenhuma prova marcada.</p>
+                ) : (
+                  <div className="exam-list">
+                    {data.upcomingExams.map((ex) => {
+                      const subj = subjectById(ex.subjectId);
+                      const d = daysUntil(ex.date);
+                      const urgent = d <= 3;
+                      return (
+                        <div key={ex.id} className="exam-card" style={{ borderColor: subj?.color ?? 'var(--border)' }}>
+                          <div className="exam-countdown" style={{ color: urgent ? 'var(--over)' : 'var(--primary)' }}>
+                            {countdownLabel(ex.date)}
                           </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                          <div className="exam-title">{ex.title}</div>
+                          <div className="exam-meta">
+                            {subj && <span className="exam-subject" style={{ background: subj.color }}>{subj.name}</span>}
+                            <span>{formatDayMonth(ex.date)}</span>
+                          </div>
+                          <div className="exam-actions">
+                            <button className="icon-btn" title="Editar" onClick={() => setExamModal({ exam: ex })}><EditIcon /></button>
+                            <button className="icon-btn" title="Excluir" onClick={() => deleteExam(ex.id)}><TrashIcon /></button>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                ))}
-              </div>
-            )}
+                )}
+              </motion.section>
+            </motion.div>
+          )}
 
-            {addingSubject ? (
-              <form className="topic-add" style={{ marginTop: 12 }} onSubmit={addSubject}>
-                <input
-                  type="text"
-                  value={subjectName}
-                  onChange={(e) => setSubjectName(e.target.value)}
-                  placeholder="Nome da matéria (ex.: Cálculo I)"
-                  autoFocus
-                />
-                <button type="submit" className="btn-primary btn-sm">
-                  Adicionar
-                </button>
-                <button type="button" className="btn-ghost btn-sm" onClick={() => setAddingSubject(false)}>
-                  Cancelar
-                </button>
-              </form>
-            ) : (
-              <motion.button
-                className="btn-ghost btn-sm"
-                style={{ marginTop: 12, alignSelf: 'flex-start' }}
-                onClick={() => setAddingSubject(true)}
-                whileTap={{ scale: 0.95 }}
-                transition={springTap}
-              >
-                <PlusIcon /> Matéria
-              </motion.button>
-            )}
-          </motion.section>
-        </motion.div>
+          {/* ── TAREFAS ── */}
+          {tab === 'tarefas' && (
+            <motion.div className="overview-grid" variants={overviewContainer} initial="hidden" animate="show">
+              <motion.section className="card overview-item overview-span-2" variants={overviewItem}>
+                <div className="section-head">
+                  <h3 className="section-title">Tarefas e entregas ({data.totals.pendingTaskCount})</h3>
+                  <motion.button className="btn-primary btn-sm" onClick={() => setTaskModal({})} whileTap={{ scale: 0.95 }} transition={springTap}>
+                    + Tarefa
+                  </motion.button>
+                </div>
+                {data.pendingTasks.length === 0 ? (
+                  <p className="empty">Tudo em dia! 🎉</p>
+                ) : (
+                  <ul className="task-list">
+                    <AnimatePresence initial={false}>
+                      {data.pendingTasks.map((t) => {
+                        const subj = subjectById(t.subjectId);
+                        const overdue = t.dueDate ? daysUntil(t.dueDate) < 0 : false;
+                        return (
+                          <motion.li
+                            key={t.id}
+                            className="task-row"
+                            layout
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={springSmooth}
+                            style={{ overflow: 'hidden' }}
+                          >
+                            <button className="check-box" onClick={() => toggleTask(t.id, true)} title="Concluir" />
+                            <div className="task-main">
+                              <span className="task-title">{t.title}</span>
+                              <span className="task-meta">
+                                {subj && <span className="dot" style={{ background: subj.color }} />}
+                                {subj?.name}
+                                {t.dueDate && (
+                                  <span style={{ color: overdue ? 'var(--over)' : 'inherit' }}>
+                                    {subj ? ' · ' : ''}
+                                    {overdue ? 'Atrasada' : countdownLabel(t.dueDate)} ({formatDayMonth(t.dueDate)})
+                                  </span>
+                                )}
+                              </span>
+                            </div>
+                            <div className="exp-actions">
+                              <button className="icon-btn" title="Editar" onClick={() => setTaskModal({ task: t })}><EditIcon /></button>
+                              <button className="icon-btn" title="Excluir" onClick={() => deleteTask(t.id)}><TrashIcon /></button>
+                            </div>
+                          </motion.li>
+                        );
+                      })}
+                    </AnimatePresence>
+                  </ul>
+                )}
+              </motion.section>
+            </motion.div>
+          )}
+
+          {/* ── MATÉRIAS ── */}
+          {tab === 'materias' && (
+            <motion.div className="overview-grid" variants={overviewContainer} initial="hidden" animate="show">
+              <motion.section className="card overview-item overview-span-2" variants={overviewItem}>
+                <div className="section-head">
+                  <h3 className="section-title">Matérias</h3>
+                  <span className="hint">{data.totals.overallProgress}% concluído</span>
+                </div>
+
+                {subjects.length === 0 && !addingSubject ? (
+                  <p className="empty">Adicione suas matérias.</p>
+                ) : (
+                  <div className="subject-grid">
+                    {subjects.map((s) => (
+                      <div key={s.id} className="subject-card">
+                        <button className="subject-head" onClick={() => setExpanded(expanded === s.id ? null : s.id)}>
+                          <span className="subject-color" style={{ background: s.color }} />
+                          <div className="subject-info">
+                            <span className="subject-name">{s.name}</span>
+                            <span className="subject-progress-text">{s.doneCount}/{s.topicCount} assuntos · {s.progress}%</span>
+                          </div>
+                          <span className={`subject-chevron${expanded === s.id ? ' open' : ''}`}><ChevronDownIcon /></span>
+                        </button>
+                        <div className="subject-bar">
+                          <div className="subject-bar-fill" style={{ width: `${s.progress}%`, background: s.color }} />
+                        </div>
+                        <AnimatePresence initial={false}>
+                          {expanded === s.id && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={springSmooth}
+                              style={{ overflow: 'hidden' }}
+                            >
+                              <ul className="topic-list">
+                                {s.topics.map((t) => (
+                                  <li key={t.id} className="topic-row">
+                                    <button className={`check-box${t.done ? ' checked' : ''}`} onClick={() => toggleTopic(t.id, !t.done)} title={t.done ? 'Desmarcar' : 'Concluir'}>
+                                      {t.done && <CheckIcon />}
+                                    </button>
+                                    <span className={`topic-name${t.done ? ' done' : ''}`}>{t.name}</span>
+                                    <button className="icon-btn" title="Remover" onClick={() => deleteTopic(t.id)}><TrashIcon /></button>
+                                  </li>
+                                ))}
+                              </ul>
+                              <form className="topic-add" onSubmit={(e) => { e.preventDefault(); void addTopic(s.id); }}>
+                                <input
+                                  type="text"
+                                  value={topicInputs[s.id] ?? ''}
+                                  onChange={(e) => setTopicInputs((p) => ({ ...p, [s.id]: e.target.value }))}
+                                  placeholder="Novo assunto…"
+                                />
+                                <button type="submit" className="btn-primary btn-sm"><PlusIcon /></button>
+                              </form>
+                              <div className="subject-footer">
+                                <button className="btn-ghost btn-sm" onClick={() => deleteSubject(s.id)}>Excluir matéria</button>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {addingSubject ? (
+                  <form className="topic-add" style={{ marginTop: 12 }} onSubmit={addSubject}>
+                    <input type="text" value={subjectName} onChange={(e) => setSubjectName(e.target.value)} placeholder="Nome da matéria" autoFocus />
+                    <button type="submit" className="btn-primary btn-sm">Adicionar</button>
+                    <button type="button" className="btn-ghost btn-sm" onClick={() => setAddingSubject(false)}>Cancelar</button>
+                  </form>
+                ) : (
+                  <motion.button className="btn-ghost btn-sm" style={{ marginTop: 12, alignSelf: 'flex-start' }} onClick={() => setAddingSubject(true)} whileTap={{ scale: 0.95 }} transition={springTap}>
+                    <PlusIcon /> Matéria
+                  </motion.button>
+                )}
+              </motion.section>
+            </motion.div>
+          )}
+        </>
       ) : null}
 
       {examModal && (

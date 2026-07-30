@@ -26,14 +26,14 @@ export function Modal({ onCancel, children }: Props) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
+          transition={{ duration: 0.18, ease: [0.32, 0.72, 0, 1] }}
         >
           <motion.div
             className="modal"
             onClick={(e) => e.stopPropagation()}
-            initial={{ opacity: 0, y: 56, scale: 0.94 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 40, scale: 0.95 }}
+            initial={{ opacity: 0, y: 48, scale: 0.93, filter: 'blur(4px)' }}
+            animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, y: 24, scale: 0.97, filter: 'blur(3px)' }}
             transition={springSheet}
           >
             {children(close)}

@@ -8,6 +8,9 @@ import { Dropdown } from './Dropdown';
 function subjectOptions(subjects: Subject[]) {
   return [{ value: '', label: 'Sem matéria' }, ...subjects.map((s) => ({ value: s.id, label: s.name }))];
 }
+function subjectOptionsRequired(subjects: Subject[]) {
+  return [{ value: '', label: 'Selecione a matéria…' }, ...subjects.map((s) => ({ value: s.id, label: s.name }))];
+}
 
 // ---------- Prova ----------
 interface ExamProps {
@@ -27,13 +30,11 @@ export function ExamModal({ subjects, initial, onCancel, onSubmit }: ExamProps) 
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!title.trim()) {
-      setError('Informe o título da prova.');
-      return;
-    }
+    if (!title.trim()) { setError('Informe o título da prova.'); return; }
+    if (!subjectId) { setError('Selecione a matéria.'); return; }
     setSubmitting(true);
     try {
-      await onSubmit({ title: title.trim(), date, subjectId: subjectId || null, notes: notes.trim() || null });
+      await onSubmit({ title: title.trim(), date, subjectId, notes: notes.trim() || null });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Erro ao salvar.');
       setSubmitting(false);
@@ -57,7 +58,7 @@ export function ExamModal({ subjects, initial, onCancel, onSubmit }: ExamProps) 
               </label>
               <div className="field">
                 <span>Matéria</span>
-                <Dropdown value={subjectId} onChange={setSubjectId} ariaLabel="Matéria" options={subjectOptions(subjects)} />
+                <Dropdown value={subjectId} onChange={setSubjectId} ariaLabel="Matéria" options={subjectOptionsRequired(subjects)} />
               </div>
             </div>
             <label className="field">

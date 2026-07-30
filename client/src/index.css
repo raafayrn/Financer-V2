@@ -2405,6 +2405,291 @@ select option {
 /* ============================================================
    Estudos — provas
    ============================================================ */
+/* ===== STUDY CALENDAR ===== */
+.study-cal { display: flex; flex-direction: column; gap: 8px; }
+.study-cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.study-cal-title { font-weight: 600; font-size: 0.95rem; }
+.study-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.study-cal-weekday {
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  padding: 4px 0;
+  font-weight: 500;
+}
+.study-cal-day {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text);
+  transition: background 0.15s;
+  gap: 2px;
+}
+.study-cal-day:hover { background: var(--surface-2); }
+.study-cal-day.today { background: var(--surface-2); font-weight: 700; color: var(--primary); }
+.study-cal-day.selected { background: var(--primary); color: #fff; }
+.study-cal-day.selected.today { background: var(--primary); }
+.study-cal-dots { display: flex; gap: 3px; }
+.study-cal-dot { width: 5px; height: 5px; border-radius: 50%; }
+.study-cal-dot.exam { background: var(--over); }
+.study-cal-dot.task { background: var(--primary); }
+.study-cal-day.selected .study-cal-dot.exam { background: rgba(255,255,255,0.85); }
+.study-cal-day.selected .study-cal-dot.task { background: rgba(255,255,255,0.6); }
+.study-cal-detail { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+.study-cal-event {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--surface-2);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.study-cal-event:hover { opacity: 0.8; }
+.study-cal-event-type {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #fff;
+  padding: 2px 7px;
+  border-radius: 20px;
+  flex-shrink: 0;
+}
+.study-cal-event-title { font-size: 0.88rem; font-weight: 500; flex: 1; }
+.study-cal-event-subj { font-size: 0.75rem; color: var(--text-muted); flex-shrink: 0; }
+.study-cal-empty { font-size: 0.82rem; color: var(--text-muted); margin: 4px 0 0; }
+
+/* ===== ESTUDOS TABS ===== */
+.estudos-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0;
+}
+.estudos-tab {
+  position: relative;
+  padding: 8px 16px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.estudos-tab.active { color: var(--primary); }
+.estudos-tab-pill {
+  position: absolute;
+  bottom: -1px;
+  left: 0; right: 0;
+  height: 2px;
+  background: var(--primary);
+  border-radius: 2px 2px 0 0;
+}
+
+/* ===== AGENDA CALENDAR ===== */
+.agenda-layout {
+  display: grid;
+  grid-template-columns: 1fr 260px;
+  gap: 16px;
+  align-items: start;
+}
+.agenda-main { display: flex; flex-direction: column; gap: 0; }
+.agenda-cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.agenda-cal-month {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0;
+  text-transform: capitalize;
+}
+.agenda-cal-nav { display: flex; align-items: center; gap: 6px; }
+.agenda-nav-btn {
+  padding: 5px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.agenda-nav-btn:hover { background: var(--surface-2); }
+.agenda-today-btn { font-weight: 500; }
+.agenda-arrow { font-size: 1.1rem; padding: 4px 10px; }
+
+.agenda-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.agenda-weekday {
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 8px 4px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.agenda-cell {
+  min-height: 90px;
+  padding: 6px;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.12s;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.agenda-cell:hover { background: var(--surface-2); }
+.agenda-cell-empty { background: transparent; cursor: default; }
+.agenda-cell:nth-child(7n) { border-right: none; }
+.agenda-today { background: color-mix(in srgb, var(--primary) 8%, transparent); }
+.agenda-selected { background: color-mix(in srgb, var(--primary) 14%, transparent) !important; }
+.agenda-day-num {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  align-self: flex-end;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+.agenda-day-num-today {
+  background: var(--primary);
+  color: #fff;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.78rem;
+}
+.agenda-events { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.agenda-event-pill {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: #fff;
+  padding: 2px 5px;
+  border-radius: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: opacity 0.12s;
+}
+.agenda-event-pill:hover { opacity: 0.8; }
+.agenda-event-class {
+  opacity: 0.7;
+  font-style: normal;
+}
+.agenda-event-more {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  padding: 0 4px;
+}
+
+/* Sidebar */
+.agenda-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: sticky;
+  top: 16px;
+}
+.agenda-sidebar-date {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.agenda-sidebar-weekday {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+.agenda-sidebar-day { font-size: 1.05rem; font-weight: 700; }
+.agenda-sidebar-section { display: flex; flex-direction: column; gap: 8px; }
+.agenda-sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.agenda-sidebar-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.agenda-sidebar-events { display: flex; flex-direction: column; gap: 6px; }
+.agenda-sidebar-event {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  border-left: 3px solid var(--primary);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  cursor: pointer;
+  transition: opacity 0.12s;
+}
+.agenda-sidebar-event:hover { opacity: 0.8; }
+.exam-sidebar { border-left-color: var(--over); }
+.agenda-sidebar-event-label { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.agenda-sidebar-event-title { font-size: 0.85rem; font-weight: 600; }
+.agenda-sidebar-event-sub { font-size: 0.75rem; color: var(--text-muted); }
+.agenda-sidebar-empty { font-size: 0.82rem; color: var(--text-muted); margin: 0; }
+.agenda-upcoming-exam {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+.agenda-upcoming-exam:last-child { border-bottom: none; }
+.agenda-upcoming-title { font-size: 0.82rem; font-weight: 500; flex: 1; }
+.agenda-upcoming-countdown {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .agenda-layout { grid-template-columns: 1fr; }
+  .agenda-cell { min-height: 56px; padding: 4px; }
+  .agenda-sidebar { position: static; }
+}
+
 .exam-list {
   display: flex;
   gap: 12px;

@@ -95,6 +95,7 @@ export function HomePage() {
   const [loading, setLoading] = useState(true);
   const [finModal, setFinModal] = useState<FinModal>('closed');
   const [addingWater, setAddingWater] = useState(false);
+  const [hideValues, setHideValues] = useState(() => localStorage.getItem('hideFinValues') === '1');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -137,6 +138,18 @@ export function HomePage() {
     } finally {
       setAddingWater(false);
     }
+  }
+
+  function toggleHideValues() {
+    setHideValues((v) => {
+      const next = !v;
+      localStorage.setItem('hideFinValues', next ? '1' : '0');
+      return next;
+    });
+  }
+
+  function mask(value: string) {
+    return hideValues ? '••••' : value;
   }
 
   const { summary, expenses, incomes, categories, accounts, waterDay, workoutToday, workoutSummary, bodyMetrics, studies } = data;
@@ -198,9 +211,30 @@ export function HomePage() {
           </div>
 
           <div className="card home-clickable" onClick={() => navigate('/financas')}>
-            <p className="home-label">Ainda posso gastar</p>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+              <p className="home-label" style={{ margin: 0 }}>Ainda posso gastar</p>
+              <button
+                className="icon-btn-outline"
+                style={{ padding: '2px 6px' }}
+                title={hideValues ? 'Mostrar valores' : 'Ocultar valores'}
+                onClick={(e) => { e.stopPropagation(); toggleHideValues(); }}
+              >
+                {hideValues ? (
+                  <svg viewBox="0 0 24 24" width="16" height="16" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" stroke="currentColor">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                    <line x1="1" y1="1" x2="23" y2="23" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" width="16" height="16" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" stroke="currentColor">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                )}
+              </button>
+            </div>
             <p className="home-hero-value" style={{ color: remainingColor }}>
-              {formatCurrency(summary?.remaining ?? 0)}
+              {mask(formatCurrency(summary?.remaining ?? 0))}
             </p>
             <div className="home-progress-bar">
               <div
@@ -230,11 +264,11 @@ export function HomePage() {
           <div className="home-grid-2">
             <div className="card">
               <p className="home-label">Renda</p>
-              <p className="home-value" style={{ color: 'var(--ok)' }}>{formatCurrency(summary?.income.total ?? 0)}</p>
+              <p className="home-value" style={{ color: 'var(--ok)' }}>{mask(formatCurrency(summary?.income.total ?? 0))}</p>
             </div>
             <div className="card">
               <p className="home-label">Gastos</p>
-              <p className="home-value" style={{ color: 'var(--over)' }}>{formatCurrency(summary?.totalSpent ?? 0)}</p>
+              <p className="home-value" style={{ color: 'var(--over)' }}>{mask(formatCurrency(summary?.totalSpent ?? 0))}</p>
             </div>
           </div>
 
@@ -243,19 +277,19 @@ export function HomePage() {
               <div>
                 <p className="home-label">Salário</p>
                 <p className="home-account-val" style={{ color: (summary?.income.salary ?? 0) - (summary?.accounts.fixed ?? 0) - (summary?.accounts.variable ?? 0) < 0 ? 'var(--over)' : 'var(--ok)' }}>
-                  {formatCurrency((summary?.income.salary ?? 0) - (summary?.accounts.fixed ?? 0) - (summary?.accounts.variable ?? 0))}
+                  {mask(formatCurrency((summary?.income.salary ?? 0) - (summary?.accounts.fixed ?? 0) - (summary?.accounts.variable ?? 0)))}
                 </p>
               </div>
               <div>
                 <p className="home-label">VR</p>
                 <p className="home-account-val">
-                  {formatCurrency((summary?.income.voucher ?? 0) - (summary?.accounts.foodVoucher ?? 0))}
+                  {mask(formatCurrency((summary?.income.voucher ?? 0) - (summary?.accounts.foodVoucher ?? 0)))}
                 </p>
               </div>
               <div>
                 <p className="home-label">Carteira</p>
                 <p className="home-account-val" style={{ color: (summary?.walletBalance ?? 0) < 0 ? 'var(--over)' : undefined }}>
-                  {formatCurrency(summary?.walletBalance ?? 0)}
+                  {mask(formatCurrency(summary?.walletBalance ?? 0))}
                 </p>
               </div>
             </div>
@@ -266,16 +300,16 @@ export function HomePage() {
             <div className="home-accounts">
               <div>
                 <p className="home-label">Fixos</p>
-                <p className="home-account-val">{formatCurrency(summary?.accounts.fixed ?? 0)}</p>
+                <p className="home-account-val">{mask(formatCurrency(summary?.accounts.fixed ?? 0))}</p>
               </div>
               <div>
                 <p className="home-label">Variáveis</p>
-                <p className="home-account-val">{formatCurrency(summary?.accounts.variable ?? 0)}</p>
+                <p className="home-account-val">{mask(formatCurrency(summary?.accounts.variable ?? 0))}</p>
               </div>
               <div>
                 <p className="home-label" style={{ fontWeight: 700 }}>Total</p>
                 <p className="home-account-val" style={{ fontWeight: 700, color: 'var(--over)' }}>
-                  {formatCurrency((summary?.accounts.fixed ?? 0) + (summary?.accounts.variable ?? 0))}
+                  {mask(formatCurrency((summary?.accounts.fixed ?? 0) + (summary?.accounts.variable ?? 0)))}
                 </p>
               </div>
             </div>
@@ -294,7 +328,7 @@ export function HomePage() {
                       className="home-list-right"
                       style={{ color: entry.kind === 'income' ? 'var(--ok)' : 'var(--text)' }}
                     >
-                      {entry.kind === 'income' ? '+' : '−'}{formatCurrency(entry.amount)}
+                      {hideValues ? '••••' : `${entry.kind === 'income' ? '+' : '−'}${formatCurrency(entry.amount)}`}
                     </span>
                     <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{formatDayMonth(entry.date)}</span>
                   </div>
@@ -425,36 +459,49 @@ export function HomePage() {
                   {!todayClasses ? (
                     <p className="home-sub">Sem aulas hoje.</p>
                   ) : (
-                    todayClasses.map((c) => {
-                      const [startStr] = c.time.split('–');
-                      const [sh, sm] = startStr.split(':').map(Number);
-                      const [, endStr] = c.time.split('–');
-                      const [eh, em] = endStr.split(':').map(Number);
-                      const startMin = sh * 60 + sm;
-                      const endMin = eh * 60 + em;
-                      const ongoing = hhmm >= startMin && hhmm < endMin;
-                      const done = hhmm >= endMin;
-                      return (
-                        <div key={c.time} className="home-list-item" style={{ opacity: done ? 0.45 : 1 }}>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                            <span className="home-list-left" style={{ fontWeight: ongoing ? 700 : undefined }}>
-                              {c.name}
-                            </span>
-                            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{c.time}</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {todayClasses.map((c) => {
+                        const [startStr] = c.time.split('–');
+                        const [sh, sm] = startStr.split(':').map(Number);
+                        const [, endStr] = c.time.split('–');
+                        const [eh, em] = endStr.split(':').map(Number);
+                        const startMin = sh * 60 + sm;
+                        const endMin = eh * 60 + em;
+                        const ongoing = hhmm >= startMin && hhmm < endMin;
+                        const done = hhmm >= endMin;
+                        const subj = (studies?.subjects ?? []).find((s) => s.name === c.name);
+                        const borderColor = subj?.color ?? 'var(--primary)';
+                        return (
+                          <div
+                            key={c.time}
+                            style={{
+                              borderLeft: `3px solid ${borderColor}`,
+                              paddingLeft: 10,
+                              opacity: done ? 0.45 : 1,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              gap: 8,
+                            }}
+                          >
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{c.time}</span>
+                              <span style={{ fontWeight: ongoing ? 700 : 600, fontSize: '0.9rem' }}>{c.name}</span>
+                            </div>
+                            {ongoing && (
+                              <span className="home-chip" style={{ background: 'var(--ok-bg)', color: 'var(--ok)', flexShrink: 0 }}>
+                                Agora
+                              </span>
+                            )}
+                            {done && (
+                              <span className="home-chip" style={{ background: 'var(--surface-2)', color: 'var(--text-muted)', flexShrink: 0 }}>
+                                Concluída
+                              </span>
+                            )}
                           </div>
-                          {ongoing && (
-                            <span className="home-chip" style={{ background: 'var(--ok-bg)', color: 'var(--ok)', flexShrink: 0 }}>
-                              Agora
-                            </span>
-                          )}
-                          {done && (
-                            <span className="home-chip" style={{ background: 'var(--surface-2)', color: 'var(--text-muted)', flexShrink: 0 }}>
-                              Concluída
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })
+                        );
+                      })}
+                    </div>
                   )}
                 </>
               );
@@ -466,20 +513,29 @@ export function HomePage() {
             {upcomingExams.length === 0 ? (
               <p className="home-sub">Nenhuma prova agendada.</p>
             ) : (
-              upcomingExams.map((exam) => (
-                <div key={exam.id} className="home-list-item">
-                  <span className="home-list-left">{exam.title}</span>
-                  <span
-                    className="home-chip"
-                    style={{
-                      background: exam.daysLeft <= 3 ? 'var(--over-bg)' : 'var(--info-bg)',
-                      color: exam.daysLeft <= 3 ? 'var(--over)' : 'var(--primary)',
-                    }}
-                  >
-                    {exam.daysLeft === 0 ? 'Hoje' : exam.daysLeft === 1 ? 'Amanhã' : `${exam.daysLeft}d`}
-                  </span>
-                </div>
-              ))
+              upcomingExams.map((exam) => {
+                const examSubjObj = (studies?.subjects ?? []).find((s) => s.id === exam.subjectId);
+                return (
+                  <div key={exam.id} className="home-list-item">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      {examSubjObj && (
+                        <span style={{ fontSize: '0.7rem', color: examSubjObj.color, fontWeight: 600 }}>{examSubjObj.name}</span>
+                      )}
+                      <span className="home-list-left">{exam.title}</span>
+                    </div>
+                    <span
+                      className="home-chip"
+                      style={{
+                        background: exam.daysLeft <= 3 ? 'var(--over-bg)' : 'var(--info-bg)',
+                        color: exam.daysLeft <= 3 ? 'var(--over)' : 'var(--primary)',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {exam.daysLeft === 0 ? 'Hoje' : exam.daysLeft === 1 ? 'Amanhã' : `${exam.daysLeft}d`}
+                    </span>
+                  </div>
+                );
+              })
             )}
           </div>
 
@@ -497,9 +553,13 @@ export function HomePage() {
             ) : (
               pendingTasks.map((task) => {
                 const days = task.dueDate ? daysUntil(task.dueDate) : null;
+                const taskSubj = (studies?.subjects ?? []).find((s) => s.id === task.subjectId);
                 return (
                   <div key={task.id} className="home-list-item">
-                    <span className="home-list-left">{task.title}</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      {taskSubj && <span style={{ fontSize: '0.7rem', color: taskSubj.color, fontWeight: 600 }}>{taskSubj.name}</span>}
+                      <span className="home-list-left">{task.title}</span>
+                    </div>
                     {days !== null && (
                       <span
                         className="home-chip"
@@ -514,29 +574,6 @@ export function HomePage() {
                   </div>
                 );
               })
-            )}
-          </div>
-
-          <div className="card home-clickable" onClick={() => navigate('/estudos')}>
-            <div className="home-row-space" style={{ marginBottom: 10 }}>
-              <p className="home-label">Progresso geral</p>
-              <p className="home-value-inline" style={{ color: 'var(--primary)' }}>
-                {studies?.totals.overallProgress ?? 0}%
-              </p>
-            </div>
-            {topSubjects.length === 0 ? (
-              <p className="home-sub">Nenhuma matéria cadastrada.</p>
-            ) : (
-              topSubjects.map((subj) => (
-                <div key={subj.id} className="home-subj-row">
-                  <span className="home-subj-dot" style={{ background: subj.color }} />
-                  <span className="home-subj-name">{subj.name}</span>
-                  <div className="home-subj-bar">
-                    <div className="home-subj-fill" style={{ width: `${subj.progress}%`, background: subj.color }} />
-                  </div>
-                  <span className="home-subj-pct">{subj.progress}%</span>
-                </div>
-              ))
             )}
           </div>
         </motion.section>
