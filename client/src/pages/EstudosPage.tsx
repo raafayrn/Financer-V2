@@ -137,8 +137,12 @@ function AgendaCalendar({ exams, tasks, subjects, onExamEdit, onTaskEdit, onAddE
           </h2>
           <div className="agenda-cal-nav">
             <button className="agenda-nav-btn agenda-today-btn" onClick={goToday}>Hoje</button>
-            <button className="agenda-nav-btn agenda-arrow" onClick={prev}>‹</button>
-            <button className="agenda-nav-btn agenda-arrow" onClick={next}>›</button>
+            <button className="agenda-nav-btn agenda-arrow" onClick={prev}>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <button className="agenda-nav-btn agenda-arrow" onClick={next}>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
           </div>
         </div>
 

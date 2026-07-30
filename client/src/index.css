@@ -2505,7 +2505,7 @@ select option {
   display: grid;
   grid-template-columns: 1fr 260px;
   gap: 16px;
-  align-items: start;
+  align-items: stretch;
 }
 .agenda-main { display: flex; flex-direction: column; gap: 0; }
 .agenda-cal-header {
@@ -2522,25 +2522,30 @@ select option {
 }
 .agenda-cal-nav { display: flex; align-items: center; gap: 6px; }
 .agenda-nav-btn {
-  padding: 5px 12px;
+  height: 36px;
+  padding: 0 18px;
   border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   cursor: pointer;
   transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .agenda-nav-btn:hover { background: var(--surface-2); }
 .agenda-today-btn { font-weight: 500; }
-.agenda-arrow { font-size: 1.1rem; padding: 4px 10px; }
+.agenda-arrow { width: 36px; padding: 0; font-size: 1.1rem; }
 
 .agenda-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  border: 1px solid var(--border);
+  border: 1px solid rgba(255,255,255,0.1);
   border-radius: 12px;
   overflow: hidden;
+  background: #252b34;
 }
 .agenda-weekday {
   text-align: center;
@@ -2548,24 +2553,25 @@ select option {
   font-weight: 600;
   color: var(--text-muted);
   padding: 8px 4px;
-  background: var(--surface-2);
-  border-bottom: 1px solid var(--border);
+  background: #2d3440;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 .agenda-cell {
   min-height: 90px;
   padding: 6px;
-  border-right: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
+  border-right: 1px solid rgba(255,255,255,0.06);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
   cursor: pointer;
   transition: background 0.12s;
   display: flex;
   flex-direction: column;
   gap: 3px;
+  background: #252b34;
 }
-.agenda-cell:hover { background: var(--surface-2); }
-.agenda-cell-empty { background: transparent; cursor: default; }
+.agenda-cell:hover { background: #2d3440; }
+.agenda-cell-empty { background: #252b34; cursor: default; }
 .agenda-cell:nth-child(7n) { border-right: none; }
 .agenda-today { background: color-mix(in srgb, var(--primary) 8%, transparent); }
 .agenda-selected { background: color-mix(in srgb, var(--primary) 14%, transparent) !important; }
@@ -2620,6 +2626,10 @@ select option {
   gap: 16px;
   position: sticky;
   top: 16px;
+  background: #2d3440;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid rgba(255,255,255,0.1);
 }
 .agenda-sidebar-date {
   display: flex;
@@ -2653,7 +2663,7 @@ select option {
 .agenda-sidebar-event {
   padding: 8px 10px;
   border-radius: 8px;
-  background: var(--surface-2);
+  background: rgba(255,255,255,0.05);
   border-left: 3px solid var(--primary);
   display: flex;
   flex-direction: column;
