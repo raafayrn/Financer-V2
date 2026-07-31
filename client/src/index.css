@@ -1289,6 +1289,19 @@ select option {
   background: var(--ok-bg);
   color: var(--ok);
 }
+/* Despesa gerada por um template fixo, não digitada à mão. */
+.tag-auto {
+  background: var(--warning-bg);
+  color: var(--warning);
+}
+/* Parcela de uma compra parcelada ("3/6"). */
+.tag-installment {
+  background: var(--surface-2);
+  color: var(--text-muted);
+  text-transform: none;
+  font-variant-numeric: tabular-nums;
+}
+
 .exp-meta {
   font-size: 0.78rem;
   color: var(--text-muted);
@@ -1594,6 +1607,87 @@ select option {
   font-size: 0.75rem;
   font-weight: 500;
   color: var(--text-muted);
+}
+.modal-hint {
+  margin: -12px 0 16px;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* --- Despesas fixas (RecurringModal) --- */
+.recurring-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  border-radius: 14px;
+  background: var(--surface-2);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+.recurring-total strong {
+  color: var(--text);
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+.recurring-pull {
+  width: 100%;
+  margin-bottom: 14px;
+}
+.recurring-list {
+  list-style: none;
+  margin: 0 0 18px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.recurring-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.recurring-item--paused {
+  opacity: 0.5;
+}
+.recurring-item-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.recurring-item-desc {
+  font-weight: 600;
+  font-size: 0.92rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.recurring-item-meta {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+.recurring-item-amount {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+.recurring-item-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.recurring-item-actions .icon-btn-outline {
+  padding: 4px 7px;
+  font-size: 0.8rem;
+  line-height: 1;
 }
 .modal-actions {
   display: flex;

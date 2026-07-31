@@ -25,6 +25,7 @@ import { Dropdown } from '../components/Dropdown';
 import { formatCurrency, formatDayMonth, monthShort } from '../utils/format';
 import { ChevronDownIcon, EditIcon, RepeatIcon, TrashIcon } from '../components/icons';
 import { ManageModal } from '../components/ManageModal';
+import { RecurringModal } from '../components/RecurringModal';
 
 function FilterIcon() {
   return (
@@ -79,7 +80,8 @@ type ModalState =
   | { kind: 'income'; defaultAccountId?: string }
   | { kind: 'edit-income'; income: Income }
   | { kind: 'income-sources' }
-  | { kind: 'manage' };
+  | { kind: 'manage' }
+  | { kind: 'recurring' };
 
 type LedgerItem =
   | { kind: 'expense'; data: Expense }
@@ -106,7 +108,6 @@ export function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modal, setModal] = useState<ModalState>({ kind: 'closed' });
-  const [carrying, setCarrying] = useState(false);
   const [listCollapsed, setListCollapsed] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -184,64 +185,27 @@ export function DashboardPage() {
     await load();
   }
   async function handleDelete(id: string) {
+    const expense = expenses.find((e) => e.id === id);
+
+    // Numa compra parcelada, apagar só a parcela do mês deixaria as outras
+    // soltas nos meses seguintes — então pergunta o que fazer.
+    if (expense?.installmentGroupId && (expense.installmentTotal ?? 0) > 1) {
+      const apagarGrupo = confirm(
+        `"${expense.description}" faz parte de um parcelamento de ${expense.installmentTotal}x.\n\n` +
+          'OK = apaga TODAS as parcelas (inclusive as dos próximos meses).\n' +
+          'Cancelar = apaga só esta parcela.',
+      );
+      if (!apagarGrupo && !confirm('Excluir apenas esta parcela?')) return;
+      await api.deleteExpense(id, apagarGrupo);
+      await load();
+      return;
+    }
+
     if (!confirm('Excluir este lançamento?')) return;
     await api.deleteExpense(id);
     await load();
   }
 
-  /** Copia as despesas recorrentes do mês anterior para o mês em exibição (evitando duplicar descrições já lançadas). */
-  async function handleCarryRecurring() {
-    let prevYear = year;
-    let prevMonth = month - 1;
-    if (prevMonth < 1) {
-      prevMonth = 12;
-      prevYear -= 1;
-    }
-
-    setCarrying(true);
-    try {
-      const prevExpenses = await api.listExpenses(prevYear, prevMonth);
-      const recurring = prevExpenses.filter((e) => e.recurring);
-
-      const existingDescriptions = new Set(expenses.map((e) => e.description.trim().toLowerCase()));
-      const toCreate = recurring.filter((e) => !existingDescriptions.has(e.description.trim().toLowerCase()));
-
-      if (recurring.length === 0) {
-        alert('Nenhuma despesa recorrente encontrada no mês anterior.');
-        return;
-      }
-      if (toCreate.length === 0) {
-        alert('As despesas recorrentes do mês anterior já foram lançadas neste mês.');
-        return;
-      }
-      if (
-        !confirm(
-          `Trazer ${toCreate.length} despesa${toCreate.length > 1 ? 's' : ''} recorrente${toCreate.length > 1 ? 's' : ''} do mês anterior para este mês?`,
-        )
-      ) {
-        return;
-      }
-
-      const daysInMonth = new Date(year, month, 0).getDate();
-      for (const e of toCreate) {
-        const day = Math.min(Number(e.date.slice(8, 10)), daysInMonth);
-        const newDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        await api.createExpense({
-          description: e.description,
-          amount: e.amount,
-          date: newDate,
-          categoryId: e.categoryId,
-          accountId: e.accountId,
-          recurring: true,
-        });
-      }
-      await load();
-    } catch (err) {
-      alert(err instanceof ApiError ? err.message : 'Erro ao trazer despesas recorrentes.');
-    } finally {
-      setCarrying(false);
-    }
-  }
   async function handleCreateIncome(data: IncomeInput) {
     await api.createIncome(data);
     setModal({ kind: 'closed' });
@@ -540,19 +504,12 @@ export function DashboardPage() {
               <div className="section-head-actions">
                 <motion.button
                   className="icon-btn-outline"
-                  title="Trazer recorrentes do mês anterior"
-                  onClick={handleCarryRecurring}
-                  disabled={carrying}
+                  title="Despesas fixas (lançadas automaticamente todo mês)"
+                  onClick={() => setModal({ kind: 'recurring' })}
                   whileTap={{ scale: 0.9 }}
                   transition={springTap}
                 >
-                  <motion.span
-                    style={{ display: 'flex' }}
-                    animate={carrying ? { rotate: 360 } : { rotate: 0 }}
-                    transition={carrying ? { duration: 0.8, repeat: Infinity, ease: 'linear' } : springTap}
-                  >
-                    <RepeatIcon />
-                  </motion.span>
+                  <RepeatIcon />
                 </motion.button>
                 <motion.button
                   className={`icon-btn-outline ${filtersActive ? 'icon-btn-outline-active' : ''}`}
@@ -703,7 +660,20 @@ export function DashboardPage() {
                         <div className="exp-main">
                           <span className="exp-desc">
                             {e.description}
-                            {e.recurring && <span className="tag">recorrente</span>}
+                            {e.recurringExpenseId ? (
+                              <span className="tag tag-auto" title="Lançada automaticamente pela despesa fixa">
+                                fixa
+                              </span>
+                            ) : e.installmentGroupId ? (
+                              <span
+                                className="tag tag-installment"
+                                title={`Parcela ${e.installmentNo} de ${e.installmentTotal}`}
+                              >
+                                {e.installmentNo}/{e.installmentTotal}
+                              </span>
+                            ) : (
+                              e.recurring && <span className="tag">recorrente</span>
+                            )}
                           </span>
                           <span className="exp-meta">
                             {formatDayMonth(e.date)} · {cat?.name ?? 'Sem categoria'}
@@ -891,6 +861,16 @@ export function DashboardPage() {
           month={month}
           onCancel={() => setModal({ kind: 'closed' })}
           onCategoriesChanged={() => void load()}
+        />
+      )}
+      {modal.kind === 'recurring' && (
+        <RecurringModal
+          year={year}
+          month={month}
+          categories={categories}
+          accounts={accounts}
+          onCancel={() => setModal({ kind: 'closed' })}
+          onChanged={() => void load()}
         />
       )}
     </div>

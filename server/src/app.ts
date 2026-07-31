@@ -19,13 +19,17 @@ import { telegramRouter } from './routes/telegram';
 import { workoutsRouter } from './routes/workouts';
 import { waterRouter } from './routes/water';
 import { studiesRouter } from './routes/studies';
+import { recurringRouter } from './routes/recurring';
 
 export function createApp() {
   const app = express();
 
   app.use(cors({ origin: env.corsOrigin === '*' ? true : env.corsOrigin.split(',') }));
-  // Limite elevado para acomodar fotos de comprovantes em base64 no chat.
-  app.use(express.json({ limit: '12mb' }));
+  // O limite elevado (fotos de comprovante/faturas em base64) vale SÓ para o
+  // chat. As demais rotas recebem JSON pequeno; aceitar 12mb nelas seria só
+  // superfície de DoS de graça.
+  app.use('/api/chat', express.json({ limit: '12mb' }));
+  app.use(express.json({ limit: '200kb' }));
 
   app.get('/api/health', (_req, res) => {
     res.json({ status: 'ok', chatEnabled: env.chatEnabled });
@@ -38,6 +42,7 @@ export function createApp() {
   app.use('/api/voucher', voucherRouter);
   app.use('/api/wallet-base', walletBaseRouter);
   app.use('/api/expenses', expensesRouter);
+  app.use('/api/recurring', recurringRouter);
   app.use('/api/income', incomeRouter);
   app.use('/api/accounts', accountsRouter);
   app.use('/api/summary', summaryRouter);

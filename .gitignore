@@ -4,6 +4,8 @@ node_modules/
 # Build output
 dist/
 build/
+# Service Worker gerado pelo vite-plugin-pwa em desenvolvimento
+client/dev-dist/
 
 # Environment
 .env

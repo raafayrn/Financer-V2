@@ -2,9 +2,11 @@ import { prisma } from './prisma';
 import { env } from './env';
 import { reaisToCents } from './lib/money';
 import { currentYearMonth } from './lib/month';
+import { todayIso } from './lib/dates';
 import { buildFinancialContext } from './lib/financialContext';
 import { classifyAndParseMessage, answerFinancialQuestion } from './services/claude';
 import { consumePairingCode, createPending, takePending } from './lib/telegramPairing';
+import { sendDigestNow } from './telegramNotifier';
 import {
   getUpdates,
   sendMessage,
@@ -63,12 +65,23 @@ async function handleMessage(chatId: number, text: string) {
     return;
   }
 
+  // /resumo funciona mesmo sem chave de IA: é tudo dado do próprio banco.
+  if (/^\/(resumo|hoje)\b/i.test(text)) {
+    try {
+      await sendDigestNow(user.id, user.name, String(chatId));
+    } catch (err) {
+      console.error('Telegram: falha ao montar o resumo:', err);
+      await sendMessage(chatId, 'Não consegui montar o resumo agora. Tente de novo em instantes.');
+    }
+    return;
+  }
+
   if (!env.chatEnabled) {
     await sendMessage(chatId, 'Lançamento por mensagem está indisponível no momento (chave de IA não configurada no servidor).');
     return;
   }
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayIso();
   const categories = await prisma.category.findMany({
     where: { userId: user.id },
     select: { id: true, name: true },

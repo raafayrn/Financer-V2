@@ -59,6 +59,28 @@ model User {
   topics           Topic[]
   exams            Exam[]
   studyTasks       StudyTask[]
+
+  recurringExpenses RecurringExpense[]
+  notifications     NotificationLog[]
+}
+
+// Registro de qual aviso proativo já foi enviado em qual dia. A unicidade
+// (userId, jobKey, sentDate) é o que garante UMA mensagem por dia mesmo se o
+// servidor reiniciar bem na hora do disparo — o agendador tenta criar a linha
+// antes de enviar e desiste se ela já existir.
+model NotificationLog {
+  id        String   @id @default(cuid())
+  userId    String
+  // "daily-digest", "water-reminder", "month-close"
+  jobKey    String
+  // Data no fuso do app (AAAA-MM-DD), não UTC.
+  sentDate  String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, jobKey, sentDate])
+  @@index([userId])
 }
 
 model Category {
@@ -70,6 +92,7 @@ model Category {
 
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   expenses Expense[]
+  recurringExpenses RecurringExpense[]
 
   @@unique([userId, name])
   @@index([userId])
@@ -165,6 +188,7 @@ model Account {
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   expenses Expense[]
   incomes  Income[]
+  recurringExpenses RecurringExpense[]
 
   @@unique([userId, kind])
   @@index([userId])
@@ -183,12 +207,60 @@ model Expense {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  account  Account?  @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  // Quando preenchido, esta despesa foi gerada automaticamente a partir de um
+  // template recorrente (ver RecurringExpense) — não foi digitada à mão.
+  recurringExpenseId String?
+
+  // Parcelamento: uma compra em 6x vira 6 Expense, uma por mês, todas com o
+  // mesmo installmentGroupId. Guardar as parcelas futuras como linhas reais
+  // (em vez de calcular na hora) faz o comprometimento dos próximos meses
+  // aparecer sozinho no dashboard e nos relatórios.
+  installmentGroupId String?
+  installmentNo      Int?
+  installmentTotal   Int?
+
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category         Category?         @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  account          Account?          @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  recurringExpense RecurringExpense? @relation(fields: [recurringExpenseId], references: [id], onDelete: SetNull)
 
   @@index([userId, date])
   @@index([categoryId])
+  @@index([recurringExpenseId])
+  @@index([userId, installmentGroupId])
+}
+
+// Template de despesa fixa (aluguel, Netflix, academia). O app materializa
+// uma Expense por mês a partir daqui, então você cadastra uma vez e não
+// redigita todo mês. `recurring` na Expense continua sendo só a marcação
+// visual de "isso é um gasto fixo"; o vínculo real é recurringExpenseId.
+model RecurringExpense {
+  id          String   @id @default(cuid())
+  userId      String
+  description String
+  // Valor em centavos.
+  amount      Int
+  // Dia do vencimento (1-31). Meses mais curtos usam o último dia disponível.
+  dayOfMonth  Int
+  categoryId  String?
+  accountId   String?
+  // Primeiro mês em que o template vale (não gera nada antes disso).
+  startYear   Int
+  startMonth  Int
+  // Último mês (opcional) — para assinaturas com fim previsto.
+  endYear     Int?
+  endMonth    Int?
+  // Pausar sem apagar o histórico já gerado.
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  account  Account?  @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  expenses Expense[]
+
+  @@index([userId])
 }
 
 // Lançamentos de renda avulsos (ex.: vale-alimentação convertido em Pix).

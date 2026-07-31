@@ -5,6 +5,7 @@ import { asyncHandler, HttpError, parseBody } from '../lib/http';
 import { budgetUpsertSchema } from '../validation/schemas';
 import { isValidYearMonth } from '../lib/month';
 import { centsToReais, reaisToCents } from '../lib/money';
+import { effectiveFixedIncome } from '../lib/fixedIncome';
 
 export const salaryRouter = Router();
 
@@ -19,18 +20,19 @@ function parseParams(year: string, month: string): { year: number; month: number
   return { year: y, month: m };
 }
 
-// Salário fixo de um mês específico. Retorna amount 0 quando não definido.
+// Salário fixo de um mês. Quando o mês não tem valor próprio, herda o do
+// último mês definido — salário é o mesmo até você tomar um aumento.
 salaryRouter.get(
   '/:year/:month',
   asyncHandler(async (req, res) => {
     const { year, month } = parseParams(req.params.year, req.params.month);
-    const salary = await prisma.monthlySalary.findUnique({
-      where: { userId_year_month: { userId: req.userId!, year, month } },
-    });
+    const salary = await effectiveFixedIncome(prisma, req.userId!, 'salary', year, month);
     res.json({
       year,
       month,
-      amount: salary ? centsToReais(salary.amount) : 0,
+      amount: centsToReais(salary.amount),
+      inherited: salary.inherited,
+      inheritedFrom: salary.inheritedFrom,
     });
   }),
 );

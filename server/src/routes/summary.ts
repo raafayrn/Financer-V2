@@ -13,6 +13,8 @@ import {
 } from '../lib/budget';
 import { centsToReais } from '../lib/money';
 import { ensureAccountsForUser } from '../lib/accounts';
+import { ensureRecurringForMonth } from './expenses';
+import { effectiveIncomeForMonth } from '../lib/fixedIncome';
 
 export const summaryRouter = Router();
 
@@ -28,18 +30,17 @@ summaryRouter.get(
     const userId = req.userId!;
 
     await ensureAccountsForUser(prisma, userId);
+    // Despesas fixas do mês entram no cálculo mesmo que ninguém tenha aberto
+    // a aba de lançamentos ainda.
+    await ensureRecurringForMonth(userId, year, month);
 
-    const [budget, salary, voucher, walletBase, expenses, incomes, categories, accounts] =
+    const [budget, fixedIncome, walletBase, expenses, incomes, categories, accounts] =
       await Promise.all([
         prisma.monthlyBudget.findUnique({
           where: { userId_year_month: { userId, year, month } },
         }),
-        prisma.monthlySalary.findUnique({
-          where: { userId_year_month: { userId, year, month } },
-        }),
-        prisma.monthlyVoucher.findUnique({
-          where: { userId_year_month: { userId, year, month } },
-        }),
+        // Salário e VR se repetem sozinhos a partir do último mês definido.
+        effectiveIncomeForMonth(prisma, userId, year, month),
         prisma.monthlyWalletBase.findUnique({
           where: { userId_year_month: { userId, year, month } },
         }),
@@ -70,7 +71,11 @@ summaryRouter.get(
       const kind = i.accountId ? accountKindById.get(i.accountId) : undefined;
       return kind !== 'WALLET';
     });
-    const income = computeIncomeSummary(salary?.amount ?? 0, voucher?.amount ?? 0, nonWalletIncomes);
+    const income = computeIncomeSummary(
+      fixedIncome.salary.amount,
+      fixedIncome.voucher.amount,
+      nonWalletIncomes,
+    );
 
     // Saldo da carteira (Pix) do MÊS: base editável pelo usuário + receitas
     // de Pix lançadas no mês − gastos de Pix no mês. Não acumula sozinho de
@@ -114,6 +119,9 @@ summaryRouter.get(
         voucher: centsToReais(income.voucher),
         extra: centsToReais(income.extra),
         total: centsToReais(income.total),
+        // true = valor veio do último mês definido, não foi digitado neste mês.
+        salaryInherited: fixedIncome.salary.inherited,
+        voucherInherited: fixedIncome.voucher.inherited,
       },
       // Gasto por conta de origem.
       accounts: {

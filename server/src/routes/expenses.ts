@@ -1,11 +1,14 @@
 import { Router } from 'express';
+import { randomUUID } from 'node:crypto';
 import { prisma } from '../prisma';
 import { requireAuth } from '../auth/middleware';
 import { asyncHandler, HttpError, parseBody } from '../lib/http';
 import { serializeExpense } from '../lib/serialize';
 import { reaisToCents } from '../lib/money';
-import { monthRange } from '../lib/month';
+import { currentYearMonth, monthRange } from '../lib/month';
 import { readYearMonth } from '../lib/query';
+import { materializeRecurringExpenses, monthIndex } from '../lib/recurring';
+import { buildInstallmentPlan } from '../lib/installments';
 import { expenseCreateSchema, expenseUpdateSchema } from '../validation/schemas';
 
 export const expensesRouter = Router();
@@ -39,11 +42,27 @@ function parseExpenseDate(dateStr: string): Date {
   return new Date(`${dateStr}T12:00:00.000Z`);
 }
 
+/**
+ * Gera as despesas fixas do mês pedido antes de responder, para que o mês
+ * apareça completo já na primeira abertura. É idempotente e não faz nada para
+ * meses futuros — o gasto fixo só entra no mês quando o mês chega.
+ */
+export async function ensureRecurringForMonth(
+  userId: string,
+  year: number,
+  month: number,
+): Promise<void> {
+  const now = currentYearMonth();
+  if (monthIndex(year, month) > monthIndex(now.year, now.month)) return;
+  await materializeRecurringExpenses(prisma, userId, year, month);
+}
+
 // Lista as despesas de um mês (year/month na query; padrão = mês atual).
 expensesRouter.get(
   '/',
   asyncHandler(async (req, res) => {
     const { year, month } = readYearMonth(req);
+    await ensureRecurringForMonth(req.userId!, year, month);
     const { start, end } = monthRange(year, month);
     const expenses = await prisma.expense.findMany({
       where: { userId: req.userId!, date: { gte: start, lt: end } },
@@ -57,14 +76,52 @@ expensesRouter.post(
   '/',
   asyncHandler(async (req, res) => {
     const data = parseBody(expenseCreateSchema, req.body);
-    await assertOwnedCategory(req.userId!, data.categoryId ?? null);
-    await assertOwnedAccount(req.userId!, data.accountId ?? null);
+    const userId = req.userId!;
+    await assertOwnedCategory(userId, data.categoryId ?? null);
+    await assertOwnedAccount(userId, data.accountId ?? null);
 
+    const totalCents = reaisToCents(data.amount);
+    const count = data.installments ?? 1;
+
+    // --- Compra parcelada: uma despesa por mês, do mês da compra em diante ---
+    if (count > 1) {
+      const groupId = randomUUID();
+      const plan = buildInstallmentPlan(data.description, totalCents, data.date, count);
+
+      await prisma.expense.createMany({
+        data: plan.map((p) => ({
+          userId,
+          description: p.description,
+          amount: p.amount,
+          date: parseExpenseDate(p.date),
+          categoryId: data.categoryId ?? null,
+          accountId: data.accountId ?? null,
+          recurring: false,
+          installmentGroupId: groupId,
+          installmentNo: p.installmentNo,
+          installmentTotal: p.installmentTotal,
+        })),
+      });
+
+      const created = await prisma.expense.findMany({
+        where: { userId, installmentGroupId: groupId },
+        orderBy: { installmentNo: 'asc' },
+      });
+      // Devolve a primeira parcela (a que cai no mês em exibição) mais o plano,
+      // para o frontend poder avisar "3 parcelas de R$ 200 até setembro".
+      res.status(201).json({
+        ...serializeExpense(created[0]),
+        installmentPlan: created.map(serializeExpense),
+      });
+      return;
+    }
+
+    // --- Compra à vista ---
     const expense = await prisma.expense.create({
       data: {
-        userId: req.userId!,
+        userId,
         description: data.description,
-        amount: reaisToCents(data.amount),
+        amount: totalCents,
         date: parseExpenseDate(data.date),
         categoryId: data.categoryId ?? null,
         accountId: data.accountId ?? null,
@@ -106,13 +163,26 @@ expensesRouter.put(
   }),
 );
 
+/**
+ * Exclui um lançamento. Numa compra parcelada, `?group=1` apaga o parcelamento
+ * inteiro (todas as parcelas, inclusive as dos meses seguintes) — sem isso,
+ * apagar só a parcela do mês deixaria as outras órfãs no futuro.
+ */
 expensesRouter.delete(
   '/:id',
   asyncHandler(async (req, res) => {
-    const expense = await prisma.expense.findFirst({
-      where: { id: req.params.id, userId: req.userId! },
-    });
+    const userId = req.userId!;
+    const expense = await prisma.expense.findFirst({ where: { id: req.params.id, userId } });
     if (!expense) throw new HttpError(404, 'Lançamento não encontrado.');
+
+    if (req.query.group === '1' && expense.installmentGroupId) {
+      const { count } = await prisma.expense.deleteMany({
+        where: { userId, installmentGroupId: expense.installmentGroupId },
+      });
+      res.json({ deletedCount: count });
+      return;
+    }
+
     await prisma.expense.delete({ where: { id: expense.id } });
     res.status(204).end();
   }),

@@ -10,6 +10,10 @@ interface ExpenseRow {
   categoryId: string | null;
   accountId: string | null;
   recurring: boolean;
+  recurringExpenseId?: string | null;
+  installmentGroupId?: string | null;
+  installmentNo?: number | null;
+  installmentTotal?: number | null;
   createdAt: Date;
 }
 
@@ -29,7 +33,44 @@ export function serializeExpense(e: ExpenseRow) {
     categoryId: e.categoryId,
     accountId: e.accountId,
     recurring: e.recurring,
+    // Presente = despesa gerada por um template fixo, não digitada à mão.
+    recurringExpenseId: e.recurringExpenseId ?? null,
+    // Presente = parcela de uma compra parcelada ("3/6").
+    installmentGroupId: e.installmentGroupId ?? null,
+    installmentNo: e.installmentNo ?? null,
+    installmentTotal: e.installmentTotal ?? null,
     createdAt: e.createdAt.toISOString(),
+  };
+}
+
+interface RecurringExpenseRow {
+  id: string;
+  description: string;
+  amount: number;
+  dayOfMonth: number;
+  categoryId: string | null;
+  accountId: string | null;
+  startYear: number;
+  startMonth: number;
+  endYear: number | null;
+  endMonth: number | null;
+  active: boolean;
+}
+
+/** Converte um template de despesa fixa para o formato da API (reais). */
+export function serializeRecurringExpense(r: RecurringExpenseRow) {
+  return {
+    id: r.id,
+    description: r.description,
+    amount: centsToReais(r.amount),
+    dayOfMonth: r.dayOfMonth,
+    categoryId: r.categoryId,
+    accountId: r.accountId,
+    startYear: r.startYear,
+    startMonth: r.startMonth,
+    endYear: r.endYear,
+    endMonth: r.endMonth,
+    active: r.active,
   };
 }
 

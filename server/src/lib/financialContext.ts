@@ -2,6 +2,7 @@ import { prisma } from '../prisma';
 import { monthRange } from './month';
 import { centsToReais } from './money';
 import { computeSummary, computeAccountBreakdown, computeIncomeSummary, type AccountKind } from './budget';
+import { effectiveIncomeForMonth } from './fixedIncome';
 
 const MONTH_NAMES_PT = [
   'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
@@ -48,10 +49,10 @@ export async function buildFinancialContext(
 async function monthSnapshot(userId: string, year: number, month: number): Promise<string> {
   const { start, end } = monthRange(year, month);
 
-  const [budget, salary, voucher, expenses, incomes, categories, accounts] = await Promise.all([
+  const [budget, fixedIncome, expenses, incomes, categories, accounts] = await Promise.all([
     prisma.monthlyBudget.findUnique({ where: { userId_year_month: { userId, year, month } } }),
-    prisma.monthlySalary.findUnique({ where: { userId_year_month: { userId, year, month } } }),
-    prisma.monthlyVoucher.findUnique({ where: { userId_year_month: { userId, year, month } } }),
+    // Salário e VR herdam do último mês definido (ver lib/fixedIncome.ts).
+    effectiveIncomeForMonth(prisma, userId, year, month),
     prisma.expense.findMany({
       where: { userId, date: { gte: start, lt: end } },
       select: {
@@ -68,7 +69,7 @@ async function monthSnapshot(userId: string, year: number, month: number): Promi
   ]);
 
   const summary = computeSummary(budget?.amount ?? 0, expenses, categories);
-  const income = computeIncomeSummary(salary?.amount ?? 0, voucher?.amount ?? 0, incomes);
+  const income = computeIncomeSummary(fixedIncome.salary.amount, fixedIncome.voucher.amount, incomes);
   const accountKindById = new Map<string, AccountKind>(accounts.map((a) => [a.id, a.kind]));
   const accountBreakdown = computeAccountBreakdown(expenses, accountKindById);
 

@@ -12,12 +12,16 @@ import type {
   ExerciseHistory,
   Expense,
   ExpenseInput,
+  ExpenseWithPlan,
   Income,
   IncomeInput,
   Investment,
   InvestmentInput,
   InvestmentSummary,
   MonthlyReport,
+  RecurringExpense,
+  RecurringExpenseInput,
+  RecurringImportResult,
   ReportsOverview,
   StudiesOverview,
   StudyTask,
@@ -164,10 +168,34 @@ export const api = {
   listExpenses: (year: number, month: number) =>
     request<Expense[]>(`/expenses?year=${year}&month=${month}`),
   createExpense: (data: ExpenseInput) =>
-    request<Expense>('/expenses', { method: 'POST', body: JSON.stringify(data) }),
+    request<ExpenseWithPlan>('/expenses', { method: 'POST', body: JSON.stringify(data) }),
   updateExpense: (id: string, data: Partial<ExpenseInput>) =>
     request<Expense>(`/expenses/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  deleteExpense: (id: string) => request<void>(`/expenses/${id}`, { method: 'DELETE' }),
+  /** `group` apaga o parcelamento inteiro, não só a parcela do mês. */
+  deleteExpense: (id: string, group = false) =>
+    request<void>(`/expenses/${id}${group ? '?group=1' : ''}`, { method: 'DELETE' }),
+
+  // Despesas fixas (templates que geram uma despesa por mês sozinhos)
+  listRecurring: () => request<RecurringExpense[]>('/recurring'),
+  createRecurring: (data: RecurringExpenseInput) =>
+    request<RecurringExpense>('/recurring', { method: 'POST', body: JSON.stringify(data) }),
+  updateRecurring: (id: string, data: Partial<RecurringExpenseInput>) =>
+    request<RecurringExpense>(`/recurring/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  /** `deleteGenerated` também apaga as despesas já lançadas por este template. */
+  deleteRecurring: (id: string, deleteGenerated = false) =>
+    request<void>(`/recurring/${id}${deleteGenerated ? '?deleteGenerated=1' : ''}`, {
+      method: 'DELETE',
+    }),
+  /** Lança agora as fixas de um mês (mesmo futuro). Idempotente. */
+  materializeRecurring: (year: number, month: number) =>
+    request<{ year: number; month: number; createdCount: number; recurringTotal: number }>(
+      `/recurring/materialize?year=${year}&month=${month}`,
+      { method: 'POST' },
+    ),
+  importRecurring: (year: number, month: number) =>
+    request<RecurringImportResult>(`/recurring/import?year=${year}&month=${month}`, {
+      method: 'POST',
+    }),
 
   // Investimentos
   listInvestments: () => request<Investment[]>('/investments'),

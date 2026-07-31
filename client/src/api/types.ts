@@ -42,7 +42,51 @@ export interface Expense {
   categoryId: string | null;
   accountId: string | null;
   recurring: boolean;
+  /** Preenchido quando a despesa foi gerada por um template fixo. */
+  recurringExpenseId: string | null;
+  /** Preenchido quando é parcela de uma compra parcelada. */
+  installmentGroupId: string | null;
+  installmentNo: number | null;
+  installmentTotal: number | null;
   createdAt: string;
+}
+
+/** Resposta de POST /expenses quando a compra foi parcelada. */
+export interface ExpenseWithPlan extends Expense {
+  installmentPlan?: Expense[];
+}
+
+/** Template de despesa fixa — gera uma Expense por mês automaticamente. */
+export interface RecurringExpense {
+  id: string;
+  description: string;
+  amount: number; // reais
+  /** Dia do vencimento (1-31). O lançamento sempre entra no dia 1. */
+  dayOfMonth: number;
+  categoryId: string | null;
+  accountId: string | null;
+  startYear: number;
+  startMonth: number;
+  endYear: number | null;
+  endMonth: number | null;
+  active: boolean;
+  /** Quantas despesas este template já gerou (só vem na listagem). */
+  generatedCount?: number;
+}
+
+export interface RecurringExpenseInput {
+  description: string;
+  amount: number;
+  dayOfMonth: number;
+  categoryId?: string | null;
+  accountId?: string | null;
+  active?: boolean;
+}
+
+export interface RecurringImportResult {
+  importedCount: number;
+  imported: string[];
+  generatedCount: number;
 }
 
 export interface Income {
@@ -218,11 +262,14 @@ export interface InvestmentSummary {
 
 export interface ExpenseInput {
   description: string;
+  /** Numa compra parcelada, o valor CHEIO da compra — o backend divide. */
   amount: number;
   date: string;
   categoryId: string | null;
   accountId?: string | null;
   recurring: boolean;
+  /** Ausente ou 1 = à vista. Acima disso, gera uma despesa por mês. */
+  installments?: number;
 }
 
 // ============================================================

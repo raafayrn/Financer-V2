@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import type { Account, Category, Expense, ExpenseInput } from '../api/types';
 import { ApiError } from '../api/client';
-import { todayIso } from '../utils/format';
+import { formatCurrency, todayIso } from '../utils/format';
 import { Modal } from './Modal';
 import { Dropdown } from './Dropdown';
 
@@ -50,6 +50,9 @@ export function ExpenseFormModal({
     initial?.accountId ?? defaultAccountId(accounts),
   );
   const [recurring, setRecurring] = useState(initial?.recurring ?? false);
+  // Parcelamento só faz sentido ao criar; editar uma parcela existente mexe
+  // só naquela parcela.
+  const [installments, setInstallments] = useState('1');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [acceptingAll, setAcceptingAll] = useState(false);
@@ -62,6 +65,12 @@ export function ExpenseFormModal({
       setError('Informe um valor maior que zero.');
       return;
     }
+    const parcelas = Number(installments);
+    if (!Number.isInteger(parcelas) || parcelas < 1 || parcelas > 60) {
+      setError('Parcelas deve ser um número inteiro entre 1 e 60.');
+      return;
+    }
+
     setSubmitting(true);
     try {
       await onSubmit({
@@ -71,12 +80,44 @@ export function ExpenseFormModal({
         categoryId: categoryId || null,
         accountId: accountId || null,
         recurring,
+        ...(parcelas > 1 ? { installments: parcelas } : {}),
       });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Erro ao salvar.');
       setSubmitting(false);
     }
   }
+
+  /**
+   * Prévia do parcelamento: mostra o valor da parcela e até quando vai, para
+   * não haver dúvida se o valor digitado é o total ou o da parcela.
+   */
+  const parcelaPreview = (() => {
+    const n = Number(installments);
+    const total = Number(amount.replace(',', '.'));
+    if (!Number.isInteger(n) || n <= 1 || !Number.isFinite(total) || total <= 0) return null;
+
+    const centavos = Math.round(total * 100);
+    const base = Math.floor(centavos / n);
+    const resto = centavos - base * n;
+    const primeira = (base + (resto > 0 ? 1 : 0)) / 100;
+    const demais = base / 100;
+
+    const [ano, mes, dia] = date.split('-').map(Number);
+    const ultima = new Date(Date.UTC(ano, mes - 1 + (n - 1), 1));
+    const mesFinal = ultima.toLocaleDateString('pt-BR', {
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'UTC',
+    });
+
+    const valores =
+      resto > 0
+        ? `1ª de ${formatCurrency(primeira)} e ${n - 1} de ${formatCurrency(demais)}`
+        : `${n}× de ${formatCurrency(demais)}`;
+
+    return `${valores}, começando em ${String(dia).padStart(2, '0')}/${String(mes).padStart(2, '0')} e terminando em ${mesFinal}. Total ${formatCurrency(total)}.`;
+  })();
 
   async function handleAcceptAll() {
     if (!onAcceptAll) return;
@@ -160,6 +201,26 @@ export function ExpenseFormModal({
               />
             </div>
           </div>
+
+          {/* Parcelamento só na criação — editar uma parcela mexe só nela. */}
+          {!initial?.id && (
+            <label className="field">
+              <span>Parcelas</span>
+              <input
+                type="number"
+                min={1}
+                max={60}
+                value={installments}
+                onChange={(e) => setInstallments(e.target.value)}
+              />
+            </label>
+          )}
+
+          {parcelaPreview && (
+            <div className="alert alert-info">
+              {parcelaPreview}
+            </div>
+          )}
 
           <label className="checkbox">
             <input

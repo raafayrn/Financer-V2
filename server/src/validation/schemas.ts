@@ -50,11 +50,19 @@ export const walletBaseUpsertSchema = z.object({
 
 export const expenseCreateSchema = z.object({
   description: z.string().trim().min(1, 'Informe uma descrição.').max(200),
+  // Numa compra parcelada, este é o valor CHEIO da compra — o backend divide.
   amount: reais,
   date: isoDate,
   categoryId: z.string().trim().min(1).nullable().optional(),
   accountId: z.string().trim().min(1).nullable().optional(),
   recurring: z.boolean().optional(),
+  // Ausente ou 1 = compra à vista.
+  installments: z
+    .number({ invalid_type_error: 'Parcelas deve ser um número.' })
+    .int('Parcelas deve ser um número inteiro.')
+    .min(1, 'Mínimo de 1 parcela.')
+    .max(60, 'Máximo de 60 parcelas.')
+    .optional(),
 });
 
 export const expenseUpdateSchema = z
@@ -339,6 +347,44 @@ export const studyTaskUpdateSchema = z
     dueDate: isoDate.nullable(),
     subjectId: z.string().trim().min(1).nullable(),
     done: z.boolean(),
+  })
+  .partial()
+  .refine((d) => Object.keys(d).length > 0, { message: 'Envie ao menos um campo.' });
+
+// ============================================================
+// Despesas fixas (templates recorrentes)
+// ============================================================
+
+export const recurringExpenseCreateSchema = z.object({
+  description: z.string().trim().min(1, 'Informe uma descrição.').max(200),
+  amount: reais,
+  dayOfMonth: z
+    .number({ invalid_type_error: 'Dia deve ser um número.' })
+    .int('Dia deve ser inteiro.')
+    .min(1, 'Dia deve ser entre 1 e 31.')
+    .max(31, 'Dia deve ser entre 1 e 31.'),
+  categoryId: z.string().trim().min(1).nullable().optional(),
+  accountId: z.string().trim().min(1).nullable().optional(),
+  // Mês em que o template começa a valer. Ausente = mês corrente.
+  startYear: z.number().int().min(1970).max(9999).optional(),
+  startMonth: z.number().int().min(1).max(12).optional(),
+  endYear: z.number().int().min(1970).max(9999).nullable().optional(),
+  endMonth: z.number().int().min(1).max(12).nullable().optional(),
+  active: z.boolean().optional(),
+});
+
+export const recurringExpenseUpdateSchema = z
+  .object({
+    description: z.string().trim().min(1).max(200),
+    amount: reais,
+    dayOfMonth: z.number().int().min(1).max(31),
+    categoryId: z.string().trim().min(1).nullable(),
+    accountId: z.string().trim().min(1).nullable(),
+    startYear: z.number().int().min(1970).max(9999),
+    startMonth: z.number().int().min(1).max(12),
+    endYear: z.number().int().min(1970).max(9999).nullable(),
+    endMonth: z.number().int().min(1).max(12).nullable(),
+    active: z.boolean(),
   })
   .partial()
   .refine((d) => Object.keys(d).length > 0, { message: 'Envie ao menos um campo.' });

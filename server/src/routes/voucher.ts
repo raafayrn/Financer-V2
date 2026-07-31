@@ -5,6 +5,7 @@ import { asyncHandler, HttpError, parseBody } from '../lib/http';
 import { budgetUpsertSchema } from '../validation/schemas';
 import { isValidYearMonth } from '../lib/month';
 import { centsToReais, reaisToCents } from '../lib/money';
+import { effectiveFixedIncome } from '../lib/fixedIncome';
 
 export const voucherRouter = Router();
 
@@ -19,18 +20,19 @@ function parseParams(year: string, month: string): { year: number; month: number
   return { year: y, month: m };
 }
 
-// Vale-alimentação (VR) fixo de um mês específico. Retorna amount 0 quando não definido.
+// Vale-alimentação (VR) fixo de um mês. Igual ao salário, herda o valor do
+// último mês definido quando este mês ainda não tem um próprio.
 voucherRouter.get(
   '/:year/:month',
   asyncHandler(async (req, res) => {
     const { year, month } = parseParams(req.params.year, req.params.month);
-    const voucher = await prisma.monthlyVoucher.findUnique({
-      where: { userId_year_month: { userId: req.userId!, year, month } },
-    });
+    const voucher = await effectiveFixedIncome(prisma, req.userId!, 'voucher', year, month);
     res.json({
       year,
       month,
-      amount: voucher ? centsToReais(voucher.amount) : 0,
+      amount: centsToReais(voucher.amount),
+      inherited: voucher.inherited,
+      inheritedFrom: voucher.inheritedFrom,
     });
   }),
 );
