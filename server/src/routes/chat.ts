@@ -24,6 +24,7 @@ import { PDFParse } from 'pdf-parse';
 import { decodeText, parseOfxExpenses } from '../lib/statementParsers';
 import { buildFinancialContext } from '../lib/financialContext';
 import { currentYearMonth } from '../lib/month';
+import { todayIso } from '../lib/dates';
 import type { ParsedExpense } from '../services/claude';
 
 export const chatRouter = Router();
@@ -129,7 +130,7 @@ chatRouter.post(
 
     const categories = await fetchCategories(userId);
 
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayIso();
 
     let parsed;
     try {
@@ -177,7 +178,7 @@ chatRouter.post(
     const userId = req.userId!;
 
     const categories = await fetchCategories(userId);
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayIso();
 
     let result;
     try {
@@ -219,7 +220,7 @@ chatRouter.post(
     }
 
     const categories = await fetchCategories(userId);
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayIso();
 
     let result;
     try {
@@ -250,7 +251,7 @@ chatRouter.post(
 
     const { fileBase64, mimeType, fileName } = parseBody(chatFileSchema, req.body);
     const userId = req.userId!;
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayIso();
 
     const categories = await fetchCategories(userId);
 
@@ -355,7 +356,7 @@ chatRouter.post(
     const { question } = parseBody(chatAskSchema, req.body);
     const userId = req.userId!;
     const { year, month } = currentYearMonth();
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayIso();
 
     const context = await buildFinancialContext(userId, year, month);
 
@@ -385,7 +386,7 @@ chatRouter.post(
 
     const { text } = parseBody(chatMessageSchema, req.body);
     const userId = req.userId!;
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayIso();
 
     const categories = await fetchCategories(userId);
 

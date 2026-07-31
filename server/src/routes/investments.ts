@@ -5,6 +5,7 @@ import { asyncHandler, HttpError, parseBody } from '../lib/http';
 import { serializeInvestment } from '../lib/serialize';
 import { reaisToCents, centsToReais } from '../lib/money';
 import { investmentCreateSchema, investmentUpdateSchema } from '../validation/schemas';
+import { currentYearMonth } from '../lib/month';
 
 export const investmentsRouter = Router();
 
@@ -36,7 +37,7 @@ investmentsRouter.get(
   '/summary',
   asyncHandler(async (req, res) => {
     const userId = req.userId!;
-    const year = req.query.year !== undefined ? Number(req.query.year) : new Date().getFullYear();
+    const year = req.query.year !== undefined ? Number(req.query.year) : currentYearMonth().year;
     if (!Number.isInteger(year) || year < 1970 || year > 9999) {
       res.status(400).json({ error: 'Parâmetro year inválido.' });
       return;

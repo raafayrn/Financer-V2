@@ -10,7 +10,7 @@ import type {
   WorkoutSummary,
   WorkoutToday,
 } from '../api/types';
-import { formatDayMonth } from '../utils/format';
+import { formatDayMonth, todayIso } from '../utils/format';
 import { CheckIcon, EditIcon, PlayCircleIcon, PlusIcon } from '../components/icons';
 import { exerciseVideoSearchUrl } from '../utils/exerciseLibrary';
 import { WorkoutSessionModal } from '../components/WorkoutSessionModal';
@@ -138,7 +138,9 @@ export function SaudePage() {
     const id = ++waterLoadRef.current;
     setWaterError(null);
     try {
-      const d = await api.getWaterDay();
+      // Sempre manda a data local explicitamente: o dia do usuário é o do
+      // aparelho dele, nunca o do relógio do servidor.
+      const d = await api.getWaterDay(todayIso());
       if (id !== waterLoadRef.current) return;
       setWaterDay(d);
     } catch (err) {
@@ -167,7 +169,7 @@ export function SaudePage() {
 
   async function resetWaterDay() {
     if (!confirm('Resetar contagem de água de hoje?')) return;
-    await api.resetWaterDay();
+    await api.resetWaterDay(todayIso());
     await loadWater();
   }
 
@@ -180,7 +182,7 @@ export function SaudePage() {
       percent: Math.min(100, Math.round(((waterDay.consumedMl + ml) / waterDay.goalMl) * 100)),
     });
     try {
-      await api.addWaterEntry(ml);
+      await api.addWaterEntry(ml, todayIso());
       await loadWater();
     } catch {
       await loadWater();

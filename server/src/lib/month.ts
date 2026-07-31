@@ -3,6 +3,8 @@
  * identificado por year (ex.: 2026) e month (1-12).
  */
 
+import { todayIso } from './dates';
+
 export interface YearMonth {
   year: number;
   month: number; // 1-12
@@ -30,7 +32,12 @@ export function monthRange(year: number, month: number): { start: Date; end: Dat
   return { start, end };
 }
 
-/** Mês corrente (no fuso do servidor) como YearMonth. */
+/**
+ * Mês corrente como YearMonth, no fuso do app (APP_TZ) — derivado de
+ * `todayIso()` para não divergir de "hoje" no dia 1 (ou no último dia do mês)
+ * quando o processo roda em UTC.
+ */
 export function currentYearMonth(now: Date = new Date()): YearMonth {
-  return { year: now.getFullYear(), month: now.getMonth() + 1 };
+  const [year, month] = todayIso(now).split('-').map(Number);
+  return { year, month };
 }

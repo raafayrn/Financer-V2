@@ -133,7 +133,7 @@ export function HomePage() {
   async function handleAddWater(ml: number) {
     setAddingWater(true);
     try {
-      await api.addWaterEntry(ml);
+      await api.addWaterEntry(ml, todayIso());
       await load();
     } finally {
       setAddingWater(false);
@@ -186,8 +186,6 @@ export function HomePage() {
       return a.dueDate.localeCompare(b.dueDate);
     })
     .slice(0, 4);
-
-  const topSubjects = (studies?.subjects ?? []).slice(0, 4);
 
   const budgetStatus = summary?.status ?? 'ok';
   const progressColor =
