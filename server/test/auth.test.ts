@@ -82,3 +82,30 @@ describe('GET /api/auth/me', () => {
     expect(res.body).toMatchObject({ name: user.name, email: user.email });
   });
 });
+
+// O app não tem tela de login: /auth/auto é o único caminho de entrada e
+// precisa funcionar sempre — inclusive num banco vazio, criando a conta do
+// dono na primeira execução.
+describe('POST /api/auth/auto (app sem tela de login)', () => {
+  it('devolve token e usuário sem receber credencial nenhuma', async () => {
+    const res = await request(app).post('/api/auth/auto').send({});
+    expect(res.status).toBe(200);
+    expect(typeof res.body.token).toBe('string');
+    expect(res.body.user).toMatchObject({ id: expect.any(String), email: expect.any(String) });
+  });
+
+  it('o token devolvido é aceito nas rotas autenticadas', async () => {
+    const auto = await request(app).post('/api/auth/auto').send({});
+    const me = await request(app)
+      .get('/api/auth/me')
+      .set('Authorization', `Bearer ${auto.body.token}`);
+    expect(me.status).toBe(200);
+    expect(me.body.id).toBe(auto.body.user.id);
+  });
+
+  it('entra sempre na mesma conta (a mais antiga), não cria uma nova a cada chamada', async () => {
+    const a = await request(app).post('/api/auth/auto').send({});
+    const b = await request(app).post('/api/auth/auto').send({});
+    expect(a.body.user.id).toBe(b.body.user.id);
+  });
+});

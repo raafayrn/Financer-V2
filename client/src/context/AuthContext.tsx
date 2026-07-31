@@ -13,9 +13,10 @@ import type { User } from '../api/types';
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
-  logout: () => void;
+  /** Preenchido quando não deu para abrir a sessão (normalmente: API fora do ar). */
+  error: string | null;
+  /** Tenta abrir a sessão de novo (botão da tela de erro). */
+  retry: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -23,51 +24,50 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
 
-  // Ao carregar, tenta restaurar a sessão a partir do token salvo. Sem token,
-  // faz login automático (app de uso pessoal, sem tela de login) — se não
-  // houver nenhuma conta ainda, cai de volta para o fluxo normal de login/cadastro.
+  // O app não tem tela de login: é de uso pessoal e sempre entra na conta do
+  // dono. Reaproveita o token salvo enquanto ele valer e, quando não houver
+  // (ou tiver expirado), pede um novo em /auth/auto — que cria a conta na
+  // primeira execução. Só falha se a API estiver fora do ar.
   useEffect(() => {
-    const token = getToken();
-    if (!token) {
-      api
-        .autoLogin()
-        .then((res) => {
-          setToken(res.token);
-          setUser(res.user);
-        })
-        .catch(() => {})
-        .finally(() => setLoading(false));
-      return;
+    let cancelled = false;
+
+    async function openSession() {
+      setLoading(true);
+      setError(null);
+      try {
+        if (getToken()) {
+          try {
+            const me = await api.me();
+            if (!cancelled) setUser(me);
+            return;
+          } catch {
+            // Token inválido/expirado: descarta e cai no auto-login.
+            clearToken();
+          }
+        }
+        const res = await api.autoLogin();
+        if (cancelled) return;
+        setToken(res.token);
+        setUser(res.user);
+      } catch {
+        if (!cancelled) setError('Não foi possível conectar ao servidor do Orbit.');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     }
-    api
-      .me()
-      .then(setUser)
-      .catch(() => clearToken())
-      .finally(() => setLoading(false));
-  }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
-    const res = await api.login({ email, password });
-    setToken(res.token);
-    setUser(res.user);
-  }, []);
+    void openSession();
+    return () => {
+      cancelled = true;
+    };
+  }, [attempt]);
 
-  const register = useCallback(async (name: string, email: string, password: string) => {
-    const res = await api.register({ name, email, password });
-    setToken(res.token);
-    setUser(res.user);
-  }, []);
+  const retry = useCallback(() => setAttempt((n) => n + 1), []);
 
-  const logout = useCallback(() => {
-    clearToken();
-    setUser(null);
-  }, []);
-
-  const value = useMemo(
-    () => ({ user, loading, login, register, logout }),
-    [user, loading, login, register, logout],
-  );
+  const value = useMemo(() => ({ user, loading, error, retry }), [user, loading, error, retry]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

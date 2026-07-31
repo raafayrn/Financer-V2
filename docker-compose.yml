@@ -3,13 +3,23 @@ services:
     build: ./server
     environment:
       PORT: 4000
+      NODE_ENV: production
       # Caminho absoluto para o banco fora de /app/prisma (assim o volume não
       # esconde o schema.prisma da imagem).
       DATABASE_URL: "file:/data/dev.db"
       JWT_SECRET: "${JWT_SECRET:?defina JWT_SECRET no .env — veja server/.env.example}"
       JWT_EXPIRES_IN: "7d"
       ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
+      TELEGRAM_BOT_TOKEN: "${TELEGRAM_BOT_TOKEN:-}"
+      TELEGRAM_BOT_USERNAME: "${TELEGRAM_BOT_USERNAME:-}"
       CORS_ORIGIN: "${CORS_ORIGIN:-*}"
+      # Fuso do container E do app. Sem isso o container roda em UTC e "hoje"
+      # vira o dia seguinte às 21h no horário de Brasília.
+      TZ: "${APP_TZ:-America/Sao_Paulo}"
+      APP_TZ: "${APP_TZ:-America/Sao_Paulo}"
+      # Conta criada sozinha na primeira execução (o app não tem tela de login).
+      DEFAULT_USER_NAME: "${DEFAULT_USER_NAME:-Rafael}"
+      DEFAULT_USER_EMAIL: "${DEFAULT_USER_EMAIL:-eu@orbit.local}"
     volumes:
       # Persiste o arquivo SQLite entre reinícios do container.
       - db-data:/data
@@ -18,7 +28,16 @@ services:
   client:
     build: ./client
     ports:
-      - "8080:80"
+      # BIND_ADDR controla QUEM enxerga o app. O padrão 0.0.0.0 aceita
+      # qualquer interface (rede local + Tailscale) — é o que faz o acesso
+      # pelo celular funcionar sem configurar nada.
+      # Como o app entra sem senha, quem alcança esta porta entra na sua
+      # conta: mantenha a máquina fora da internet aberta. Para restringir só
+      # ao Tailscale, defina BIND_ADDR no .env com o IP dessa interface
+      # (`tailscale ip -4`); para só esta máquina, 127.0.0.1.
+      - "${BIND_ADDR:-0.0.0.0}:8080:80"
+    environment:
+      TZ: "${APP_TZ:-America/Sao_Paulo}"
     depends_on:
       - server
     restart: unless-stopped
