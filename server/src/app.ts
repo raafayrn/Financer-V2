@@ -19,6 +19,7 @@ import { telegramRouter } from './routes/telegram';
 import { workoutsRouter } from './routes/workouts';
 import { waterRouter } from './routes/water';
 import { studiesRouter } from './routes/studies';
+import { agendaRouter } from './routes/agenda';
 import { recurringRouter } from './routes/recurring';
 
 export function createApp() {
@@ -53,6 +54,7 @@ export function createApp() {
   app.use('/api/workouts', workoutsRouter);
   app.use('/api/water', waterRouter);
   app.use('/api/studies', studiesRouter);
+  app.use('/api/agenda', agendaRouter);
 
   app.use((_req, res) => {
     res.status(404).json({ error: 'Rota não encontrada.' });

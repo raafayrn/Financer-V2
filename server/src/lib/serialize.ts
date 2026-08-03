@@ -245,6 +245,30 @@ export function serializeWaterEntry(e: WaterEntryRow) {
 }
 
 // ============================================================
+// Agenda geral
+// ============================================================
+
+interface AgendaEventRow {
+  id: string;
+  title: string;
+  date: Date;
+  time: string | null;
+  notes: string | null;
+  category: string;
+}
+
+export function serializeAgendaEvent(e: AgendaEventRow) {
+  return {
+    id: e.id,
+    title: e.title,
+    date: dateToIso(e.date),
+    time: e.time,
+    notes: e.notes,
+    category: e.category,
+  };
+}
+
+// ============================================================
 // Estudos
 // ============================================================
 

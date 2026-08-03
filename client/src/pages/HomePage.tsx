@@ -4,6 +4,8 @@ import { motion } from 'framer-motion';
 import { api } from '../api/client';
 import type {
   Account,
+  AgendaEvent,
+  AgendaEventCategory,
   BodyMetric,
   Category,
   Expense,
@@ -62,6 +64,22 @@ const CLASS_SCHEDULE: Record<number, { time: string; name: string }[]> = {
   ],
 };
 
+const CATEGORY_COLORS: Record<AgendaEventCategory, string> = {
+  CONSULTA: '#ff6b35',
+  EVENTO: '#af52de',
+  COMPROMISSO: '#007aff',
+  LEMBRETE: '#ffcc00',
+  OUTRO: '#8e8e93',
+};
+
+const CATEGORY_LABELS: Record<AgendaEventCategory, string> = {
+  CONSULTA: 'Consulta',
+  EVENTO: 'Evento',
+  COMPROMISSO: 'Compromisso',
+  LEMBRETE: 'Lembrete',
+  OUTRO: 'Outro',
+};
+
 const WATER_QUICK_ADDS = [
   { label: 'Garrafa', ml: 600 },
 ];
@@ -82,6 +100,7 @@ interface HomeData {
   workoutSummary: WorkoutSummary | null;
   bodyMetrics: BodyMetric[];
   studies: StudiesOverview | null;
+  agendaEvents: AgendaEvent[];
 }
 
 export function HomePage() {
@@ -90,7 +109,7 @@ export function HomePage() {
   const [data, setData] = useState<HomeData>({
     summary: null, expenses: [], incomes: [], categories: [], accounts: [],
     waterDay: null, workoutToday: null, workoutSummary: null,
-    bodyMetrics: [], studies: null,
+    bodyMetrics: [], studies: null, agendaEvents: [],
   });
   const [loading, setLoading] = useState(true);
   const [finModal, setFinModal] = useState<FinModal>('closed');
@@ -99,7 +118,7 @@ export function HomePage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [summary, expenses, incomes, categories, accounts, waterDay, workoutToday, workoutSummary, bodyMetrics, studies] =
+    const [summary, expenses, incomes, categories, accounts, waterDay, workoutToday, workoutSummary, bodyMetrics, studies, agendaEvents] =
       await Promise.all([
         api.getSummary(year, month).catch(() => null),
         api.listExpenses(year, month).catch((): Expense[] => []),
@@ -111,8 +130,9 @@ export function HomePage() {
         api.getWorkoutSummary().catch(() => null),
         api.listBodyMetrics().catch((): BodyMetric[] => []),
         api.getStudiesOverview().catch(() => null),
+        api.listAgendaEvents().catch((): AgendaEvent[] => []),
       ]);
-    setData({ summary, expenses, incomes, categories, accounts, waterDay, workoutToday, workoutSummary, bodyMetrics, studies });
+    setData({ summary, expenses, incomes, categories, accounts, waterDay, workoutToday, workoutSummary, bodyMetrics, studies, agendaEvents });
     setLoading(false);
   }, [year, month]);
 
@@ -152,7 +172,7 @@ export function HomePage() {
     return hideValues ? '••••' : value;
   }
 
-  const { summary, expenses, incomes, categories, accounts, waterDay, workoutToday, workoutSummary, bodyMetrics, studies } = data;
+  const { summary, expenses, incomes, categories, accounts, waterDay, workoutToday, workoutSummary, bodyMetrics, studies, agendaEvents } = data;
 
   type Entry = { id: string; description: string; amount: number; date: string; kind: 'expense' | 'income' };
   const recentEntries: Entry[] = [
@@ -176,6 +196,12 @@ export function HomePage() {
     .filter((e) => e.daysLeft >= 0)
     .sort((a, b) => a.daysLeft - b.daysLeft)
     .slice(0, 3);
+
+  const upcomingAgendaEvents = agendaEvents
+    .map((ev) => ({ ...ev, daysLeft: daysUntil(ev.date) }))
+    .filter((ev) => ev.daysLeft >= 0 && ev.daysLeft <= 30)
+    .sort((a, b) => a.daysLeft - b.daysLeft || (a.time ?? '').localeCompare(b.time ?? ''))
+    .slice(0, 5);
 
   const pendingTasks = (studies?.pendingTasks ?? [])
     .filter((t) => !t.done)
@@ -336,6 +362,178 @@ export function HomePage() {
           </div>
         </motion.section>
 
+        {/* ===== ESTUDOS ===== */}
+        <motion.section className="home-section" variants={fadeUp}>
+          <div className="home-section-header">
+            <span className="home-section-dot" style={{ background: 'var(--primary)' }} />
+            Estudos
+          </div>
+
+          <div className="card">
+            {(() => {
+              const dow = new Date().getDay(); // 0=dom…6=sab
+              const todayClasses = CLASS_SCHEDULE[dow];
+              const now = new Date();
+              const hhmm = now.getHours() * 60 + now.getMinutes();
+              const dayLabel = WEEKDAYS_PT[dow];
+              return (
+                <>
+                  <p className="home-label" style={{ marginBottom: 8 }}>
+                    Aulas de hoje — <span style={{ color: 'var(--primary)' }}>{dayLabel}</span>
+                  </p>
+                  {!todayClasses ? (
+                    <p className="home-sub">Sem aulas hoje.</p>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {todayClasses.map((c) => {
+                        const [startStr] = c.time.split('–');
+                        const [sh, sm] = startStr.split(':').map(Number);
+                        const [, endStr] = c.time.split('–');
+                        const [eh, em] = endStr.split(':').map(Number);
+                        const startMin = sh * 60 + sm;
+                        const endMin = eh * 60 + em;
+                        const ongoing = hhmm >= startMin && hhmm < endMin;
+                        const done = hhmm >= endMin;
+                        const subj = (studies?.subjects ?? []).find((s) => s.name === c.name);
+                        const borderColor = subj?.color ?? 'var(--primary)';
+                        return (
+                          <div
+                            key={c.time}
+                            style={{
+                              borderLeft: `3px solid ${borderColor}`,
+                              paddingLeft: 10,
+                              opacity: done ? 0.45 : 1,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              gap: 8,
+                            }}
+                          >
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{c.time}</span>
+                              <span style={{ fontWeight: ongoing ? 700 : 600, fontSize: '0.9rem' }}>{c.name}</span>
+                            </div>
+                            {ongoing && (
+                              <span className="home-chip" style={{ background: 'var(--ok-bg)', color: 'var(--ok)', flexShrink: 0 }}>
+                                Agora
+                              </span>
+                            )}
+                            {done && (
+                              <span className="home-chip" style={{ background: 'var(--surface-2)', color: 'var(--text-muted)', flexShrink: 0 }}>
+                                Concluída
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
+          </div>
+
+          <div className="card home-clickable" onClick={() => navigate('/estudos?tab=agenda')}>
+            <p className="home-label" style={{ marginBottom: 8 }}>Agenda</p>
+            {upcomingAgendaEvents.length === 0 ? (
+              <p className="home-sub">Nenhum evento nos próximos 30 dias.</p>
+            ) : (
+              upcomingAgendaEvents.map((ev) => (
+                <div key={ev.id} className="home-list-item">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ width: 3, borderRadius: 99, alignSelf: 'stretch', background: CATEGORY_COLORS[ev.category], flexShrink: 0 }} />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      <span style={{ fontSize: '0.7rem', color: CATEGORY_COLORS[ev.category], fontWeight: 600 }}>
+                        {CATEGORY_LABELS[ev.category]}{ev.time ? ` · ${ev.time}` : ''}
+                      </span>
+                      <span className="home-list-left">{ev.title}</span>
+                    </div>
+                  </div>
+                  <span
+                    className="home-chip"
+                    style={{
+                      background: ev.daysLeft === 0 ? 'var(--over-bg)' : ev.daysLeft <= 3 ? 'var(--warning-bg)' : 'var(--surface-2)',
+                      color: ev.daysLeft === 0 ? 'var(--over)' : ev.daysLeft <= 3 ? 'var(--warning)' : 'var(--text-muted)',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {ev.daysLeft === 0 ? 'Hoje' : ev.daysLeft === 1 ? 'Amanhã' : `${ev.daysLeft}d`}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+
+          <div className="card home-clickable" onClick={() => navigate('/estudos')}>
+            <p className="home-label" style={{ marginBottom: 8 }}>Próximas provas</p>
+            {upcomingExams.length === 0 ? (
+              <p className="home-sub">Nenhuma prova agendada.</p>
+            ) : (
+              upcomingExams.map((exam) => {
+                const examSubjObj = (studies?.subjects ?? []).find((s) => s.id === exam.subjectId);
+                return (
+                  <div key={exam.id} className="home-list-item">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      {examSubjObj && (
+                        <span style={{ fontSize: '0.7rem', color: examSubjObj.color, fontWeight: 600 }}>{examSubjObj.name}</span>
+                      )}
+                      <span className="home-list-left">{exam.title}</span>
+                    </div>
+                    <span
+                      className="home-chip"
+                      style={{
+                        background: exam.daysLeft <= 3 ? 'var(--over-bg)' : 'var(--info-bg)',
+                        color: exam.daysLeft <= 3 ? 'var(--over)' : 'var(--primary)',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {exam.daysLeft === 0 ? 'Hoje' : exam.daysLeft === 1 ? 'Amanhã' : `${exam.daysLeft}d`}
+                    </span>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          <div className="card home-clickable" onClick={() => navigate('/estudos')}>
+            <div className="home-row-space">
+              <p className="home-label">Tarefas pendentes</p>
+              {(studies?.totals.pendingTaskCount ?? 0) > 0 && (
+                <span style={{ color: 'var(--over)', fontWeight: 700, fontSize: '0.85rem' }}>
+                  {studies?.totals.pendingTaskCount}
+                </span>
+              )}
+            </div>
+            {pendingTasks.length === 0 ? (
+              <p className="home-sub">Nenhuma tarefa pendente.</p>
+            ) : (
+              pendingTasks.map((task) => {
+                const days = task.dueDate ? daysUntil(task.dueDate) : null;
+                const taskSubj = (studies?.subjects ?? []).find((s) => s.id === task.subjectId);
+                return (
+                  <div key={task.id} className="home-list-item">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      {taskSubj && <span style={{ fontSize: '0.7rem', color: taskSubj.color, fontWeight: 600 }}>{taskSubj.name}</span>}
+                      <span className="home-list-left">{task.title}</span>
+                    </div>
+                    {days !== null && (
+                      <span
+                        className="home-chip"
+                        style={{
+                          background: days < 0 ? 'var(--over-bg)' : days <= 2 ? 'var(--warning-bg)' : 'var(--surface-2)',
+                          color: days < 0 ? 'var(--over)' : days <= 2 ? 'var(--warning)' : 'var(--text-muted)',
+                        }}
+                      >
+                        {days < 0 ? `${Math.abs(days)}d atraso` : days === 0 ? 'Hoje' : days === 1 ? 'Amanhã' : `${days}d`}
+                      </span>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </motion.section>
+
         {/* ===== SAÚDE ===== */}
         <motion.section className="home-section" variants={fadeUp}>
           <div className="home-section-header">
@@ -433,147 +631,6 @@ export function HomePage() {
               ))}
             </div>
           )}
-        </motion.section>
-
-        {/* ===== ESTUDOS ===== */}
-        <motion.section className="home-section" variants={fadeUp}>
-          <div className="home-section-header">
-            <span className="home-section-dot" style={{ background: 'var(--primary)' }} />
-            Estudos
-          </div>
-
-          <div className="card">
-            {(() => {
-              const dow = new Date().getDay(); // 0=dom…6=sab
-              const todayClasses = CLASS_SCHEDULE[dow];
-              const now = new Date();
-              const hhmm = now.getHours() * 60 + now.getMinutes();
-              const dayLabel = WEEKDAYS_PT[dow];
-              return (
-                <>
-                  <p className="home-label" style={{ marginBottom: 8 }}>
-                    Aulas de hoje — <span style={{ color: 'var(--primary)' }}>{dayLabel}</span>
-                  </p>
-                  {!todayClasses ? (
-                    <p className="home-sub">Sem aulas hoje.</p>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      {todayClasses.map((c) => {
-                        const [startStr] = c.time.split('–');
-                        const [sh, sm] = startStr.split(':').map(Number);
-                        const [, endStr] = c.time.split('–');
-                        const [eh, em] = endStr.split(':').map(Number);
-                        const startMin = sh * 60 + sm;
-                        const endMin = eh * 60 + em;
-                        const ongoing = hhmm >= startMin && hhmm < endMin;
-                        const done = hhmm >= endMin;
-                        const subj = (studies?.subjects ?? []).find((s) => s.name === c.name);
-                        const borderColor = subj?.color ?? 'var(--primary)';
-                        return (
-                          <div
-                            key={c.time}
-                            style={{
-                              borderLeft: `3px solid ${borderColor}`,
-                              paddingLeft: 10,
-                              opacity: done ? 0.45 : 1,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              gap: 8,
-                            }}
-                          >
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{c.time}</span>
-                              <span style={{ fontWeight: ongoing ? 700 : 600, fontSize: '0.9rem' }}>{c.name}</span>
-                            </div>
-                            {ongoing && (
-                              <span className="home-chip" style={{ background: 'var(--ok-bg)', color: 'var(--ok)', flexShrink: 0 }}>
-                                Agora
-                              </span>
-                            )}
-                            {done && (
-                              <span className="home-chip" style={{ background: 'var(--surface-2)', color: 'var(--text-muted)', flexShrink: 0 }}>
-                                Concluída
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </>
-              );
-            })()}
-          </div>
-
-          <div className="card home-clickable" onClick={() => navigate('/estudos')}>
-            <p className="home-label" style={{ marginBottom: 8 }}>Próximas provas</p>
-            {upcomingExams.length === 0 ? (
-              <p className="home-sub">Nenhuma prova agendada.</p>
-            ) : (
-              upcomingExams.map((exam) => {
-                const examSubjObj = (studies?.subjects ?? []).find((s) => s.id === exam.subjectId);
-                return (
-                  <div key={exam.id} className="home-list-item">
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                      {examSubjObj && (
-                        <span style={{ fontSize: '0.7rem', color: examSubjObj.color, fontWeight: 600 }}>{examSubjObj.name}</span>
-                      )}
-                      <span className="home-list-left">{exam.title}</span>
-                    </div>
-                    <span
-                      className="home-chip"
-                      style={{
-                        background: exam.daysLeft <= 3 ? 'var(--over-bg)' : 'var(--info-bg)',
-                        color: exam.daysLeft <= 3 ? 'var(--over)' : 'var(--primary)',
-                        flexShrink: 0,
-                      }}
-                    >
-                      {exam.daysLeft === 0 ? 'Hoje' : exam.daysLeft === 1 ? 'Amanhã' : `${exam.daysLeft}d`}
-                    </span>
-                  </div>
-                );
-              })
-            )}
-          </div>
-
-          <div className="card home-clickable" onClick={() => navigate('/estudos')}>
-            <div className="home-row-space">
-              <p className="home-label">Tarefas pendentes</p>
-              {(studies?.totals.pendingTaskCount ?? 0) > 0 && (
-                <span style={{ color: 'var(--over)', fontWeight: 700, fontSize: '0.85rem' }}>
-                  {studies?.totals.pendingTaskCount}
-                </span>
-              )}
-            </div>
-            {pendingTasks.length === 0 ? (
-              <p className="home-sub">Nenhuma tarefa pendente.</p>
-            ) : (
-              pendingTasks.map((task) => {
-                const days = task.dueDate ? daysUntil(task.dueDate) : null;
-                const taskSubj = (studies?.subjects ?? []).find((s) => s.id === task.subjectId);
-                return (
-                  <div key={task.id} className="home-list-item">
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                      {taskSubj && <span style={{ fontSize: '0.7rem', color: taskSubj.color, fontWeight: 600 }}>{taskSubj.name}</span>}
-                      <span className="home-list-left">{task.title}</span>
-                    </div>
-                    {days !== null && (
-                      <span
-                        className="home-chip"
-                        style={{
-                          background: days < 0 ? 'var(--over-bg)' : days <= 2 ? 'var(--warning-bg)' : 'var(--surface-2)',
-                          color: days < 0 ? 'var(--over)' : days <= 2 ? 'var(--warning)' : 'var(--text-muted)',
-                        }}
-                      >
-                        {days < 0 ? `${Math.abs(days)}d atraso` : days === 0 ? 'Hoje' : days === 1 ? 'Amanhã' : `${days}d`}
-                      </span>
-                    )}
-                  </div>
-                );
-              })
-            )}
-          </div>
         </motion.section>
 
       </motion.div>

@@ -54,6 +54,8 @@ model User {
   // Saúde — Água
   waterGoal        WaterGoal?
   waterEntries     WaterEntry[]
+  // Agenda geral
+  agendaEvents     AgendaEvent[]
   // Estudos
   subjects         Subject[]
   topics           Topic[]
@@ -456,6 +458,34 @@ model WaterEntry {
   date      DateTime
   amountMl  Int
   createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+}
+
+// ============================================================
+// AGENDA GERAL
+// ============================================================
+
+enum AgendaEventCategory {
+  CONSULTA
+  EVENTO
+  COMPROMISSO
+  LEMBRETE
+  OUTRO
+}
+
+model AgendaEvent {
+  id        String              @id @default(cuid())
+  userId    String
+  title     String
+  date      DateTime
+  time      String?
+  notes     String?
+  category  AgendaEventCategory @default(OUTRO)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

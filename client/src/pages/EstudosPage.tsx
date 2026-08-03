@@ -1,10 +1,10 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { api, ApiError } from '../api/client';
-import type { Exam, StudiesOverview, StudyTask, Subject } from '../api/types';
+import type { AgendaEvent, AgendaEventCategory, Exam, StudiesOverview, StudyTask, Subject } from '../api/types';
 import { formatDayMonth } from '../utils/format';
 import { CheckIcon, ChevronDownIcon, EditIcon, PlusIcon, TrashIcon } from '../components/icons';
-import { ExamModal, StudyTaskModal } from '../components/StudyModals';
+import { AgendaEventModal, ExamModal, StudyTaskModal } from '../components/StudyModals';
 import { springSmooth, springTap } from '../lib/motion';
 
 const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
@@ -66,17 +66,36 @@ const CLASS_SCHEDULE: Record<number, { time: string; name: string }[]> = {
   ],
 };
 
+const CATEGORY_COLORS: Record<AgendaEventCategory, string> = {
+  CONSULTA: '#ff6b35',
+  EVENTO: '#af52de',
+  COMPROMISSO: '#007aff',
+  LEMBRETE: '#ffcc00',
+  OUTRO: '#8e8e93',
+};
+
+const CATEGORY_LABELS: Record<AgendaEventCategory, string> = {
+  CONSULTA: 'Consulta',
+  EVENTO: 'Evento',
+  COMPROMISSO: 'Compromisso',
+  LEMBRETE: 'Lembrete',
+  OUTRO: 'Outro',
+};
+
 // ─── CALENDÁRIO AGENDA ────────────────────────────────────────────────────────
 interface AgendaCalendarProps {
   exams: Exam[];
   tasks: StudyTask[];
   subjects: Subject[];
+  events: AgendaEvent[];
   onExamEdit: (exam: Exam) => void;
   onTaskEdit: (task: StudyTask) => void;
-  onAddExam: () => void;
+  onEventEdit: (event: AgendaEvent) => void;
+  onAddEvent: (date: string) => void;
+  onDeleteEvent: (id: string) => void;
 }
 
-function AgendaCalendar({ exams, tasks, subjects, onExamEdit, onTaskEdit, onAddExam }: AgendaCalendarProps) {
+function AgendaCalendar({ exams, tasks, subjects, events, onExamEdit, onTaskEdit, onEventEdit, onAddEvent, onDeleteEvent }: AgendaCalendarProps) {
   const today = new Date();
   const [cal, setCal] = useState({ year: today.getFullYear(), month: today.getMonth() });
   const [selectedIso, setSelectedIso] = useState<string>(todayIsoStr());
@@ -113,14 +132,15 @@ function AgendaCalendar({ exams, tasks, subjects, onExamEdit, onTaskEdit, onAddE
     const dayExams = exams.filter((e) => e.date === iso);
     const dayTasks = tasks.filter((t) => t.dueDate === iso);
     const dayClasses = classesForIso(iso);
-    return { dayExams, dayTasks, dayClasses };
+    const dayEvents = events.filter((ev) => ev.date === iso);
+    return { dayExams, dayTasks, dayClasses, dayEvents };
   }
 
   const cells: (number | null)[] = [...Array(firstDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
   while (cells.length % 7 !== 0) cells.push(null);
 
   const selDate = selectedIso ? new Date(selectedIso + 'T00:00:00') : null;
-  const { dayExams: selExams, dayTasks: selTasks, dayClasses: selClasses } = eventsForDay(selectedIso);
+  const { dayExams: selExams, dayTasks: selTasks, dayClasses: selClasses, dayEvents: selEvents } = eventsForDay(selectedIso);
 
   const upcomingExams = [...exams]
     .filter((e) => daysUntil(e.date) >= 0)
@@ -153,11 +173,12 @@ function AgendaCalendar({ exams, tasks, subjects, onExamEdit, onTaskEdit, onAddE
           {cells.map((day, i) => {
             if (!day) return <div key={i} className="agenda-cell agenda-cell-empty" />;
             const iso = isoOf(day);
-            const { dayExams, dayTasks, dayClasses } = eventsForDay(iso);
+            const { dayExams, dayTasks, dayClasses, dayEvents } = eventsForDay(iso);
             const isToday = iso === todayStr;
             const isSel = iso === selectedIso;
             const MAX_VISIBLE = 3;
             const allEvents = [
+              ...dayEvents.map((ev) => ({ kind: 'event' as const, label: ev.title, color: CATEGORY_COLORS[ev.category], id: ev.id })),
               ...dayExams.map((e) => {
                 const subj = subjectById(e.subjectId);
                 return { kind: 'exam' as const, label: subj ? `${subj.name} — ${e.title}` : e.title, color: subj?.color ?? 'var(--over)', id: e.id };
@@ -184,7 +205,8 @@ function AgendaCalendar({ exams, tasks, subjects, onExamEdit, onTaskEdit, onAddE
                       style={{ background: ev.color }}
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (ev.kind === 'exam') onExamEdit(exams.find((x) => x.id === ev.id)!);
+                        if (ev.kind === 'event') onEventEdit(events.find((x) => x.id === ev.id)!);
+                        else if (ev.kind === 'exam') onExamEdit(exams.find((x) => x.id === ev.id)!);
                         else if (ev.kind === 'task') onTaskEdit(tasks.find((x) => x.id === ev.id)!);
                       }}
                     >
@@ -213,12 +235,37 @@ function AgendaCalendar({ exams, tasks, subjects, onExamEdit, onTaskEdit, onAddE
         <div className="agenda-sidebar-section">
           <div className="agenda-sidebar-head">
             <span className="agenda-sidebar-label">Agenda do dia</span>
-            <button className="btn-primary btn-sm" onClick={onAddExam}>+ Adicionar</button>
+            <button className="btn-primary btn-sm" onClick={() => onAddEvent(selectedIso)}>+ Evento</button>
           </div>
-          {selExams.length === 0 && selTasks.length === 0 && selClasses.length === 0 ? (
+          {selEvents.length === 0 && selExams.length === 0 && selTasks.length === 0 && selClasses.length === 0 ? (
             <p className="agenda-sidebar-empty">Nenhum evento.</p>
           ) : (
             <div className="agenda-sidebar-events">
+              {selEvents.map((ev) => (
+                <div
+                  key={ev.id}
+                  className="agenda-sidebar-event"
+                  style={{ borderLeftColor: CATEGORY_COLORS[ev.category], cursor: 'pointer' }}
+                  onClick={() => onEventEdit(ev)}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 4 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 1, flex: 1 }}>
+                      <span className="agenda-sidebar-event-label">
+                        {CATEGORY_LABELS[ev.category]}{ev.time ? ` · ${ev.time}` : ''}
+                      </span>
+                      <span className="agenda-sidebar-event-title">{ev.title}</span>
+                      {ev.notes && <span className="agenda-sidebar-event-sub">{ev.notes}</span>}
+                    </div>
+                    <button
+                      className="icon-btn"
+                      title="Excluir"
+                      onClick={(e) => { e.stopPropagation(); void onDeleteEvent(ev.id); }}
+                    >
+                      <TrashIcon />
+                    </button>
+                  </div>
+                </div>
+              ))}
               {selClasses.map((c, ci) => {
                 const subj = subjectByName(c.name);
                 return (
@@ -291,15 +338,18 @@ export function EstudosPage() {
   const [topicInputs, setTopicInputs] = useState<Record<string, string>>({});
   const [examModal, setExamModal] = useState<{ exam?: Exam } | null>(null);
   const [taskModal, setTaskModal] = useState<{ task?: StudyTask } | null>(null);
+  const [agendaEvents, setAgendaEvents] = useState<AgendaEvent[]>([]);
+  const [eventModal, setEventModal] = useState<{ event?: AgendaEvent; defaultDate?: string } | null>(null);
 
   const loadRef = useRef(0);
   const load = useCallback(async () => {
     const id = ++loadRef.current;
     setError(null);
     try {
-      const d = await api.getStudiesOverview();
+      const [d, evs] = await Promise.all([api.getStudiesOverview(), api.listAgendaEvents()]);
       if (id !== loadRef.current) return;
       setData(d);
+      setAgendaEvents(evs);
     } catch (err) {
       if (id !== loadRef.current) return;
       setError(err instanceof ApiError ? err.message : 'Erro ao carregar.');
@@ -354,6 +404,17 @@ export function EstudosPage() {
     await api.deleteExam(id);
     await load();
   }
+  async function saveEvent(d: { title: string; date: string; time: string | null; notes: string | null; category: AgendaEventCategory }) {
+    if (eventModal?.event) await api.updateAgendaEvent(eventModal.event.id, d);
+    else await api.createAgendaEvent(d);
+    setEventModal(null);
+    await load();
+  }
+  async function deleteEvent(id: string) {
+    await api.deleteAgendaEvent(id);
+    await load();
+  }
+
   async function saveExam(d: { title: string; date: string; subjectId: string | null; notes: string | null }) {
     if (examModal?.exam) await api.updateExam(examModal.exam.id, d);
     else await api.createExam(d);
@@ -403,9 +464,12 @@ export function EstudosPage() {
               exams={data.upcomingExams}
               tasks={data.pendingTasks}
               subjects={subjects}
+              events={agendaEvents}
               onExamEdit={(ex) => setExamModal({ exam: ex })}
               onTaskEdit={(t) => setTaskModal({ task: t })}
-              onAddExam={() => setExamModal({})}
+              onEventEdit={(ev) => setEventModal({ event: ev })}
+              onAddEvent={(date) => setEventModal({ defaultDate: date })}
+              onDeleteEvent={deleteEvent}
             />
           )}
 
@@ -590,6 +654,14 @@ export function EstudosPage() {
         </>
       ) : null}
 
+      {eventModal && (
+        <AgendaEventModal
+          initial={eventModal.event}
+          defaultDate={eventModal.defaultDate}
+          onCancel={() => setEventModal(null)}
+          onSubmit={saveEvent}
+        />
+      )}
       {examModal && (
         <ExamModal subjects={subjects} initial={examModal.exam} onCancel={() => setExamModal(null)} onSubmit={saveExam} />
       )}

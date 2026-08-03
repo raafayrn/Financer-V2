@@ -352,6 +352,35 @@ export const studyTaskUpdateSchema = z
   .refine((d) => Object.keys(d).length > 0, { message: 'Envie ao menos um campo.' });
 
 // ============================================================
+// Agenda geral
+// ============================================================
+
+const agendaEventCategorySchema = z.enum(['CONSULTA', 'EVENTO', 'COMPROMISSO', 'LEMBRETE', 'OUTRO']);
+
+export const agendaEventCreateSchema = z.object({
+  title: z.string().trim().min(1, 'Informe o título.').max(160),
+  date: isoDate,
+  time: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/, 'Hora deve estar no formato HH:MM.')
+    .nullable()
+    .optional(),
+  notes: z.string().trim().max(500).nullable().optional(),
+  category: agendaEventCategorySchema.optional(),
+});
+
+export const agendaEventUpdateSchema = z
+  .object({
+    title: z.string().trim().min(1).max(160),
+    date: isoDate,
+    time: z.string().regex(/^\d{2}:\d{2}$/).nullable(),
+    notes: z.string().trim().max(500).nullable(),
+    category: agendaEventCategorySchema,
+  })
+  .partial()
+  .refine((d) => Object.keys(d).length > 0, { message: 'Envie ao menos um campo.' });
+
+// ============================================================
 // Despesas fixas (templates recorrentes)
 // ============================================================
 

@@ -1,5 +1,7 @@
 import type {
   Account,
+  AgendaEvent,
+  AgendaEventCategory,
   AuthResponse,
   BodyMetric,
   BodyMetricInput,
@@ -348,4 +350,18 @@ export const api = {
     data: Partial<{ title: string; dueDate: string | null; subjectId: string | null; done: boolean }>,
   ) => request<StudyTask>(`/studies/tasks/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteStudyTask: (id: string) => request<void>(`/studies/tasks/${id}`, { method: 'DELETE' }),
+
+  listAgendaEvents: () => request<AgendaEvent[]>('/agenda'),
+  createAgendaEvent: (data: {
+    title: string;
+    date: string;
+    time?: string | null;
+    notes?: string | null;
+    category?: AgendaEventCategory;
+  }) => request<AgendaEvent>('/agenda', { method: 'POST', body: JSON.stringify(data) }),
+  updateAgendaEvent: (
+    id: string,
+    data: Partial<{ title: string; date: string; time: string | null; notes: string | null; category: AgendaEventCategory }>,
+  ) => request<AgendaEvent>(`/agenda/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteAgendaEvent: (id: string) => request<void>(`/agenda/${id}`, { method: 'DELETE' }),
 };

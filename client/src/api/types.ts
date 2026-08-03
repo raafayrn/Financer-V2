@@ -446,6 +446,17 @@ export interface StudyTask {
   done: boolean;
 }
 
+export type AgendaEventCategory = 'CONSULTA' | 'EVENTO' | 'COMPROMISSO' | 'LEMBRETE' | 'OUTRO';
+
+export interface AgendaEvent {
+  id: string;
+  title: string;
+  date: string;
+  time: string | null;
+  notes: string | null;
+  category: AgendaEventCategory;
+}
+
 export interface StudiesOverview {
   subjects: Subject[];
   upcomingExams: Exam[];
