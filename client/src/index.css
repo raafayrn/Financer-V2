@@ -3128,13 +3128,13 @@ select option {
 .home-action-btn:hover { opacity: 0.8; }
 
 .home-action-expense {
-  background: var(--over-bg);
-  color: var(--over);
+  background: var(--surface-2);
+  color: var(--text);
 }
 
 .home-action-income {
-  background: var(--ok-bg);
-  color: var(--ok);
+  background: var(--primary);
+  color: var(--primary-contrast);
 }
 
 .home-action-btn:disabled {

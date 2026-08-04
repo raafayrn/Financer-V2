@@ -214,8 +214,6 @@ export function HomePage() {
     .slice(0, 4);
 
   const budgetStatus = summary?.status ?? 'ok';
-  const progressColor =
-    budgetStatus === 'over' ? 'var(--over)' : budgetStatus === 'warning' ? 'var(--warning)' : 'var(--ok)';
   const remainingColor =
     budgetStatus === 'over' ? 'var(--over)' : budgetStatus === 'warning' ? 'var(--warning)' : 'var(--text)';
 
@@ -260,13 +258,7 @@ export function HomePage() {
             <p className="home-hero-value" style={{ color: remainingColor }}>
               {mask(formatCurrency(summary?.remaining ?? 0))}
             </p>
-            <div className="home-progress-bar">
-              <div
-                className="home-progress-fill"
-                style={{ width: `${Math.min(100, summary?.percentUsed ?? 0)}%`, background: progressColor }}
-              />
-            </div>
-            <p className="home-sub">{Math.round(summary?.percentUsed ?? 0)}% do orçamento usado</p>
+
             <div className="home-hero-actions">
               <button
                 className="home-action-btn home-action-expense"

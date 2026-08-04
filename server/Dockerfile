@@ -19,4 +19,4 @@ EXPOSE 4000
 # Sincroniza o schema com o banco (cria as tabelas se necessário) e sobe a API.
 # `prisma db push` é idempotente e não precisa de histórico de migrações — ideal
 # para SQLite. Para SQLite, o arquivo do banco fica no volume montado em /app/prisma.
-CMD ["sh", "-c", "npx prisma db push --skip-generate && node dist/index.js"]
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss --skip-generate && node dist/index.js"]
