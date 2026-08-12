@@ -1,0 +1,179 @@
+/* ============================================================================
+   ORBIT — SISTEMA DE DESIGN
+   Direção "painel de instrumentos": superfícies sólidas e opacas, neutro de
+   viés quente, acento petróleo. As camadas se separam por contraste de
+   superfície, não por blur.
+   ========================================================================= */
+
+:root {
+  /* ---- Superfícies (nível 0 = ground, 1 = card, 2 = chip/input) ---- */
+  --bg: #fbfaf7;
+  --surface: #ffffff;
+  --surface-solid: #ffffff;
+  --surface-2: #f3f1ec;
+  --surface-3: #eae7e0;
+  --menu-bg: #ffffff;
+
+  /* ---- Texto ---- */
+  --text: #1a1c1b;
+  --text-muted: #5c6360; /* 5,9:1 sobre --bg — passa WCAG AA */
+  --text-faint: #7d8481; /* apenas decorativo: ícones, separadores */
+
+  --border: #dfdbd3;
+  --border-strong: #c6c1b7;
+
+  /* ---- Acento petróleo ---- */
+  --primary: #0e6c78;
+  --primary-hover: #0a545e;
+  --primary-contrast: #ffffff;
+  --primary-soft: #e2eff1;
+
+  /* ---- Semânticas (dinheiro/estado — nunca usadas como acento) ---- */
+  --ok: #2f7d4e;
+  --ok-bg: #e6f1e9;
+  --warning: #9a6410;
+  --warning-bg: #f7eedc;
+  --over: #b23a2e;
+  --over-bg: #f8e7e4;
+  --info-bg: #e2eff1;
+
+  /* ---- Paleta categórica: matérias, categorias, tipos de investimento.
+         Consumida por índice. Nenhum hex deve voltar a aparecer em .tsx ---- */
+  --data-1: #0e6c78;
+  --data-2: #8a4fbf;
+  --data-3: #c2571c;
+  --data-4: #2f7d4e;
+  --data-5: #b8336a;
+  --data-6: #1f5fa8;
+  --data-7: #8a7a12;
+  --data-8: #546a75;
+
+  /* ---- Escala de espaçamento (base 4px) ---- */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+  --s7: 48px;
+  --s8: 72px;
+
+  /* ---- Escala tipográfica — piso de 12px, sem exceção ---- */
+  --fs-label: 0.75rem; /* 12px */
+  --fs-sm: 0.875rem; /* 14px */
+  --fs-body: 1rem; /* 16px */
+  --fs-heading: 1.25rem; /* 20px */
+  --fs-title: 1.5rem; /* 24px */
+  --fs-display: 2.75rem; /* 44px */
+
+  --font-ui: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI',
+    Roboto, sans-serif;
+  --font-num: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Segoe UI Mono', Menlo, monospace;
+
+  /* ---- Raio proporcional ao elemento (era 22px universal) ---- */
+  --radius-xs: 6px; /* chips, badges, pontos */
+  --radius-sm: 10px; /* inputs, botões */
+  --radius: 14px; /* cards */
+  --radius-lg: 20px; /* sheets, modais */
+
+  --shadow: 0 1px 2px rgba(26, 28, 27, 0.04), 0 4px 12px rgba(26, 28, 27, 0.05);
+  --shadow-float: 0 4px 12px rgba(26, 28, 27, 0.1), 0 12px 32px rgba(26, 28, 27, 0.12);
+
+  /* Glassmorfismo desativado: superfícies agora são opacas. Mantido como token
+     para os overlays modais, que ainda se beneficiam do blur. */
+  --blur: none;
+  --blur-overlay: blur(16px) saturate(160%);
+
+  --tap: 44px; /* alvo mínimo de toque */
+  --maxw: 640px;
+  --maxw-desktop: 1200px;
+  /* Breakpoints: 600px / 900px / 1280px (literais nas media queries — custom
+     properties não funcionam dentro de condições de @media). */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #131513;
+    --surface: #1b1e1d;
+    --surface-solid: #1b1e1d;
+    --surface-2: #232726;
+    --surface-3: #2c3130;
+    --menu-bg: #232726;
+
+    --text: #edebe6;
+    --text-muted: #a2a9a6; /* 7,1:1 sobre --bg */
+    --text-faint: #7f8683;
+
+    --border: #2e3331;
+    --border-strong: #434a47;
+
+    /* O acento clareia no escuro, então o texto sobre ele precisa ser escuro. */
+    --primary: #4ecbd9;
+    --primary-hover: #7adbe6;
+    --primary-contrast: #0b2e33;
+    --primary-soft: #14343a;
+
+    --ok: #62c98a;
+    --ok-bg: #162c20;
+    --warning: #dfa946;
+    --warning-bg: #322817;
+    --over: #e8796b;
+    --over-bg: #331c19;
+    --info-bg: #14343a;
+
+    --data-1: #4ecbd9;
+    --data-2: #c08ce8;
+    --data-3: #ef8b4e;
+    --data-4: #62c98a;
+    --data-5: #ea6f9c;
+    --data-6: #6fa4e8;
+    --data-7: #cbb63f;
+    --data-8: #93a8b2;
+
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.35);
+    --shadow-float: 0 4px 12px rgba(0, 0, 0, 0.5), 0 12px 32px rgba(0, 0, 0, 0.45);
+  }
+}
+
+/* Override manual — vence a preferência do sistema quando o usuário escolhe
+   explicitamente um tema pelo botão da navbar (ver ThemeContext). */
+:root[data-theme='dark'] {
+  --bg: #131513;
+  --surface: #1b1e1d;
+  --surface-solid: #1b1e1d;
+  --surface-2: #232726;
+  --surface-3: #2c3130;
+  --menu-bg: #232726;
+
+  --text: #edebe6;
+  --text-muted: #a2a9a6;
+  --text-faint: #7f8683;
+
+  --border: #2e3331;
+  --border-strong: #434a47;
+
+  --primary: #4ecbd9;
+  --primary-hover: #7adbe6;
+  --primary-contrast: #0b2e33;
+  --primary-soft: #14343a;
+
+  --ok: #62c98a;
+  --ok-bg: #162c20;
+  --warning: #dfa946;
+  --warning-bg: #322817;
+  --over: #e8796b;
+  --over-bg: #331c19;
+  --info-bg: #14343a;
+
+  --data-1: #4ecbd9;
+  --data-2: #c08ce8;
+  --data-3: #ef8b4e;
+  --data-4: #62c98a;
+  --data-5: #ea6f9c;
+  --data-6: #6fa4e8;
+  --data-7: #cbb63f;
+  --data-8: #93a8b2;
+
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.35);
+  --shadow-float: 0 4px 12px rgba(0, 0, 0, 0.5), 0 12px 32px rgba(0, 0, 0, 0.45);
+}

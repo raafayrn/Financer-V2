@@ -6,6 +6,7 @@ import type { AgendaEvent, AgendaEventCategory, Exam, StudiesOverview, StudyTask
 import { formatDayMonth } from '../utils/format';
 import { EditIcon, TrashIcon } from '../components/icons';
 import { PageHeader } from '../components/PageHeader';
+import { Button, EmptyState } from '../components/ui';
 import { AgendaEventModal, ExamModal, StudyTaskModal } from '../components/StudyModals';
 import { springSmooth } from '../lib/motion';
 import { AGENDA_CATEGORY_COLORS, AGENDA_CATEGORY_LABELS } from '../utils/palette';
@@ -442,9 +443,9 @@ export function EstudosPage() {
             <div className="section-head">
               <h3 className="section-title">Próximos ({items.length})</h3>
               <div className="section-head-actions">
-                <button className="btn-ghost btn-sm" onClick={() => setExamModal({})}>+ Prova</button>
-                <button className="btn-ghost btn-sm" onClick={() => setTaskModal({})}>+ Tarefa</button>
-                <button className="btn-primary btn-sm" onClick={() => setEventModal({})}>+ Evento</button>
+                <Button variant="secondary" size="sm" onClick={() => setExamModal({})}>+ Prova</Button>
+                <Button variant="secondary" size="sm" onClick={() => setTaskModal({})}>+ Tarefa</Button>
+                <Button size="sm" onClick={() => setEventModal({})}>+ Evento</Button>
               </div>
             </div>
 
@@ -462,12 +463,10 @@ export function EstudosPage() {
             </div>
 
             {items.length === 0 ? (
-              <div className="empty-state">
-                <p className="empty-state-title">Nada por aqui</p>
-                <p className="empty-state-text">
-                  {filter === 'tudo' ? 'Sem provas, tarefas ou eventos pendentes.' : 'Nenhum item deste tipo.'}
-                </p>
-              </div>
+              <EmptyState
+                title="Nada por aqui"
+                text={filter === 'tudo' ? 'Sem provas, tarefas ou eventos pendentes.' : 'Nenhum item deste tipo.'}
+              />
             ) : (
               <ul className="agenda-item-list">
                 <AnimatePresence initial={false}>

@@ -29,6 +29,7 @@ import { formatCurrency, formatDayMonth, monthShort } from '../utils/format';
 import { ChevronDownIcon, EditIcon, RepeatIcon, TrashIcon } from '../components/icons';
 import { ManageModal } from '../components/ManageModal';
 import { NEUTRAL_COLOR } from '../utils/palette';
+import { Sparkline } from '../components/ui';
 import { RecurringModal } from '../components/RecurringModal';
 
 function FilterIcon() {
@@ -382,7 +383,6 @@ export function DashboardPage() {
   // for gasto no cartão (fixo + variável, ou seja, não-Pix e não-VR) sai dele.
   const voucherRemaining = summary ? summary.income.voucher - summary.accounts.foodVoucher : 0;
   const salaryRemaining = summary ? summary.income.salary - (summary.accounts.fixed + summary.accounts.variable) : 0;
-  const maxTrend = Math.max(1, ...trend.map((t) => t.spent));
 
   return (
     <div className="page">
@@ -535,6 +535,33 @@ export function DashboardPage() {
                 </li>
               </ul>
             </motion.section>
+
+            {/* Tendência de 6 meses. Estava no rodapé da tela, onde nunca era
+                vista; junto do resumo ela responde "gastei mais que o mês
+                passado?" na mesma dobra. */}
+            {trend.length > 1 && (
+              <motion.div className="card overview-item" variants={overviewItem}>
+                <span className="stat-label">Gasto nos últimos 6 meses</span>
+                <Sparkline points={trend.map((t) => t.spent)} />
+                <span className="spark-meta">
+                  {(() => {
+                    const atual = trend[trend.length - 1].spent;
+                    const anterior = trend[trend.length - 2].spent;
+                    if (anterior === 0) return 'Sem base de comparação';
+                    const delta = ((atual - anterior) / anterior) * 100;
+                    const subiu = delta > 0;
+                    return (
+                      <>
+                        <strong className={subiu ? 'neg' : 'pos'}>
+                          {subiu ? '↑' : '↓'} {Math.abs(delta).toFixed(0)}%
+                        </strong>{' '}
+                        vs. {monthShort(trend[trend.length - 2].month)}
+                      </>
+                    );
+                  })()}
+                </span>
+              </motion.div>
+            )}
 
             {/* Saldo investido — a porta de entrada de Investimentos, que saiu
                 da navegação principal. Também é o que finalmente conecta os
@@ -925,31 +952,6 @@ export function DashboardPage() {
             </AnimatePresence>
           </section>
 
-          {/* Gráfico: gasto nos últimos meses */}
-          <section className="card">
-            <h3 className="section-title">Gastos nos últimos meses</h3>
-            <div className="chart">
-              {trend.map((t) => {
-                const h = maxTrend > 0 ? (t.spent / maxTrend) * 100 : 0;
-                const isCurrent = t.year === year && t.month === month;
-                return (
-                  <div
-                    key={`${t.year}-${t.month}`}
-                    className="chart-col"
-                    title={`${monthShort(t.month)}/${t.year}: ${formatCurrency(t.spent)}`}
-                  >
-                    <div className="chart-bars">
-                      <div
-                        className={`chart-spent ${isCurrent ? '' : 'trend-muted'}`}
-                        style={{ height: `${h}%` }}
-                      />
-                    </div>
-                    <span className="chart-label">{monthShort(t.month)}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
           </motion.div>
 
           <AnimatePresence>

@@ -250,14 +250,19 @@ export function HomePage() {
 
       <motion.div className="home-page" variants={stagger} initial="hidden" animate="show">
 
-        {/* ===== FINANÇAS ===== */}
+        {/* ===== DINHEIRO =====
+            As faixas passaram a ser nomeadas pelo que a pessoa quer saber
+            (Dinheiro, Compromissos, Hábitos) e não pela seção do app de onde
+            os dados vêm. */}
         <motion.section className="home-section" variants={fadeUp}>
           <div className="home-section-header">
-            <span className="home-section-dot" style={{ background: 'var(--warning)' }} />
-            Finanças
+            <span className="home-section-dot" style={{ background: 'var(--primary)' }} />
+            Dinheiro
           </div>
 
-          <div className="card home-clickable" onClick={() => navigate('/financas')}>
+          {/* Único card com tratamento de destaque da Home: é o número que
+              responde à pergunta que traz a pessoa aqui. */}
+          <div className="card card--feature home-clickable" onClick={() => navigate('/financas')}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
               <p className="home-label" style={{ margin: 0 }}>Ainda posso gastar</p>
               <button
@@ -385,11 +390,11 @@ export function HomePage() {
           </div>
         </motion.section>
 
-        {/* ===== ESTUDOS ===== */}
+        {/* ===== COMPROMISSOS ===== */}
         <motion.section className="home-section" variants={fadeUp}>
           <div className="home-section-header">
-            <span className="home-section-dot" style={{ background: 'var(--primary)' }} />
-            Estudos
+            <span className="home-section-dot" style={{ background: 'var(--data-2)' }} />
+            Compromissos
           </div>
 
           <div className="card">
@@ -557,11 +562,11 @@ export function HomePage() {
           </div>
         </motion.section>
 
-        {/* ===== SAÚDE ===== */}
+        {/* ===== HÁBITOS ===== */}
         <motion.section className="home-section" variants={fadeUp}>
           <div className="home-section-header">
             <span className="home-section-dot" style={{ background: 'var(--ok)' }} />
-            Saúde
+            Hábitos
           </div>
 
           <div className="card home-clickable" onClick={() => navigate('/saude')}>

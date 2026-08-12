@@ -5,6 +5,7 @@ import type { StudiesOverview, Subject } from '../api/types';
 import { springSmooth, springTap } from '../lib/motion';
 import { DATA_COLORS } from '../utils/palette';
 import { CheckIcon, ChevronDownIcon, PlusIcon, TrashIcon } from './icons';
+import { EmptyState } from './ui';
 
 /**
  * Cadastro de matérias e assuntos.
@@ -82,10 +83,10 @@ export function SubjectsManager() {
       </div>
 
       {subjects.length === 0 && !adding ? (
-        <div className="empty-state">
-          <p className="empty-state-title">Nenhuma matéria cadastrada</p>
-          <p className="empty-state-text">Cadastre as matérias do semestre para usá-las em provas e tarefas.</p>
-        </div>
+        <EmptyState
+          title="Nenhuma matéria cadastrada"
+          text="Cadastre as matérias do semestre para usá-las em provas e tarefas."
+        />
       ) : (
         <div className="subject-grid">
           {subjects.map((s) => (
