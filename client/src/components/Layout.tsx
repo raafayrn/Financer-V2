@@ -6,6 +6,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useShell } from '../context/ShellContext';
 import { springSheet, springSmooth, springTap } from '../lib/motion';
 import { ChatBox } from './ChatBox';
+import { RightRail } from './RightRail';
 import {
   BookIcon,
   DropletIcon,
@@ -41,11 +42,6 @@ function HomeIcon() {
 
 type Section = { id: string; label: string; home: string; icon: ComponentType };
 
-/**
- * Navegação primária. Relatórios virou o modo "Ano" de Finanças e
- * Investimentos virou sub-tela — nenhum dos dois disputa mais este nível, o
- * que eliminou a camada de sub-abas que existia no mobile.
- */
 const SECTIONS: Section[] = [
   { id: 'home', label: 'Home', home: '/', icon: HomeIcon },
   { id: 'financas', label: 'Finanças', home: '/financas', icon: WalletIcon },
@@ -61,7 +57,6 @@ function sectionForPath(pathname: string): Section | null {
   return null; // /ajustes não é seção primária
 }
 
-/** Ações do "+", na ordem de uso de cada contexto. */
 type QuickAction = { label: string; hint: string; to: string; icon: ComponentType };
 
 const ACTION_EXPENSE: QuickAction = { label: 'Gasto', hint: 'Registrar uma saída', to: '/financas?new=expense', icon: WalletIcon };
@@ -71,10 +66,6 @@ const ACTION_WORKOUT: QuickAction = { label: 'Treino', hint: 'Registrar o treino
 const ACTION_TASK: QuickAction = { label: 'Tarefa', hint: 'Com matéria e prazo', to: '/estudos?new=task', icon: BookIcon };
 const ACTION_EVENT: QuickAction = { label: 'Evento', hint: 'Compromisso na agenda', to: '/estudos?new=event', icon: BookIcon };
 
-/**
- * O "+" oferece primeiro o que faz sentido na tela atual, mas nunca esconde as
- * outras opções — registrar um gasto continua a um toque de qualquer lugar.
- */
 function actionsForPath(pathname: string): QuickAction[] {
   if (pathname.startsWith('/saude')) {
     return [ACTION_WATER, ACTION_WORKOUT, ACTION_EXPENSE, ACTION_TASK];
@@ -138,6 +129,15 @@ function QuickAddMenu({ open, onClose }: { open: boolean; onClose: () => void })
   );
 }
 
+/**
+ * Shell do app. No desktop passou a ser um grid de três colunas: sidebar de
+ * navegação à esquerda, conteúdo no meio, trilha de contexto à direita. O
+ * espaço vazio dos lados era o maior sintoma do redesign anterior — o app se
+ * comportava como uma coluna estreita centrada em telas largas.
+ *
+ * No mobile o layout continua sendo o mesmo: cabeçalho rolável por tela +
+ * barra inferior com o "+" ao centro.
+ */
 export function Layout() {
   const { user } = useAuth();
   const { theme, toggleTheme } = useTheme();
@@ -152,54 +152,57 @@ export function Layout() {
     prevPath.current = location.pathname;
   }
   const section = sectionForPath(location.pathname);
-
-  const themeButton = (
-    <motion.button
-      className="icon-btn-outline"
-      title={theme === 'dark' ? 'Ativar modo claro' : 'Ativar modo escuro'}
-      aria-label={theme === 'dark' ? 'Ativar modo claro' : 'Ativar modo escuro'}
-      onClick={toggleTheme}
-      whileTap={{ scale: 0.9 }}
-      transition={springTap}
-    >
-      {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
-    </motion.button>
-  );
+  const showRail = !location.pathname.startsWith('/ajustes');
 
   return (
     <div className="layout">
-      {/* Navbar — desktop. Nível único: as sub-abas deixaram de existir. */}
-      <header className="navbar-desktop">
-        <div className="navbar-desktop-top">
+      {/* Sidebar — desktop. Vertical, marca no topo, ações fixas no rodapé. */}
+      <aside className="sidebar">
+        <div className="sidebar-brand">
           <span className="brand">Orbit</span>
-          <nav className="navbar-desktop-sections">
-            {SECTIONS.map((s) => (
+        </div>
+        <nav className="sidebar-nav" aria-label="Navegação principal">
+          {SECTIONS.map((s) => {
+            const active = s.id === section?.id;
+            return (
               <button
                 key={s.id}
-                className={`navbar-section-item${s.id === section?.id ? ' active' : ''}`}
+                className={`sidebar-item${active ? ' active' : ''}`}
                 onClick={() => navigate(s.home)}
+                aria-current={active ? 'page' : undefined}
               >
-                {s.id === section?.id && (
-                  <motion.span layoutId="desktop-section-pill" className="navbar-section-pill" transition={springSheet} />
+                {active && (
+                  <motion.span layoutId="sidebar-pill" className="sidebar-pill" transition={springSheet} />
                 )}
-                <span className="navbar-section-icon">
+                <span className="sidebar-icon">
                   <s.icon />
                 </span>
-                <span style={{ position: 'relative' }}>{s.label}</span>
+                <span className="sidebar-label">{s.label}</span>
               </button>
-            ))}
-          </nav>
-          <div className="navbar-desktop-right">
+            );
+          })}
+        </nav>
+        <div className="sidebar-bottom">
+          <motion.button
+            className="btn-primary sidebar-add"
+            onClick={() => setQuickAdd(true)}
+            whileTap={{ scale: 0.97 }}
+            transition={springTap}
+          >
+            <PlusIcon />
+            <span>Registrar</span>
+          </motion.button>
+          <div className="sidebar-utility">
             <motion.button
-              className="btn-primary navbar-add"
-              onClick={() => setQuickAdd(true)}
-              whileTap={{ scale: 0.95 }}
+              className="icon-btn-outline"
+              title={theme === 'dark' ? 'Ativar modo claro' : 'Ativar modo escuro'}
+              aria-label={theme === 'dark' ? 'Ativar modo claro' : 'Ativar modo escuro'}
+              onClick={toggleTheme}
+              whileTap={{ scale: 0.9 }}
               transition={springTap}
             >
-              <PlusIcon />
-              <span>Registrar</span>
+              {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
             </motion.button>
-            {themeButton}
             <motion.button
               className={`icon-btn-outline${location.pathname === '/ajustes' ? ' icon-btn-outline-active' : ''}`}
               title="Ajustes"
@@ -210,13 +213,10 @@ export function Layout() {
             >
               <GearIcon />
             </motion.button>
-            <span className="user-name">{user?.name}</span>
+            <span className="sidebar-user" title={user?.name}>{user?.name}</span>
           </div>
         </div>
-      </header>
-
-      {/* O topbar mobile foi removido: o título agora é cabeçalho rolável da
-          própria página (ver PageHeader), o que devolve ~90px de área útil. */}
+      </aside>
 
       <main className="content">
         <AnimatePresence mode="wait" initial={false} custom={navDir.current}>
@@ -234,8 +234,11 @@ export function Layout() {
         </AnimatePresence>
       </main>
 
-      {/* Assistente — global. Antes só existia em /financas, escondendo o
-          caminho mais rápido de lançar um gasto. */}
+      {/* Trilha à direita — só a partir de 1280px. Foco, atalho de registrar e
+          últimos lançamentos ficam sempre visíveis. Em Ajustes ela some,
+          porque tema/registrar/ajustes já estão no fluxo da própria tela. */}
+      {showRail && <RightRail />}
+
       <ChatBox
         onSaved={requestRefresh}
         onPreviews={(previews) => {
@@ -246,7 +249,7 @@ export function Layout() {
 
       <QuickAddMenu open={quickAdd} onClose={() => setQuickAdd(false)} />
 
-      {/* Menu inferior — mobile. O "+" ocupa o centro, o ponto mais alcançável
+      {/* Barra inferior — mobile. O "+" ocupa o centro, o ponto mais alcançável
           do polegar, porque registrar é a ação mais repetida do app. */}
       <nav className="bottom-nav">
         {SECTIONS.slice(0, 2).map((s) => (

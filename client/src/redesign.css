@@ -208,6 +208,274 @@
   color: var(--text-muted);
 }
 
+/* ============================================================================
+   SHELL DE TRÊS COLUNAS (desktop)
+   Sidebar à esquerda, conteúdo no meio, trilha de contexto à direita. Nas
+   telas abaixo de 900px o layout inteiro empilha e a navegação vira barra
+   inferior — as regras específicas de mobile ficam depois deste bloco.
+   ========================================================================= */
+
+/* Base compartilhada. .layout continua flex-column no mobile (herdado). */
+.sidebar,
+.right-rail {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  /* Cobre o antigo topbar. Agora a navegação é lateral. */
+  .navbar-desktop {
+    display: none !important;
+  }
+  .bottom-nav {
+    display: none;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 232px 1fr;
+    grid-template-rows: 1fr;
+    min-height: 100vh;
+  }
+
+  .content {
+    /* O padding lateral fica menor porque a sidebar já cria a margem. E o
+       max-width sobe: no shell antigo, 1200px era o teto da tela inteira. */
+    padding: var(--s5) var(--s6) var(--s6);
+    max-width: 1080px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s5);
+    padding: var(--s5) var(--s4);
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    height: 100vh;
+  }
+  .sidebar-brand {
+    padding: 0 var(--s2);
+  }
+  .sidebar-brand .brand {
+    font-size: var(--fs-title);
+    letter-spacing: -0.02em;
+  }
+  .sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s1);
+    flex: 1;
+  }
+  .sidebar-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--s3);
+    padding: var(--s3);
+    min-height: var(--tap);
+    border: none;
+    background: none;
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: var(--fs-body);
+    font-weight: 550;
+    color: var(--text-muted);
+    text-align: left;
+    cursor: pointer;
+    transition: color 0.16s ease, background 0.16s ease;
+  }
+  .sidebar-item:hover {
+    background: var(--surface-2);
+    color: var(--text);
+  }
+  .sidebar-item.active {
+    color: var(--primary);
+  }
+  .sidebar-pill {
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius-sm);
+    background: var(--primary-soft);
+    z-index: 0;
+  }
+  .sidebar-icon,
+  .sidebar-label {
+    position: relative;
+    z-index: 1;
+  }
+  .sidebar-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+  }
+  .sidebar-icon svg {
+    width: 22px;
+    height: 22px;
+    stroke: currentColor;
+    fill: none;
+  }
+  .sidebar-item.active .sidebar-icon svg {
+    fill: currentColor;
+    fill-opacity: 0.12;
+  }
+
+  .sidebar-bottom {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s3);
+    padding-top: var(--s3);
+    border-top: 1px solid var(--border);
+  }
+  .sidebar-add {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--s2);
+    padding: var(--s3);
+  }
+  .sidebar-add svg {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+    stroke-width: 2.2;
+    fill: none;
+  }
+  .sidebar-utility {
+    display: flex;
+    align-items: center;
+    gap: var(--s2);
+  }
+  .sidebar-user {
+    flex: 1;
+    font-size: var(--fs-label);
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+/* A trilha à direita aparece só quando há espaço real para ela. Abaixo disso
+   o conteúdo fica com o max-width e o vazio se resolve com margens simétricas. */
+@media (min-width: 1280px) {
+  .layout {
+    grid-template-columns: 232px 1fr 300px;
+  }
+  .content {
+    padding: var(--s5) var(--s6);
+    max-width: none;
+    margin: 0;
+  }
+  .right-rail {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s4);
+    padding: var(--s5) var(--s4);
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  .rail-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s2);
+  }
+  .rail-card-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--s2);
+  }
+  .rail-empty {
+    margin: 0;
+    font-size: var(--fs-sm);
+    color: var(--text-muted);
+  }
+  .rail-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s2);
+  }
+  .rail-list-item {
+    display: flex;
+    align-items: baseline;
+    gap: var(--s2);
+    padding-bottom: var(--s2);
+    border-bottom: 1px solid var(--border);
+  }
+  .rail-list-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+  .rail-list-main {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1;
+  }
+  .rail-list-title {
+    font-size: var(--fs-sm);
+    font-weight: 550;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .rail-list-meta {
+    font-size: var(--fs-label);
+    color: var(--text-muted);
+  }
+  .rail-list-value {
+    font-size: var(--fs-sm);
+    font-weight: 650;
+    white-space: nowrap;
+  }
+  .rail-event {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--s3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    text-align: left;
+    font-family: inherit;
+    color: var(--text);
+    cursor: pointer;
+    transition: border-color 0.16s ease;
+  }
+  .rail-event:hover {
+    border-color: var(--primary);
+  }
+  .rail-event-title {
+    font-size: var(--fs-body);
+    font-weight: 600;
+  }
+  .rail-event-meta {
+    font-size: var(--fs-label);
+    color: var(--text-muted);
+  }
+
+  /* O max-width das colunas centrais desaparece — o próprio grid limita. */
+  .home-page {
+    grid-template-columns: 1fr 1fr;
+  }
+  .home-top {
+    max-width: none;
+  }
+}
+
 /* ---------- Topo da Home ----------
    Largura total acima do grid de três colunas dos domínios. */
 .home-top {
@@ -645,7 +913,10 @@
   align-items: baseline;
   justify-content: space-between;
   gap: var(--s3);
-  padding: var(--s4) 0 var(--s1);
+  /* A lista de lançamentos é edge-to-edge (margin: 0 -18px), então cada linha
+     precisa reintroduzir o padding lateral que compensa a extensão. Sem isso,
+     "14/08" e ",00" caíam nos 18px que passam da borda do card. */
+  padding: var(--s4) 18px var(--s1);
   border-bottom: 1px solid var(--border);
   position: sticky;
   top: 0;
