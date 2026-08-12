@@ -1,6 +1,8 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api, ApiError } from '../api/client';
+import { PageHeader } from '../components/PageHeader';
 import type { Investment, InvestmentInput, InvestmentSummary } from '../api/types';
 import { formatCurrency, formatDayMonth, monthShort } from '../utils/format';
 import { INVESTMENT_TYPE_COLOR, INVESTMENT_TYPE_LABEL } from '../utils/investments';
@@ -21,6 +23,7 @@ const overviewItem = {
 type ModalState = { kind: 'closed' } | { kind: 'create' } | { kind: 'edit'; investment: Investment };
 
 export function InvestmentsPage() {
+  const navigate = useNavigate();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [summary, setSummary] = useState<InvestmentSummary | null>(null);
@@ -74,19 +77,26 @@ export function InvestmentsPage() {
 
   return (
     <div className="page">
-      <h2 className="page-title">Investimentos</h2>
-
-      <div className="section-head">
-        <span />
-        <motion.button
-          className="btn-primary btn-sm"
-          onClick={() => setModal({ kind: 'create' })}
-          whileTap={{ scale: 0.95 }}
-          transition={springTap}
-        >
-          + Novo
-        </motion.button>
-      </div>
+      {/* Investimentos saiu da navegação principal: chega-se aqui pelo card de
+          saldo em Finanças, então o cabeçalho oferece a volta. */}
+      <PageHeader
+        title="Investimentos"
+        actions={
+          <>
+            <button className="btn-ghost btn-sm" onClick={() => navigate('/financas')}>
+              ← Finanças
+            </button>
+            <motion.button
+              className="btn-primary btn-sm"
+              onClick={() => setModal({ kind: 'create' })}
+              whileTap={{ scale: 0.95 }}
+              transition={springTap}
+            >
+              + Novo
+            </motion.button>
+          </>
+        }
+      />
 
       <div className="year-nav">
         <button className="month-arrow" onClick={() => setYear((y) => y - 1)} aria-label="Ano anterior">

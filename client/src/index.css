@@ -1,96 +1,181 @@
+/* ============================================================================
+   ORBIT — SISTEMA DE DESIGN
+   Direção "painel de instrumentos": superfícies sólidas e opacas, neutro de
+   viés quente, acento petróleo. As camadas se separam por contraste de
+   superfície, não por blur.
+   ========================================================================= */
+
 :root {
-  --bg: #f6f9fd;
-  --bg-blob-1: rgba(0, 122, 255, 0.22);
-  --bg-blob-2: rgba(52, 199, 89, 0.14);
-  --bg-blob-3: rgba(191, 90, 242, 0.12);
-  --surface: rgba(255, 255, 255, 0.55);
+  /* ---- Superfícies (nível 0 = ground, 1 = card, 2 = chip/input) ---- */
+  --bg: #fbfaf7;
+  --surface: #ffffff;
   --surface-solid: #ffffff;
-  --surface-2: rgba(100, 116, 139, 0.1);
-  --menu-bg: rgba(255, 255, 255, 0.94);
-  --text: #1c1c1e;
-  --text-muted: #7c8ba1;
-  --border: rgba(71, 85, 105, 0.13);
-  --primary: #007aff;
-  --primary-hover: #0067d6;
+  --surface-2: #f3f1ec;
+  --surface-3: #eae7e0;
+  --menu-bg: #ffffff;
+
+  /* ---- Texto ---- */
+  --text: #1a1c1b;
+  --text-muted: #5c6360; /* 5,9:1 sobre --bg — passa WCAG AA */
+  --text-faint: #7d8481; /* apenas decorativo: ícones, separadores */
+
+  --border: #dfdbd3;
+  --border-strong: #c6c1b7;
+
+  /* ---- Acento petróleo ---- */
+  --primary: #0e6c78;
+  --primary-hover: #0a545e;
   --primary-contrast: #ffffff;
+  --primary-soft: #e2eff1;
 
-  --ok: #30b350;
-  --ok-bg: rgba(52, 199, 89, 0.15);
-  --warning: #d98006;
-  --warning-bg: rgba(255, 159, 10, 0.15);
-  --over: #ff3b30;
-  --over-bg: rgba(255, 59, 48, 0.13);
-  --info-bg: rgba(0, 122, 255, 0.12);
+  /* ---- Semânticas (dinheiro/estado — nunca usadas como acento) ---- */
+  --ok: #2f7d4e;
+  --ok-bg: #e6f1e9;
+  --warning: #9a6410;
+  --warning-bg: #f7eedc;
+  --over: #b23a2e;
+  --over-bg: #f8e7e4;
+  --info-bg: #e2eff1;
 
-  --radius: 22px;
-  --radius-sm: 14px;
-  --shadow: 0 12px 30px rgba(0, 0, 0, 0.07), 0 2px 8px rgba(0, 0, 0, 0.04);
-  --shadow-float: 0 10px 26px rgba(0, 0, 0, 0.16), 0 2px 6px rgba(0, 0, 0, 0.08);
-  --blur: blur(24px) saturate(180%);
+  /* ---- Paleta categórica: matérias, categorias, tipos de investimento.
+         Consumida por índice. Nenhum hex deve voltar a aparecer em .tsx ---- */
+  --data-1: #0e6c78;
+  --data-2: #8a4fbf;
+  --data-3: #c2571c;
+  --data-4: #2f7d4e;
+  --data-5: #b8336a;
+  --data-6: #1f5fa8;
+  --data-7: #8a7a12;
+  --data-8: #546a75;
+
+  /* ---- Escala de espaçamento (base 4px) ---- */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+  --s7: 48px;
+  --s8: 72px;
+
+  /* ---- Escala tipográfica — piso de 12px, sem exceção ---- */
+  --fs-label: 0.75rem; /* 12px */
+  --fs-sm: 0.875rem; /* 14px */
+  --fs-body: 1rem; /* 16px */
+  --fs-heading: 1.25rem; /* 20px */
+  --fs-title: 1.5rem; /* 24px */
+  --fs-display: 2.75rem; /* 44px */
+
+  --font-ui: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI',
+    Roboto, sans-serif;
+  --font-num: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Segoe UI Mono', Menlo, monospace;
+
+  /* ---- Raio proporcional ao elemento (era 22px universal) ---- */
+  --radius-xs: 6px; /* chips, badges, pontos */
+  --radius-sm: 10px; /* inputs, botões */
+  --radius: 14px; /* cards */
+  --radius-lg: 20px; /* sheets, modais */
+
+  --shadow: 0 1px 2px rgba(26, 28, 27, 0.04), 0 4px 12px rgba(26, 28, 27, 0.05);
+  --shadow-float: 0 4px 12px rgba(26, 28, 27, 0.1), 0 12px 32px rgba(26, 28, 27, 0.12);
+
+  /* Glassmorfismo desativado: superfícies agora são opacas. Mantido como token
+     para os overlays modais, que ainda se beneficiam do blur. */
+  --blur: none;
+  --blur-overlay: blur(16px) saturate(160%);
+
+  --tap: 44px; /* alvo mínimo de toque */
   --maxw: 640px;
-  --maxw-desktop: 1800px;
-  /* Breakpoint desktop: 880px (hardcoded nas media queries — custom
+  --maxw-desktop: 1200px;
+  /* Breakpoints: 600px / 900px / 1280px (literais nas media queries — custom
      properties não funcionam dentro de condições de @media). */
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --bg: #1c212b;
-    --bg-blob-1: rgba(10, 132, 255, 0.28);
-    --bg-blob-2: rgba(48, 209, 88, 0.14);
-    --bg-blob-3: rgba(191, 90, 242, 0.16);
-    --surface: rgba(41, 46, 58, 0.55);
-    --surface-solid: #262b36;
-    --surface-2: rgba(148, 163, 184, 0.14);
-    --menu-bg: rgba(30, 34, 44, 0.94);
-    --text: #f5f5f7;
-    --text-muted: #9aa5b8;
-    --border: rgba(148, 163, 184, 0.14);
-    --primary: #0a84ff;
-    --primary-hover: #409cff;
-    --primary-contrast: #ffffff;
+    --bg: #131513;
+    --surface: #1b1e1d;
+    --surface-solid: #1b1e1d;
+    --surface-2: #232726;
+    --surface-3: #2c3130;
+    --menu-bg: #232726;
 
-    --ok: #30d158;
-    --ok-bg: rgba(48, 209, 88, 0.18);
-    --warning: #ff9f0a;
-    --warning-bg: rgba(255, 159, 10, 0.16);
-    --over: #ff453a;
-    --over-bg: rgba(255, 69, 58, 0.18);
-    --info-bg: rgba(10, 132, 255, 0.16);
+    --text: #edebe6;
+    --text-muted: #a2a9a6; /* 7,1:1 sobre --bg */
+    --text-faint: #7f8683;
 
-    --shadow: 0 12px 30px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.3);
-    --shadow-float: 0 10px 30px rgba(0, 0, 0, 0.55);
+    --border: #2e3331;
+    --border-strong: #434a47;
+
+    /* O acento clareia no escuro, então o texto sobre ele precisa ser escuro. */
+    --primary: #4ecbd9;
+    --primary-hover: #7adbe6;
+    --primary-contrast: #0b2e33;
+    --primary-soft: #14343a;
+
+    --ok: #62c98a;
+    --ok-bg: #162c20;
+    --warning: #dfa946;
+    --warning-bg: #322817;
+    --over: #e8796b;
+    --over-bg: #331c19;
+    --info-bg: #14343a;
+
+    --data-1: #4ecbd9;
+    --data-2: #c08ce8;
+    --data-3: #ef8b4e;
+    --data-4: #62c98a;
+    --data-5: #ea6f9c;
+    --data-6: #6fa4e8;
+    --data-7: #cbb63f;
+    --data-8: #93a8b2;
+
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.35);
+    --shadow-float: 0 4px 12px rgba(0, 0, 0, 0.5), 0 12px 32px rgba(0, 0, 0, 0.45);
   }
 }
 
 /* Override manual — vence a preferência do sistema quando o usuário escolhe
    explicitamente um tema pelo botão da navbar (ver ThemeContext). */
 :root[data-theme='dark'] {
-  --bg: #1c212b;
-  --bg-blob-1: rgba(10, 132, 255, 0.28);
-  --bg-blob-2: rgba(48, 209, 88, 0.14);
-  --bg-blob-3: rgba(191, 90, 242, 0.16);
-  --surface: rgba(41, 46, 58, 0.55);
-  --surface-solid: #262b36;
-  --surface-2: rgba(148, 163, 184, 0.14);
-  --menu-bg: rgba(30, 34, 44, 0.94);
-  --text: #f5f5f7;
-  --text-muted: #9aa5b8;
-  --border: rgba(148, 163, 184, 0.14);
-  --primary: #0a84ff;
-  --primary-hover: #409cff;
-  --primary-contrast: #ffffff;
+  --bg: #131513;
+  --surface: #1b1e1d;
+  --surface-solid: #1b1e1d;
+  --surface-2: #232726;
+  --surface-3: #2c3130;
+  --menu-bg: #232726;
 
-  --ok: #30d158;
-  --ok-bg: rgba(48, 209, 88, 0.18);
-  --warning: #ff9f0a;
-  --warning-bg: rgba(255, 159, 10, 0.16);
-  --over: #ff453a;
-  --over-bg: rgba(255, 69, 58, 0.18);
-  --info-bg: rgba(10, 132, 255, 0.16);
+  --text: #edebe6;
+  --text-muted: #a2a9a6;
+  --text-faint: #7f8683;
 
-  --shadow: 0 12px 30px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.3);
-  --shadow-float: 0 10px 30px rgba(0, 0, 0, 0.55);
+  --border: #2e3331;
+  --border-strong: #434a47;
+
+  --primary: #4ecbd9;
+  --primary-hover: #7adbe6;
+  --primary-contrast: #0b2e33;
+  --primary-soft: #14343a;
+
+  --ok: #62c98a;
+  --ok-bg: #162c20;
+  --warning: #dfa946;
+  --warning-bg: #322817;
+  --over: #e8796b;
+  --over-bg: #331c19;
+  --info-bg: #14343a;
+
+  --data-1: #4ecbd9;
+  --data-2: #c08ce8;
+  --data-3: #ef8b4e;
+  --data-4: #62c98a;
+  --data-5: #ea6f9c;
+  --data-6: #6fa4e8;
+  --data-7: #cbb63f;
+  --data-8: #93a8b2;
+
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.35);
+  --shadow-float: 0 4px 12px rgba(0, 0, 0, 0.5), 0 12px 32px rgba(0, 0, 0, 0.45);
 }
 
 * {
@@ -105,17 +190,41 @@ body {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI',
-    Roboto, sans-serif;
+  font-family: var(--font-ui);
+  /* Os blobs radiais saíram: competiam com o conteúdo e derrubavam o contraste
+     do texto secundário. O ground agora é chapado. */
   background-color: var(--bg);
-  background-image:
-    radial-gradient(680px circle at 6% -6%, var(--bg-blob-1), transparent 62%),
-    radial-gradient(640px circle at 100% 8%, var(--bg-blob-2), transparent 58%),
-    radial-gradient(720px circle at 30% 105%, var(--bg-blob-3), transparent 60%);
-  background-attachment: fixed;
   color: var(--text);
   -webkit-font-smoothing: antialiased;
   letter-spacing: -0.01em;
+}
+
+/* ---------- Foco de teclado — global ----------
+   Antes existia apenas em inputs e no switch, o que tornava a navegação por
+   teclado invisível em botões, chips, nav e linhas clicáveis. */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+/* Só remove o anel de quem realmente não recebe foco por teclado. */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Rótulos técnicos e valores monetários usam a família numérica. */
+.num,
+.money {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 button {
@@ -259,7 +368,7 @@ select option {
   gap: 3px;
   text-decoration: none;
   color: var(--text-muted);
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   font-weight: 500;
   padding: 4px 8px;
   border-radius: 10px;
@@ -375,7 +484,7 @@ select option {
   gap: 8px;
 }
 .filter-label {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 700;
   color: var(--text-muted);
   text-transform: uppercase;
@@ -415,7 +524,7 @@ select option {
   width: fit-content;
 }
 .switch-row > span:first-child {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 700;
   color: var(--text-muted);
   text-transform: uppercase;
@@ -723,7 +832,7 @@ select option {
   gap: 2px;
 }
 .detail-label {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -926,7 +1035,7 @@ select option {
   letter-spacing: -0.01em;
 }
 .chat-panel-hint {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
 }
 
@@ -1018,7 +1127,7 @@ select option {
   box-shadow: var(--shadow);
 }
 .chat-card-label {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 700;
   color: var(--over);
   text-transform: uppercase;
@@ -1095,6 +1204,21 @@ select option {
   height: 18px;
   stroke: currentColor;
   fill: none;
+}
+/* Alvo de toque de 44px sem inflar o visual: a área clicável cresce por
+   pseudo-elemento. Resolve os ícones de editar/excluir colados nas listas,
+   onde o toque errado era frequente no mobile. */
+.icon-btn-outline {
+  position: relative;
+}
+.icon-btn-outline::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: var(--tap);
+  height: var(--tap);
 }
 .icon-btn-outline:active {
   transform: scale(0.9);
@@ -1276,7 +1400,7 @@ select option {
   gap: 6px;
 }
 .tag {
-  font-size: 0.62rem;
+  font-size: 0.75rem;
   font-weight: 700;
   background: var(--info-bg);
   color: var(--primary);
@@ -1671,7 +1795,7 @@ select option {
   white-space: nowrap;
 }
 .recurring-item-meta {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
 }
 .recurring-item-amount {
@@ -1753,7 +1877,7 @@ select option {
   opacity: 0.45;
 }
 .chart-label {
-  font-size: 0.62rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
   font-weight: 500;
 }
@@ -2510,7 +2634,7 @@ select option {
 }
 .study-cal-weekday {
   text-align: center;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
   padding: 4px 0;
   font-weight: 500;
@@ -2539,8 +2663,8 @@ select option {
 .study-cal-dot { width: 5px; height: 5px; border-radius: 50%; }
 .study-cal-dot.exam { background: var(--over); }
 .study-cal-dot.task { background: var(--primary); }
-.study-cal-day.selected .study-cal-dot.exam { background: rgba(255,255,255,0.85); }
-.study-cal-day.selected .study-cal-dot.task { background: rgba(255,255,255,0.6); }
+.study-cal-day.selected .study-cal-dot.exam { background: var(--primary-contrast); }
+.study-cal-day.selected .study-cal-dot.task { background: var(--primary-contrast); }
 .study-cal-detail { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
 .study-cal-event {
   display: flex;
@@ -2554,7 +2678,7 @@ select option {
 }
 .study-cal-event:hover { opacity: 0.8; }
 .study-cal-event-type {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: #fff;
   padding: 2px 7px;
@@ -2636,10 +2760,10 @@ select option {
 .agenda-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  border: 1px solid rgba(255,255,255,0.1);
+  border: 1px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
-  background: #252b34;
+  background: var(--surface);
 }
 .agenda-weekday {
   text-align: center;
@@ -2647,25 +2771,25 @@ select option {
   font-weight: 600;
   color: var(--text-muted);
   padding: 8px 4px;
-  background: #2d3440;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 .agenda-cell {
   min-height: 90px;
   padding: 6px;
-  border-right: 1px solid rgba(255,255,255,0.06);
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
   cursor: pointer;
   transition: background 0.12s;
   display: flex;
   flex-direction: column;
   gap: 3px;
-  background: #252b34;
+  background: var(--surface);
 }
-.agenda-cell:hover { background: #2d3440; }
-.agenda-cell-empty { background: #252b34; cursor: default; }
+.agenda-cell:hover { background: var(--surface-2); }
+.agenda-cell-empty { background: var(--surface); cursor: default; }
 .agenda-cell:nth-child(7n) { border-right: none; }
 .agenda-today { background: color-mix(in srgb, var(--primary) 8%, transparent); }
 .agenda-selected { background: color-mix(in srgb, var(--primary) 14%, transparent) !important; }
@@ -2691,7 +2815,7 @@ select option {
 }
 .agenda-events { display: flex; flex-direction: column; gap: 2px; flex: 1; }
 .agenda-event-pill {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 500;
   color: #fff;
   padding: 2px 5px;
@@ -2708,7 +2832,7 @@ select option {
   font-style: normal;
 }
 .agenda-event-more {
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
   padding: 0 4px;
 }
@@ -2720,10 +2844,10 @@ select option {
   gap: 16px;
   position: sticky;
   top: 16px;
-  background: #2d3440;
+  background: var(--surface-2);
   border-radius: 12px;
   padding: 16px;
-  border: 1px solid rgba(255,255,255,0.1);
+  border: 1px solid var(--border);
 }
 .agenda-sidebar-date {
   display: flex;
@@ -2747,7 +2871,7 @@ select option {
   justify-content: space-between;
 }
 .agenda-sidebar-label {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text-muted);
@@ -2757,7 +2881,7 @@ select option {
 .agenda-sidebar-event {
   padding: 8px 10px;
   border-radius: 8px;
-  background: rgba(255,255,255,0.05);
+  background: var(--surface-2);
   border-left: 3px solid var(--primary);
   display: flex;
   flex-direction: column;
@@ -2767,7 +2891,7 @@ select option {
 }
 .agenda-sidebar-event:hover { opacity: 0.8; }
 .exam-sidebar { border-left-color: var(--over); }
-.agenda-sidebar-event-label { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.agenda-sidebar-event-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
 .agenda-sidebar-event-title { font-size: 0.85rem; font-weight: 600; }
 .agenda-sidebar-event-sub { font-size: 0.75rem; color: var(--text-muted); }
 .agenda-sidebar-empty { font-size: 0.82rem; color: var(--text-muted); margin: 0; }
@@ -2788,7 +2912,10 @@ select option {
   flex-shrink: 0;
 }
 
-@media (max-width: 768px) {
+/* Alinhado ao breakpoint do sistema (900px). Antes era 768px — um valor solto
+   que não batia com nenhum outro e deixava uma faixa de larguras no layout
+   errado. */
+@media (max-width: 899px) {
   .agenda-layout { grid-template-columns: 1fr; }
   .agenda-cell { min-height: 56px; padding: 4px; }
   .agenda-sidebar { position: static; }
@@ -2832,7 +2959,7 @@ select option {
   color: #fff;
   padding: 2px 8px;
   border-radius: 999px;
-  font-size: 0.74rem;
+  font-size: 0.75rem;
   font-weight: 600;
 }
 .exam-actions {
@@ -3098,7 +3225,7 @@ select option {
   display: flex;
   align-items: center;
   gap: 7px;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -3190,7 +3317,7 @@ select option {
 }
 
 .home-label {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -3266,7 +3393,7 @@ select option {
 .home-mini-label {
   flex: 1;
   text-align: center;
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
 }
 
@@ -3301,7 +3428,7 @@ select option {
   font-size: 0.9rem;
 }
 .home-tag-done {
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   font-weight: 700;
   padding: 2px 7px;
   border-radius: 6px;

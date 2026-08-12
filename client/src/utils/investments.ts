@@ -10,12 +10,5 @@ export const INVESTMENT_TYPE_LABEL: Record<InvestmentType, string> = {
   OUTRO: 'Outro',
 };
 
-export const INVESTMENT_TYPE_COLOR: Record<InvestmentType, string> = {
-  RENDA_FIXA: '#3b82f6',
-  TESOURO_DIRETO: '#22c55e',
-  ACOES: '#ef4444',
-  FUNDOS: '#a855f7',
-  CRIPTO: '#f59e0b',
-  POUPANCA: '#14b8a6',
-  OUTRO: '#94a3b8',
-};
+// As cores vêm da paleta categórica única do app (ver utils/palette.ts).
+export { INVESTMENT_TYPE_COLOR } from './palette';

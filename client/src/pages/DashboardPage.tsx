@@ -15,9 +15,11 @@ import type {
   Summary,
 } from '../api/types';
 import { useMonth } from '../context/MonthContext';
+import { useShell } from '../context/ShellContext';
 import { MonthNavigator } from '../components/MonthNavigator';
+import { PageHeader } from '../components/PageHeader';
 import { ProgressBar } from '../components/ProgressBar';
-import { ChatBox } from '../components/ChatBox';
+import { ReportsPage } from './ReportsPage';
 import { ExpenseFormModal } from '../components/ExpenseFormModal';
 import { IncomeFormModal } from '../components/IncomeFormModal';
 import { IncomeSourcesModal } from '../components/IncomeSourcesModal';
@@ -110,17 +112,42 @@ export function DashboardPage() {
   const [modal, setModal] = useState<ModalState>({ kind: 'closed' });
   const [listCollapsed, setListCollapsed] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
+  const { refreshKey, pendingPreviews, setPendingPreviews } = useShell();
+
+  /** Mês é o padrão; "Ano" abre o que antes era a tela de Relatórios. */
+  const [range, setRange] = useState<'mes' | 'ano'>(
+    searchParams.get('range') === 'ano' ? 'ano' : 'mes',
+  );
+  /** Busca na lista de lançamentos — antes achar algo antigo exigia rolar. */
+  const [query, setQuery] = useState('');
 
   useEffect(() => {
+    const intent = searchParams.get('new');
+    let changed = false;
     if (searchParams.get('manage') === '1') {
       setModal({ kind: 'manage' });
-      setSearchParams((prev) => {
-        prev.delete('manage');
-        return prev;
-      }, { replace: true });
+      searchParams.delete('manage');
+      changed = true;
     }
+    // Intenções vindas do botão "+" global do Layout.
+    if (intent === 'expense') setModal({ kind: 'create' });
+    else if (intent === 'income') setModal({ kind: 'income' });
+    if (intent) {
+      searchParams.delete('new');
+      changed = true;
+    }
+    if (changed) setSearchParams(searchParams, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
+
+  // O assistente vive no Layout; quando ele detecta lançamentos, esta tela é
+  // quem abre o fluxo de confirmação.
+  useEffect(() => {
+    if (pendingPreviews && pendingPreviews.length > 0) {
+      setModal({ kind: 'chat-batch', previews: pendingPreviews, index: 0 });
+      setPendingPreviews(null);
+    }
+  }, [pendingPreviews, setPendingPreviews]);
 
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -168,9 +195,10 @@ export function DashboardPage() {
     }
   }, [year, month]);
 
+  // `refreshKey` muda quando o assistente global salva algo em outra tela.
   useEffect(() => {
     void load();
-  }, [load]);
+  }, [load, refreshKey]);
 
   const categoryById = new Map(categories.map((c) => [c.id, c]));
 
@@ -288,7 +316,14 @@ export function DashboardPage() {
     setSortMode('date-desc');
   }
 
+  const queryNorm = query.trim().toLowerCase();
+
   let filteredLedger = ledger.filter((item) => {
+    if (queryNorm) {
+      const cat = item.kind === 'expense' ? categoryById.get(item.data.categoryId ?? '') : undefined;
+      const haystack = `${item.data.description} ${cat?.name ?? ''}`.toLowerCase();
+      if (!haystack.includes(queryNorm)) return false;
+    }
     if (categoryFilter !== 'all' && (item.kind !== 'expense' || item.data.categoryId !== categoryFilter)) {
       return false;
     }
@@ -318,9 +353,33 @@ export function DashboardPage() {
 
   return (
     <div className="page">
-      <MonthNavigator />
+      <PageHeader title="Finanças" />
 
-      {loading && !summary ? (
+      {/* Período: "Ano" entrega o que era a tela de Relatórios, sem troca de
+          contexto — comparar meses virou um toque. */}
+      <div className="range-bar">
+        <div className="segmented">
+          <button
+            className={`segmented-item${range === 'mes' ? ' active' : ''}`}
+            onClick={() => setRange('mes')}
+            aria-pressed={range === 'mes'}
+          >
+            Mês
+          </button>
+          <button
+            className={`segmented-item${range === 'ano' ? ' active' : ''}`}
+            onClick={() => setRange('ano')}
+            aria-pressed={range === 'ano'}
+          >
+            Ano
+          </button>
+        </div>
+        {range === 'mes' && <MonthNavigator />}
+      </div>
+
+      {range === 'ano' ? (
+        <ReportsPage embedded />
+      ) : loading && !summary ? (
         <div className="center-pad">
           <div className="spinner" />
         </div>
@@ -473,11 +532,8 @@ export function DashboardPage() {
             )}
           </motion.div>
 
-          {/* Assistente: lançar por texto/foto ou perguntar sobre os gastos */}
-          <ChatBox
-            onSaved={() => void load()}
-            onPreviews={(previews) => setModal({ kind: 'chat-batch', previews, index: 0 })}
-          />
+          {/* O assistente subiu para o Layout: agora está disponível em
+              qualquer tela, não só aqui. */}
 
           {/* Lista de lançamentos (despesas + receitas juntas) */}
           <section className="card">
@@ -530,6 +586,24 @@ export function DashboardPage() {
                 </motion.button>
               </div>
             </div>
+
+            {!listCollapsed && (
+              <div className="search-row">
+                <input
+                  type="search"
+                  className="search-input"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Buscar por descrição ou categoria…"
+                  aria-label="Buscar lançamentos"
+                />
+                {query && (
+                  <button className="link-btn" onClick={() => setQuery('')}>
+                    Limpar
+                  </button>
+                )}
+              </div>
+            )}
 
             <AnimatePresence initial={false}>
             {filtersOpen && (

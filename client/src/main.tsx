@@ -5,6 +5,7 @@ import App from './App';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import './index.css';
+import './redesign.css'; // depois de index.css: sobrescreve o que o redesign mudou
 import { setupServiceWorker } from './registerSW';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

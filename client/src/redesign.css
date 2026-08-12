@@ -1,0 +1,529 @@
+/* ============================================================================
+   ORBIT — COMPONENTES DO REDESIGN
+   Carregado depois de index.css (ver main.tsx). Primeiro passo da quebra do
+   CSS monolítico: o que é novo nasce fora do arquivo de 3.400 linhas.
+   ========================================================================= */
+
+/* ---------- Cabeçalho de tela (substitui a topbar fixa do mobile) ---------- */
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding-top: var(--s2);
+}
+.page-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.page-header .page-title {
+  margin: 0;
+  font-size: var(--fs-title);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.page-subtitle {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+.page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  flex-shrink: 0;
+}
+
+/* ---------- Rótulo de seção ---------- */
+.section-eyebrow {
+  font-family: var(--font-num);
+  font-size: var(--fs-label);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* ---------- Foco de hoje (Home) ---------- */
+.focus-card {
+  gap: var(--s3);
+}
+.focus-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+}
+.focus-item {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  width: 100%;
+  padding: var(--s2);
+  min-height: var(--tap);
+  border: none;
+  background: none;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: var(--fs-body);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.16s ease;
+}
+.focus-item:hover {
+  background: var(--surface-2);
+}
+.focus-bullet {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.focus-over .focus-bullet { background: var(--over); }
+.focus-warning .focus-bullet { background: var(--warning); }
+.focus-primary .focus-bullet { background: var(--primary); }
+
+.focus-card--clear {
+  align-items: flex-start;
+  gap: 2px;
+}
+.focus-clear-title {
+  font-size: var(--fs-heading);
+  font-weight: 650;
+  letter-spacing: -0.015em;
+}
+.focus-clear-text {
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+
+/* ---------- Botão "+" central da barra inferior ---------- */
+.bottom-nav {
+  align-items: center;
+}
+.nav-add {
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  margin: 0 var(--s2);
+  border: none;
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--primary-contrast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--shadow-float);
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+.nav-add:hover { background: var(--primary-hover); }
+.nav-add:active { transform: scale(0.94); }
+.nav-add svg {
+  width: 26px;
+  height: 26px;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  fill: none;
+}
+
+/* ---------- Menu do "+" ---------- */
+.quickadd-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: var(--blur-overlay);
+  -webkit-backdrop-filter: var(--blur-overlay);
+  z-index: 40;
+}
+.quickadd-sheet {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(96px + env(safe-area-inset-bottom));
+  width: min(420px, calc(100vw - 24px));
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-float);
+  padding: var(--s4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  z-index: 41;
+}
+.quickadd-title {
+  font-family: var(--font-num);
+  font-size: var(--fs-label);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.quickadd-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s2);
+}
+.quickadd-item {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s3);
+  min-height: var(--tap);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font-family: inherit;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.16s ease, background 0.16s ease;
+}
+.quickadd-item:hover {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+.quickadd-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: var(--radius-xs);
+  background: var(--surface);
+  color: var(--primary);
+}
+.quickadd-icon svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+}
+.quickadd-item-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.quickadd-item-text strong {
+  font-size: var(--fs-sm);
+  font-weight: 650;
+}
+.quickadd-item-text small {
+  font-size: var(--fs-label);
+  color: var(--text-muted);
+}
+
+.navbar-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.navbar-add svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  fill: none;
+}
+
+/* ---------- Seletor de período (Mês / Ano) ---------- */
+.range-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  flex-wrap: wrap;
+}
+.segmented-item {
+  position: relative;
+  min-height: 36px;
+  padding: 0 var(--s4);
+  border: none;
+  border-radius: var(--radius-xs);
+  background: none;
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease;
+}
+.segmented-item.active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+
+/* ---------- Busca ---------- */
+.search-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+.search-input {
+  flex: 1;
+  min-height: var(--tap);
+  padding: 0 var(--s3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: var(--fs-body);
+}
+.search-input:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: -1px;
+}
+
+/* ---------- Lista unificada da Agenda (provas + tarefas + eventos) ---------- */
+.agenda-item-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.agenda-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s3) 0 var(--s3) var(--s3);
+  border-bottom: 1px solid var(--border);
+}
+.agenda-item:last-child {
+  border-bottom: none;
+}
+.agenda-item-accent {
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  border-radius: 2px;
+}
+.agenda-item-kind {
+  flex-shrink: 0;
+  font-family: var(--font-num);
+  font-size: var(--fs-label);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  min-width: 48px;
+}
+.agenda-item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+.agenda-item-title {
+  font-size: var(--fs-body);
+  font-weight: 550;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.agenda-item-meta {
+  font-size: var(--fs-label);
+  color: var(--text-muted);
+}
+.countdown-chip {
+  flex-shrink: 0;
+  font-size: var(--fs-label);
+  font-weight: 600;
+  padding: 3px var(--s2);
+  border-radius: var(--radius-xs);
+  background: var(--surface-2);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.countdown-chip.urgent {
+  background: var(--warning-bg);
+  color: var(--warning);
+}
+.countdown-chip.over {
+  background: var(--over-bg);
+  color: var(--over);
+}
+
+/* ---------- Estado vazio (antes ficava simplesmente em branco) ---------- */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s1);
+  padding: var(--s6) var(--s4);
+  text-align: center;
+}
+.empty-state-title {
+  margin: 0;
+  font-size: var(--fs-body);
+  font-weight: 650;
+}
+.empty-state-text {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+  max-width: 42ch;
+}
+
+/* ---------- Ajustes ---------- */
+.settings-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+}
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding: var(--s3) 0;
+  border-bottom: 1px solid var(--border);
+}
+.settings-row:last-child {
+  border-bottom: none;
+}
+.settings-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.settings-row-text strong {
+  font-size: var(--fs-body);
+  font-weight: 600;
+}
+.settings-row-text small {
+  font-size: var(--fs-label);
+  color: var(--text-muted);
+}
+.schedule-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.schedule-day {
+  display: flex;
+  gap: var(--s4);
+  padding: var(--s3) 0;
+  border-bottom: 1px solid var(--border);
+}
+.schedule-day:last-child {
+  border-bottom: none;
+}
+.schedule-weekday {
+  flex: 0 0 76px;
+  font-size: var(--fs-sm);
+  font-weight: 650;
+}
+.schedule-classes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  min-width: 0;
+}
+.schedule-class {
+  display: flex;
+  flex-direction: column;
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+.schedule-time {
+  font-family: var(--font-num);
+  font-size: var(--fs-label);
+  color: var(--text-faint);
+}
+
+/* ---------- Rebalanceamento da tela de Saúde ----------
+   O treino — o dado que exige mais esforço para registrar — subiu para o topo
+   e a água desceu. A troca foi feita no JSX, não com `order`: reordenar só
+   visualmente deixaria a ordem de tabulação diferente da ordem na tela. */
+
+/* O anel de água encolhe: ocupava a tela toda sendo o dado mais simples. */
+.water-ring svg {
+  max-width: 168px;
+  height: auto;
+}
+
+/* ---------- Correção de overflow horizontal na Agenda ----------
+   Itens de grid têm `min-width: auto` por padrão, então o conteúdo largo do
+   calendário (nomes longos de matéria) esticava a coluna e a página inteira
+   rolava de lado no mobile. O `min-width: 0` deixa a coluna encolher e o
+   calendário rola dentro do próprio contêiner. */
+.agenda-layout > *,
+.agenda-main {
+  min-width: 0;
+}
+.agenda-grid-scroll {
+  overflow-x: auto;
+}
+.agenda-event-pill,
+.agenda-sidebar-event-label,
+.agenda-sidebar-weekday,
+.agenda-sidebar-day {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Células maiores no mobile: os pontos coloridos eram pequenos demais. */
+@media (max-width: 899px) {
+  .agenda-cell {
+    min-height: 64px;
+  }
+  .agenda-event-pill {
+    font-size: var(--fs-label);
+    padding: 1px 4px;
+  }
+}
+
+/* ---------- Densidade geral ---------- */
+/* Glassmorfismo removido: as superfícies agora são opacas e a separação entre
+   camadas vem do contraste, não do blur. */
+.card {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.bottom-nav {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+/* A topbar sumiu do mobile; o padding inferior encolhe junto. */
+.content {
+  padding: var(--s3) var(--s4) 148px;
+}
+
+/* ============================ DESKTOP ============================ */
+@media (min-width: 900px) {
+  /* Tema e ajustes já vivem na navbar do desktop. */
+  .page-header-only-mobile {
+    display: none;
+  }
+  .page-header .page-title {
+    font-size: 2rem;
+  }
+  .quickadd-sheet {
+    bottom: auto;
+    top: 88px;
+    left: auto;
+    right: 24px;
+    transform: none;
+    width: 420px;
+  }
+}

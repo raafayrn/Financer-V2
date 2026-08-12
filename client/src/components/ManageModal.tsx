@@ -4,6 +4,7 @@ import { api, ApiError } from '../api/client';
 import type { Category, TelegramStatus } from '../api/types';
 import { formatCurrency, monthName } from '../utils/format';
 import { springSmooth, springTap } from '../lib/motion';
+import { DATA_COLORS } from '../utils/palette';
 import { Modal } from './Modal';
 
 function TrashIcon() {
@@ -14,16 +15,7 @@ function TrashIcon() {
   );
 }
 
-const PALETTE = [
-  '#ef4444',
-  '#f59e0b',
-  '#22c55e',
-  '#3b82f6',
-  '#6366f1',
-  '#a855f7',
-  '#ec4899',
-  '#14b8a6',
-];
+const PALETTE = DATA_COLORS;
 
 interface Props {
   year: number;

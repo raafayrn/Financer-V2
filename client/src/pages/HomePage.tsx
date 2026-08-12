@@ -5,7 +5,6 @@ import { api } from '../api/client';
 import type {
   Account,
   AgendaEvent,
-  AgendaEventCategory,
   BodyMetric,
   Category,
   Expense,
@@ -20,9 +19,12 @@ import type {
 } from '../api/types';
 import { useMonth } from '../context/MonthContext';
 import { formatCurrency, formatDayMonth, todayIso } from '../utils/format';
+import { AGENDA_CATEGORY_COLORS, AGENDA_CATEGORY_LABELS } from '../utils/palette';
+import { CLASS_SCHEDULE } from '../utils/schedule';
 import { springSmooth } from '../lib/motion';
 import { ExpenseFormModal } from '../components/ExpenseFormModal';
 import { IncomeFormModal } from '../components/IncomeFormModal';
+import { PageHeader } from '../components/PageHeader';
 
 function daysUntil(dateStr: string): number {
   const today = new Date();
@@ -39,49 +41,15 @@ function formatMl(ml: number): string {
 
 const WEEKDAYS_PT = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
-// Quadro de horários fixo (segunda a sexta, 18:55–22:30)
-const CLASS_SCHEDULE: Record<number, { time: string; name: string }[]> = {
-  // 1=Seg 2=Ter 3=Qua 4=Qui 5=Sex
-  1: [
-    { time: '18:55–20:35', name: 'Cálculo Diferencial e Integral II' },
-    { time: '20:50–22:30', name: 'Estática em Engenharia' },
-  ],
-  2: [
-    { time: '18:55–20:35', name: 'Física Geral e Experimental II' },
-    { time: '20:50–22:30', name: 'Estática em Engenharia' },
-  ],
-  3: [
-    { time: '18:55–20:35', name: 'Cálculo Diferencial e Integral II' },
-    { time: '20:50–22:30', name: 'Física Geral e Experimental II' },
-  ],
-  4: [
-    { time: '18:55–20:35', name: 'Geometria e Álgebra Linear' },
-    { time: '20:50–22:30', name: 'Introdução à Ciência dos Materiais' },
-  ],
-  5: [
-    { time: '18:55–20:35', name: 'Desenho e Modelagem Geométrica' },
-    { time: '20:50–22:30', name: 'Geometria e Álgebra Linear' },
-  ],
-};
+const CATEGORY_COLORS = AGENDA_CATEGORY_COLORS;
+const CATEGORY_LABELS = AGENDA_CATEGORY_LABELS;
 
-const CATEGORY_COLORS: Record<AgendaEventCategory, string> = {
-  CONSULTA: '#ff6b35',
-  EVENTO: '#af52de',
-  COMPROMISSO: '#007aff',
-  LEMBRETE: '#ffcc00',
-  OUTRO: '#8e8e93',
-};
-
-const CATEGORY_LABELS: Record<AgendaEventCategory, string> = {
-  CONSULTA: 'Consulta',
-  EVENTO: 'Evento',
-  COMPROMISSO: 'Compromisso',
-  LEMBRETE: 'Lembrete',
-  OUTRO: 'Outro',
-};
-
+// Três volumes, não um: registrar um copo ou um garrafão deixa de exigir
+// digitação no campo customizado.
 const WATER_QUICK_ADDS = [
+  { label: 'Copo', ml: 250 },
   { label: 'Garrafa', ml: 600 },
+  { label: 'Garrafão', ml: 1000 },
 ];
 
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.07 } } };
@@ -223,9 +191,60 @@ export function HomePage() {
     return <div className="center-pad"><div className="spinner" /></div>;
   }
 
+  // "Foco de hoje": o que precisa de ação, extraído dos três domínios. A Home
+  // era só leitura — onze cards de peso igual e nenhuma indicação do que fazer.
+  const focus: { text: string; tone: 'over' | 'warning' | 'primary'; to: string }[] = [];
+  if (budgetStatus === 'over') {
+    focus.push({ text: 'Você já gastou mais do que ganhou este mês', tone: 'over', to: '/financas' });
+  } else if (budgetStatus === 'warning') {
+    focus.push({ text: 'Perto de gastar toda a renda do mês', tone: 'warning', to: '/financas' });
+  }
+  for (const t of pendingTasks) {
+    if (t.dueDate && daysUntil(t.dueDate) < 0) {
+      focus.push({ text: `Tarefa atrasada: ${t.title}`, tone: 'over', to: '/estudos' });
+    }
+  }
+  for (const e of upcomingExams) {
+    if (e.daysLeft <= 3) {
+      focus.push({
+        text: `${e.title} ${e.daysLeft === 0 ? 'é hoje' : `em ${e.daysLeft} dia${e.daysLeft > 1 ? 's' : ''}`}`,
+        tone: 'warning',
+        to: '/estudos',
+      });
+    }
+  }
+  if (waterDay && waterDay.percent < 100) {
+    focus.push({ text: `Faltam ${formatMl(waterDay.goalMl - waterDay.consumedMl)} de água hoje`, tone: 'primary', to: '/saude' });
+  }
+
   return (
     <>
       <motion.div className="home-page" variants={stagger} initial="hidden" animate="show">
+        <PageHeader title="Hoje" subtitle={WEEKDAYS_PT[new Date().getDay()]} />
+
+        {/* ===== FOCO DE HOJE ===== */}
+        <motion.section className="home-section" variants={fadeUp}>
+          {focus.length === 0 ? (
+            <div className="card focus-card focus-card--clear">
+              <span className="focus-clear-title">Tudo em dia</span>
+              <span className="focus-clear-text">Nenhuma pendência de dinheiro, estudo ou saúde.</span>
+            </div>
+          ) : (
+            <div className="card focus-card">
+              <span className="section-eyebrow">Foco de hoje</span>
+              <ul className="focus-list">
+                {focus.slice(0, 4).map((f) => (
+                  <li key={f.text}>
+                    <button className={`focus-item focus-${f.tone}`} onClick={() => navigate(f.to)}>
+                      <span className="focus-bullet" />
+                      <span>{f.text}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </motion.section>
 
         {/* ===== FINANÇAS ===== */}
         <motion.section className="home-section" variants={fadeUp}>

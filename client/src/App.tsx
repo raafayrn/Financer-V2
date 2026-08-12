@@ -1,13 +1,14 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { MonthProvider } from './context/MonthContext';
+import { ShellProvider } from './context/ShellContext';
 import { Layout } from './components/Layout';
 import { HomePage } from './pages/HomePage';
 import { DashboardPage } from './pages/DashboardPage';
-import { ReportsPage } from './pages/ReportsPage';
 import { InvestmentsPage } from './pages/InvestmentsPage';
 import { SaudePage } from './pages/SaudePage';
 import { EstudosPage } from './pages/EstudosPage';
+import { AjustesPage } from './pages/AjustesPage';
 
 /**
  * Única tela fora do app: aparece quando a API não respondeu. Não existe tela
@@ -47,17 +48,22 @@ export default function App() {
 
   return (
     <MonthProvider>
-      <Routes>
-        <Route element={<Layout />}>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/financas" element={<DashboardPage />} />
-          <Route path="/relatorios" element={<ReportsPage />} />
-          <Route path="/investimentos" element={<InvestmentsPage />} />
-          <Route path="/saude" element={<SaudePage />} />
-          <Route path="/estudos" element={<EstudosPage />} />
-        </Route>
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <ShellProvider>
+        <Routes>
+          <Route element={<Layout />}>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/financas" element={<DashboardPage />} />
+            <Route path="/investimentos" element={<InvestmentsPage />} />
+            <Route path="/saude" element={<SaudePage />} />
+            <Route path="/estudos" element={<EstudosPage />} />
+            <Route path="/ajustes" element={<AjustesPage />} />
+            {/* Relatórios deixou de ser tela própria: virou o modo "Ano" de
+                Finanças. O redirect mantém links antigos e o atalho da PWA. */}
+            <Route path="/relatorios" element={<Navigate to="/financas?range=ano" replace />} />
+          </Route>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </ShellProvider>
     </MonthProvider>
   );
 }

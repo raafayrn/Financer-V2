@@ -15,6 +15,7 @@ import { CheckIcon, EditIcon, PlayCircleIcon, PlusIcon } from '../components/ico
 import { exerciseVideoSearchUrl } from '../utils/exerciseLibrary';
 import { WorkoutSessionModal } from '../components/WorkoutSessionModal';
 import { WorkoutPlanModal } from '../components/WorkoutPlanModal';
+import { PageHeader } from '../components/PageHeader';
 import { springSmooth, springTap } from '../lib/motion';
 
 const WEEKDAYS = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
@@ -26,8 +27,12 @@ const overviewItem = {
 };
 
 // Botões rápidos de adição de água (ml).
+// Três volumes cobrem quase todo registro; antes só existia "Garrafa" e
+// qualquer outro valor exigia digitar no campo customizado.
 const QUICK_ADDS = [
+  { label: 'Copo', ml: 250 },
   { label: 'Garrafa', ml: 600 },
+  { label: 'Garrafão', ml: 1000 },
 ];
 
 function formatMl(ml: number): string {
@@ -275,12 +280,14 @@ export function SaudePage() {
 
   return (
     <div className="page">
-      <div className="section-head">
-        <h2 className="page-title">Saúde</h2>
-        <motion.button className="btn-ghost btn-sm" onClick={() => setPlanOpen(true)} whileTap={{ scale: 0.95 }} transition={springTap}>
-          Rotina semanal
-        </motion.button>
-      </div>
+      <PageHeader
+        title="Saúde"
+        actions={
+          <motion.button className="btn-ghost btn-sm" onClick={() => setPlanOpen(true)} whileTap={{ scale: 0.95 }} transition={springTap}>
+            Rotina semanal
+          </motion.button>
+        }
+      />
 
       {loading && !ready ? (
         <div className="center-pad">
@@ -290,78 +297,6 @@ export function SaudePage() {
         <div className="alert alert-error">{error}</div>
       ) : waterDay && today && summary ? (
         <motion.div className="overview-grid" variants={overviewContainer} initial="hidden" animate="show">
-          {/* Água */}
-          <motion.section className="card overview-item overview-span-2 water-hero" variants={overviewItem}>
-            <WaterRing percent={waterDay.percent} consumedMl={waterDay.consumedMl} goalMl={waterDay.goalMl} />
-
-            <div className="water-quick">
-              {QUICK_ADDS.map((q) => (
-                <motion.button
-                  key={q.ml}
-                  className="water-quick-btn"
-                  onClick={() => addWater(q.ml)}
-                  whileTap={{ scale: 0.92 }}
-                  transition={springTap}
-                >
-                  <span className="water-quick-label">{q.label}</span>
-                  <span className="water-quick-ml">+{q.ml} ml</span>
-                </motion.button>
-              ))}
-            </div>
-
-            <div className="water-custom">
-              <input
-                type="number"
-                inputMode="numeric"
-                placeholder="Outro valor (ml)"
-                value={customMl}
-                onChange={(e) => setCustomMl(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && addCustomWater()}
-              />
-              <motion.button className="btn-primary btn-sm" onClick={addCustomWater} whileTap={{ scale: 0.95 }} transition={springTap}>
-                Adicionar
-              </motion.button>
-            </div>
-
-            <div className="water-goal-row">
-              {editingGoal ? (
-                <>
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    className="water-goal-input"
-                    value={goalInput}
-                    onChange={(e) => setGoalInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && saveGoal()}
-                    autoFocus
-                  />
-                  <button className="btn-primary btn-sm" onClick={saveGoal}>
-                    Salvar
-                  </button>
-                  <button className="btn-ghost btn-sm" onClick={() => setEditingGoal(false)}>
-                    Cancelar
-                  </button>
-                </>
-              ) : (
-                <>
-                  <span className="hint">Meta diária: {formatMl(waterDay.goalMl)}</span>
-                  <button
-                    className="btn-ghost btn-sm"
-                    onClick={() => {
-                      setGoalInput(String(waterDay.goalMl));
-                      setEditingGoal(true);
-                    }}
-                  >
-                    Alterar meta
-                  </button>
-                  <button className="btn-ghost btn-sm" onClick={resetWaterDay}>
-                    Resetar dia
-                  </button>
-                </>
-              )}
-            </div>
-          </motion.section>
-
           {/* Treino de hoje em destaque */}
           <motion.section className="card overview-item overview-span-2 today-card" variants={overviewItem}>
             <div className="today-head">
@@ -440,6 +375,78 @@ export function SaudePage() {
                 </div>
               </>
             )}
+          </motion.section>
+
+          {/* Água */}
+          <motion.section className="card overview-item overview-span-2 water-hero" variants={overviewItem}>
+            <WaterRing percent={waterDay.percent} consumedMl={waterDay.consumedMl} goalMl={waterDay.goalMl} />
+
+            <div className="water-quick">
+              {QUICK_ADDS.map((q) => (
+                <motion.button
+                  key={q.ml}
+                  className="water-quick-btn"
+                  onClick={() => addWater(q.ml)}
+                  whileTap={{ scale: 0.92 }}
+                  transition={springTap}
+                >
+                  <span className="water-quick-label">{q.label}</span>
+                  <span className="water-quick-ml">+{q.ml} ml</span>
+                </motion.button>
+              ))}
+            </div>
+
+            <div className="water-custom">
+              <input
+                type="number"
+                inputMode="numeric"
+                placeholder="Outro valor (ml)"
+                value={customMl}
+                onChange={(e) => setCustomMl(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && addCustomWater()}
+              />
+              <motion.button className="btn-primary btn-sm" onClick={addCustomWater} whileTap={{ scale: 0.95 }} transition={springTap}>
+                Adicionar
+              </motion.button>
+            </div>
+
+            <div className="water-goal-row">
+              {editingGoal ? (
+                <>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    className="water-goal-input"
+                    value={goalInput}
+                    onChange={(e) => setGoalInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && saveGoal()}
+                    autoFocus
+                  />
+                  <button className="btn-primary btn-sm" onClick={saveGoal}>
+                    Salvar
+                  </button>
+                  <button className="btn-ghost btn-sm" onClick={() => setEditingGoal(false)}>
+                    Cancelar
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span className="hint">Meta diária: {formatMl(waterDay.goalMl)}</span>
+                  <button
+                    className="btn-ghost btn-sm"
+                    onClick={() => {
+                      setGoalInput(String(waterDay.goalMl));
+                      setEditingGoal(true);
+                    }}
+                  >
+                    Alterar meta
+                  </button>
+                  <button className="btn-ghost btn-sm" onClick={resetWaterDay}>
+                    Resetar dia
+                  </button>
+                </>
+              )}
+            </div>
           </motion.section>
 
           {/* Treinos na semana */}
