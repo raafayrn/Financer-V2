@@ -11,6 +11,7 @@ import { SubjectsManager } from '../components/SubjectsManager';
 import { ManageModal } from '../components/ManageModal';
 import { RecurringModal } from '../components/RecurringModal';
 import { CLASS_SCHEDULE } from '../utils/schedule';
+import { DATA_COLORS } from '../utils/palette';
 import { MoonIcon, SunIcon } from '../components/icons';
 
 const WEEKDAY_LABEL: Record<number, string> = {
@@ -44,6 +45,29 @@ export function AjustesPage() {
   useEffect(() => {
     void loadRefs();
   }, [loadRefs]);
+
+  const [recoloring, setRecoloring] = useState(false);
+
+  /** Categorias cuja cor não pertence à paleta categórica atual. */
+  const outdated = categories.filter((c) => !DATA_COLORS.includes((c.color ?? '').toLowerCase()));
+
+  async function recolor() {
+    setRecoloring(true);
+    try {
+      // Reatribui por posição, preservando a ordem — categorias vizinhas
+      // continuam com cores distintas entre si.
+      await Promise.all(
+        categories.map((c, i) =>
+          DATA_COLORS.includes((c.color ?? '').toLowerCase())
+            ? null
+            : api.updateCategory(c.id, { color: DATA_COLORS[i % DATA_COLORS.length] }),
+        ),
+      );
+      await loadRefs();
+    } finally {
+      setRecoloring(false);
+    }
+  }
 
   const weekdays = Object.keys(CLASS_SCHEDULE).map(Number).sort();
 
@@ -87,6 +111,25 @@ export function AjustesPage() {
             </div>
             <button className="btn-ghost btn-sm" onClick={() => setModal('fixas')}>Abrir</button>
           </div>
+
+          {/* As cores das categorias ficam gravadas no banco, então trocar a
+              paleta do app não alcança as que já existem: elas seguem com os
+              tons saturados originais, que destoam do tema bege. A recoloração
+              é explícita porque é o usuário quem escolheu essas cores. */}
+          {outdated.length > 0 && (
+            <div className="settings-row">
+              <div className="settings-row-text">
+                <strong>Recolorir categorias</strong>
+                <small>
+                  {outdated.length} categoria{outdated.length > 1 ? 's usam' : ' usa'} cores de fora da
+                  paleta atual
+                </small>
+              </div>
+              <button className="btn-ghost btn-sm" onClick={recolor} disabled={recoloring}>
+                {recoloring ? 'Aplicando…' : 'Aplicar paleta'}
+              </button>
+            </div>
+          )}
         </section>
 
         <SubjectsManager />

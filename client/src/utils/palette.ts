@@ -12,13 +12,13 @@ import type { AgendaEventCategory, InvestmentType } from '../api/types';
  */
 export const DATA_COLORS = [
   '#0e6c78', // 1 · petróleo
-  '#8a4fbf', // 2 · violeta
-  '#c2571c', // 3 · âmbar queimado
-  '#2f7d4e', // 4 · verde
-  '#b8336a', // 5 · magenta
-  '#1f5fa8', // 6 · azul
-  '#8a7a12', // 7 · oliva
-  '#546a75', // 8 · ardósia
+  '#7d5296', // 2 · violeta
+  '#b5541f', // 3 · terracota
+  '#3d7a52', // 4 · sage
+  '#a63e63', // 5 · magenta queimado
+  '#2c5f92', // 6 · azul poeira
+  '#8a7326', // 7 · oliva
+  '#6b6157', // 8 · marrom-ardósia
 ];
 
 /** Cor estável por índice, com wrap — para listas de tamanho arbitrário. */
@@ -27,7 +27,7 @@ export function dataColor(index: number): string {
 }
 
 /** Cor neutra para itens sem categoria atribuída. */
-export const NEUTRAL_COLOR = '#546a75';
+export const NEUTRAL_COLOR = '#6b6157';
 
 export const AGENDA_CATEGORY_COLORS: Record<AgendaEventCategory, string> = {
   CONSULTA: DATA_COLORS[2],

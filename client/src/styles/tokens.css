@@ -6,47 +6,58 @@
    ========================================================================= */
 
 :root {
-  /* ---- Superfícies (nível 0 = ground, 1 = card, 2 = chip/input) ---- */
-  --bg: #fbfaf7;
-  --surface: #ffffff;
-  --surface-solid: #ffffff;
-  --surface-2: #f3f1ec;
-  --surface-3: #eae7e0;
-  --menu-bg: #ffffff;
+  /* ---- Superfícies — tema claro "bege quente" ----
+     O ground é bege puxado para o marrom e os cards são um creme mais claro
+     que ele. É a inversão do padrão anterior (card branco sobre quase-branco):
+     a camada elevada agora se destaca por ser mais clara e mais quente que o
+     fundo, o que dá profundidade sem precisar de sombra forte — e tira o
+     branco puro da tela, que é o que cansa a vista em uso longo. */
+  --bg: #f1e9dd;
+  --surface: #fbf6ee;
+  --surface-solid: #fbf6ee;
+  --surface-2: #e8dfd0; /* rebaixado: chips, inputs, trilhos */
+  --surface-3: #dbcfbb;
+  --menu-bg: #fbf6ee;
 
-  /* ---- Texto ---- */
-  --text: #1a1c1b;
-  --text-muted: #5c6360; /* 5,9:1 sobre --bg — passa WCAG AA */
-  --text-faint: #7d8481; /* apenas decorativo: ícones, separadores */
+  /* ---- Texto — marrom escuro, não preto neutro ----
+     Preto puro sobre bege vibra e endurece a tela. */
+  --text: #2b2521; /* 12,6:1 sobre --bg */
+  --text-muted: #5f554c; /* 6,0:1 sobre --bg — passa WCAG AA */
+  --text-faint: #857a6e; /* apenas decorativo: ícones, separadores */
 
-  --border: #dfdbd3;
-  --border-strong: #c6c1b7;
+  --border: #ddd2c0;
+  --border-strong: #c3b6a1;
 
-  /* ---- Acento petróleo ---- */
+  /* ---- Acento petróleo ----
+     Mantido: o teal é o complemento do bege, então continua sendo o ponto
+     frio que organiza a tela sem competir com o fundo quente. 5,1:1. */
   --primary: #0e6c78;
   --primary-hover: #0a545e;
-  --primary-contrast: #ffffff;
-  --primary-soft: #e2eff1;
+  --primary-contrast: #fbf6ee;
+  --primary-soft: #dde9e8;
 
-  /* ---- Semânticas (dinheiro/estado — nunca usadas como acento) ---- */
-  --ok: #2f7d4e;
-  --ok-bg: #e6f1e9;
-  --warning: #9a6410;
-  --warning-bg: #f7eedc;
-  --over: #b23a2e;
-  --over-bg: #f8e7e4;
-  --info-bg: #e2eff1;
+  /* ---- Semânticas — dessaturadas para o fundo quente ----
+     Os tons anteriores eram calibrados para fundo branco e gritavam sobre
+     bege. Aqui viram sage, ocre e terracota. */
+  --ok: #3d7a52;
+  --ok-bg: #e2ebdf;
+  --warning: #8a5e17;
+  --warning-bg: #f2e6cd;
+  --over: #a8443a;
+  --over-bg: #f2e0d9;
+  --info-bg: #dde9e8;
 
   /* ---- Paleta categórica: matérias, categorias, tipos de investimento.
-         Consumida por índice. Nenhum hex deve voltar a aparecer em .tsx ---- */
+         Consumida por índice. Nenhum hex deve voltar a aparecer em .tsx.
+         Também rebaixada de saturação para conviver com o bege. ---- */
   --data-1: #0e6c78;
-  --data-2: #8a4fbf;
-  --data-3: #c2571c;
-  --data-4: #2f7d4e;
-  --data-5: #b8336a;
-  --data-6: #1f5fa8;
-  --data-7: #8a7a12;
-  --data-8: #546a75;
+  --data-2: #7d5296;
+  --data-3: #b5541f;
+  --data-4: #3d7a52;
+  --data-5: #a63e63;
+  --data-6: #2c5f92;
+  --data-7: #8a7326;
+  --data-8: #6b6157;
 
   /* ---- Escala de espaçamento (base 4px) ---- */
   --s1: 4px;
@@ -76,8 +87,9 @@
   --radius: 14px; /* cards */
   --radius-lg: 20px; /* sheets, modais */
 
-  --shadow: 0 1px 2px rgba(26, 28, 27, 0.04), 0 4px 12px rgba(26, 28, 27, 0.05);
-  --shadow-float: 0 4px 12px rgba(26, 28, 27, 0.1), 0 12px 32px rgba(26, 28, 27, 0.12);
+  /* Sombra marrom, não cinza: sombra neutra sobre bege lê como sujeira. */
+  --shadow: 0 1px 2px rgba(87, 66, 44, 0.06), 0 4px 12px rgba(87, 66, 44, 0.07);
+  --shadow-float: 0 4px 12px rgba(87, 66, 44, 0.12), 0 12px 32px rgba(87, 66, 44, 0.14);
 
   /* Glassmorfismo desativado: superfícies agora são opacas. Mantido como token
      para os overlays modais, que ainda se beneficiam do blur. */
