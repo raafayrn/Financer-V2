@@ -1920,7 +1920,7 @@ select option {
    no topo (em vez de menu inferior), o conteúdo ganha mais largura, e o
    resumo do mês é compacto para caber na tela sem rolar.
    ===================================================================== */
-@media (min-width: 880px) {
+@media (min-width: 900px) {
   /* Esconde os elementos pensados para mobile */
   .topbar,
   .bottom-nav {
@@ -2070,7 +2070,7 @@ select option {
   .overview-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    align-items: stretch;
+    align-items: start;
     gap: 14px;
   }
   .overview-span-2 {
@@ -2723,7 +2723,7 @@ select option {
   display: grid;
   grid-template-columns: 1fr 260px;
   gap: 16px;
-  align-items: stretch;
+  align-items: start;
 }
 .agenda-main { display: flex; flex-direction: column; gap: 0; }
 .agenda-cal-header {
@@ -3196,7 +3196,7 @@ select option {
   fill: none;
 }
 
-@media (min-width: 880px) {
+@media (min-width: 900px) {
   .body-fields {
     grid-template-columns: repeat(4, 1fr);
   }
@@ -3528,7 +3528,7 @@ select option {
   flex-shrink: 0;
 }
 
-@media (min-width: 880px) {
+@media (min-width: 900px) {
   .home-page {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;

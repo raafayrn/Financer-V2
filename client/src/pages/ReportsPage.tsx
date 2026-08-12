@@ -5,6 +5,7 @@ import type { ReportsOverview } from '../api/types';
 import { formatCurrency, formatDayMonth, monthShort } from '../utils/format';
 import { ChevronLeftIcon, ChevronRightIcon } from '../components/icons';
 import { springSmooth } from '../lib/motion';
+import { NEUTRAL_COLOR } from '../utils/palette';
 
 const overviewContainer = {
   hidden: {},
@@ -187,7 +188,7 @@ export function ReportsPage({ embedded = false }: { embedded?: boolean } = {}) {
               <ul className="exp-list">
                 {overview.topExpenses.map((e) => (
                   <li key={e.id} className="exp-row">
-                    <span className="exp-dot" style={{ background: '#94a3b8' }} />
+                    <span className="exp-dot" style={{ background: NEUTRAL_COLOR }} />
                     <div className="exp-main">
                       <span className="exp-desc">{e.description}</span>
                       <span className="exp-meta">

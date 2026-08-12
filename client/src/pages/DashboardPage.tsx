@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api, ApiError } from '../api/client';
 import { springSheet, springSmooth, springTap } from '../lib/motion';
 import type {
@@ -12,6 +12,7 @@ import type {
   ExpenseInput,
   Income,
   IncomeInput,
+  InvestmentSummary,
   Summary,
 } from '../api/types';
 import { useMonth } from '../context/MonthContext';
@@ -27,6 +28,7 @@ import { Dropdown } from '../components/Dropdown';
 import { formatCurrency, formatDayMonth, monthShort } from '../utils/format';
 import { ChevronDownIcon, EditIcon, RepeatIcon, TrashIcon } from '../components/icons';
 import { ManageModal } from '../components/ManageModal';
+import { NEUTRAL_COLOR } from '../utils/palette';
 import { RecurringModal } from '../components/RecurringModal';
 
 function FilterIcon() {
@@ -101,12 +103,14 @@ const overviewItem = {
 
 export function DashboardPage() {
   const { year, month } = useMonth();
+  const navigate = useNavigate();
   const [summary, setSummary] = useState<Summary | null>(null);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [incomes, setIncomes] = useState<Income[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [trend, setTrend] = useState<TrendPoint[]>([]);
+  const [investments, setInvestments] = useState<InvestmentSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modal, setModal] = useState<ModalState>({ kind: 'closed' });
@@ -162,12 +166,13 @@ export function DashboardPage() {
     setLoading(true);
     setError(null);
     try {
-      const [s, e, inc, c, a] = await Promise.all([
+      const [s, e, inc, c, a, invest] = await Promise.all([
         api.getSummary(year, month),
         api.listExpenses(year, month),
         api.listIncome(year, month),
         api.listCategories(),
         api.listAccounts(),
+        api.getInvestmentSummary(year),
       ]);
 
       const wanted = lastMonths(year, month, 6);
@@ -181,6 +186,7 @@ export function DashboardPage() {
       setIncomes(inc);
       setCategories(c);
       setAccounts(a);
+      setInvestments(invest);
 
       const spentByKey = new Map<string, number>();
       for (const r of reports) {
@@ -343,6 +349,33 @@ export function DashboardPage() {
     filteredLedger = [...filteredLedger].sort((a, b) => a.data.amount - b.data.amount);
   }
 
+  /**
+   * Intercala cabeçalhos de dia com o total gasto naquele dia. Antes a lista
+   * era um rolo contínuo sem marco temporal: dava para rolar trinta linhas sem
+   * saber em que dia se estava. Só faz sentido na ordenação por data — nas
+   * outras a sequência não é cronológica.
+   */
+  const groupByDay = sortMode === 'date-desc';
+  const ledgerRows: (LedgerItem | { kind: 'day'; date: string; total: number })[] = [];
+  if (groupByDay) {
+    let currentDay: string | null = null;
+    for (let idx = 0; idx < filteredLedger.length; idx++) {
+      const item = filteredLedger[idx];
+      if (item.data.date !== currentDay) {
+        currentDay = item.data.date;
+        let dayTotal = 0;
+        for (let j = idx; j < filteredLedger.length && filteredLedger[j].data.date === currentDay; j++) {
+          const it = filteredLedger[j];
+          dayTotal += it.kind === 'expense' ? -it.data.amount : it.data.amount;
+        }
+        ledgerRows.push({ kind: 'day', date: currentDay, total: dayTotal });
+      }
+      ledgerRows.push(item);
+    }
+  } else {
+    ledgerRows.push(...filteredLedger);
+  }
+
   const totalAvailable = summary ? summary.income.total + summary.walletBalance : 0;
   // VR e Salário restantes (mostrados no card "Ainda posso gastar" — a
   // Carteira já é sempre líquida). Salário é o "limite da fatura": tudo que
@@ -503,6 +536,29 @@ export function DashboardPage() {
               </ul>
             </motion.section>
 
+            {/* Saldo investido — a porta de entrada de Investimentos, que saiu
+                da navegação principal. Também é o que finalmente conecta os
+                dois mundos: antes o dinheiro investido não aparecia aqui. */}
+            {investments && (
+              <motion.button
+                className="card overview-item invest-card"
+                variants={overviewItem}
+                onClick={() => navigate('/investimentos')}
+                whileTap={{ scale: 0.98 }}
+                transition={springTap}
+              >
+                <span className="stat-label">Saldo investido</span>
+                <span className="stat-value money">{formatCurrency(investments.totalBalance)}</span>
+                <span className="invest-card-meta">
+                  {investments.totals.netYear >= 0 ? 'Aporte líquido' : 'Resgate líquido'} em {year}:{' '}
+                  <strong className={investments.totals.netYear >= 0 ? 'pos' : 'neg'}>
+                    {formatCurrency(Math.abs(investments.totals.netYear))}
+                  </strong>
+                </span>
+                <span className="invest-card-cta">Ver carteira →</span>
+              </motion.button>
+            )}
+
             {/* Gasto por categoria — ocupa o espaço dos 2 cards removidos */}
             {summary.byCategory.length > 0 && (
               <motion.section className="card overview-item overview-span-2" variants={overviewItem}>
@@ -588,21 +644,54 @@ export function DashboardPage() {
             </div>
 
             {!listCollapsed && (
-              <div className="search-row">
-                <input
-                  type="search"
-                  className="search-input"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Buscar por descrição ou categoria…"
-                  aria-label="Buscar lançamentos"
-                />
-                {query && (
-                  <button className="link-btn" onClick={() => setQuery('')}>
-                    Limpar
-                  </button>
+              <>
+                <div className="search-row">
+                  <input
+                    type="search"
+                    className="search-input"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Buscar por descrição ou categoria…"
+                    aria-label="Buscar lançamentos"
+                  />
+                  {query && (
+                    <button className="link-btn" onClick={() => setQuery('')}>
+                      Limpar
+                    </button>
+                  )}
+                </div>
+
+                {/* Filtros ativos como chips removíveis. Antes o painel ficava
+                    aberto ocupando espaço permanente e não havia sinal de qual
+                    filtro estava valendo. */}
+                {filtersActive && (
+                  <div className="chip-row active-filters">
+                    {categoryFilter !== 'all' && (
+                      <button className="chip chip-removable" onClick={() => setCategoryFilter('all')}>
+                        {categoryById.get(categoryFilter)?.name ?? 'Categoria'} ✕
+                      </button>
+                    )}
+                    {typeFilter !== 'all' && (
+                      <button className="chip chip-removable" onClick={() => setTypeFilter('all')}>
+                        {TYPE_FILTER_LABEL[typeFilter]} ✕
+                      </button>
+                    )}
+                    {recurringOnly && (
+                      <button className="chip chip-removable" onClick={() => setRecurringOnly(false)}>
+                        Só fixas ✕
+                      </button>
+                    )}
+                    {sortMode !== 'date-desc' && (
+                      <button className="chip chip-removable" onClick={() => setSortMode('date-desc')}>
+                        {sortMode === 'amount-desc' ? 'Maior valor' : 'Menor valor'} ✕
+                      </button>
+                    )}
+                    <button className="link-btn" onClick={resetFilters}>
+                      Limpar tudo
+                    </button>
+                  </div>
                 )}
-              </div>
+              </>
             )}
 
             <AnimatePresence initial={false}>
@@ -712,7 +801,18 @@ export function DashboardPage() {
             ) : (
               <ul className="exp-list">
                 <AnimatePresence initial={false}>
-                {filteredLedger.map((item) => {
+                {ledgerRows.map((item) => {
+                  if (item.kind === 'day') {
+                    return (
+                      <li key={`day-${item.date}`} className="day-header">
+                        <span className="day-header-date">{formatDayMonth(item.date)}</span>
+                        <span className={`day-header-total money ${item.total < 0 ? 'neg' : 'pos'}`}>
+                          {item.total < 0 ? '−' : '+'}
+                          {formatCurrency(Math.abs(item.total))}
+                        </span>
+                      </li>
+                    );
+                  }
                   if (item.kind === 'expense') {
                     const e = item.data;
                     const cat = e.categoryId ? categoryById.get(e.categoryId) : undefined;
@@ -729,7 +829,7 @@ export function DashboardPage() {
                       >
                         <span
                           className="exp-dot"
-                          style={{ background: cat?.color ?? '#94a3b8' }}
+                          style={{ background: cat?.color ?? NEUTRAL_COLOR }}
                         />
                         <div className="exp-main">
                           <span className="exp-desc">

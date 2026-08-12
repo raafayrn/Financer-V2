@@ -118,12 +118,21 @@ function LineChart({ points }: { points: { date: string; maxWeight: number }[] }
     return [x, y] as const;
   });
   const path = coords.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  // Área preenchida sob a linha + ponto final destacado: uma polyline nua não
+  // dizia onde a série termina nem qual é a leitura mais recente.
+  const areaPath = `${path} L${coords[coords.length - 1][0].toFixed(1)},${h} L${coords[0][0].toFixed(1)},${h} Z`;
+  const [lastX, lastY] = coords[coords.length - 1];
   return (
-    <svg className="line-chart" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
+    <svg className="line-chart" viewBox={`0 0 ${w} ${h}`}>
+      <path d={areaPath} className="line-chart-area" />
       <path d={path} className="line-chart-path" />
-      {coords.map(([x, y], i) => (
-        <circle key={i} cx={x} cy={y} r={2.5} className="line-chart-dot" />
+      {coords.slice(0, -1).map(([x, y], i) => (
+        <circle key={i} cx={x} cy={y} r={2} className="line-chart-dot" />
       ))}
+      <circle cx={lastX} cy={lastY} r={4.5} className="line-chart-dot-last" />
+      <text x={lastX} y={Math.max(12, lastY - 9)} className="line-chart-last-label" textAnchor="end">
+        {points[points.length - 1].maxWeight} kg
+      </text>
     </svg>
   );
 }
