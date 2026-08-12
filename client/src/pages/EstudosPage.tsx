@@ -10,7 +10,6 @@ import { Button, EmptyState } from '../components/ui';
 import { AgendaEventModal, ExamModal, StudyTaskModal } from '../components/StudyModals';
 import { springSmooth } from '../lib/motion';
 import { AGENDA_CATEGORY_COLORS, AGENDA_CATEGORY_LABELS } from '../utils/palette';
-import { CLASS_SCHEDULE } from '../utils/schedule';
 
 const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const WEEKDAYS_LONG = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
@@ -95,26 +94,19 @@ function AgendaCalendar({ exams, tasks, subjects, events, onExamEdit, onTaskEdit
   }
 
   const subjectById = (id: string | null) => subjects.find((s) => s.id === id);
-  const subjectByName = (name: string) => subjects.find((s) => s.name === name);
-
-  function classesForIso(iso: string) {
-    const dow = new Date(iso + 'T00:00:00').getDay(); // 0=Dom
-    return CLASS_SCHEDULE[dow] ?? [];
-  }
 
   function eventsForDay(iso: string) {
     const dayExams = exams.filter((e) => e.date === iso);
     const dayTasks = tasks.filter((t) => t.dueDate === iso);
-    const dayClasses = classesForIso(iso);
     const dayEvents = events.filter((ev) => ev.date === iso);
-    return { dayExams, dayTasks, dayClasses, dayEvents };
+    return { dayExams, dayTasks, dayEvents };
   }
 
   const cells: (number | null)[] = [...Array(firstDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
   while (cells.length % 7 !== 0) cells.push(null);
 
   const selDate = selectedIso ? new Date(selectedIso + 'T00:00:00') : null;
-  const { dayExams: selExams, dayTasks: selTasks, dayClasses: selClasses, dayEvents: selEvents } = eventsForDay(selectedIso);
+  const { dayExams: selExams, dayTasks: selTasks, dayEvents: selEvents } = eventsForDay(selectedIso);
 
   const upcomingExams = [...exams]
     .filter((e) => daysUntil(e.date) >= 0)
@@ -147,10 +139,13 @@ function AgendaCalendar({ exams, tasks, subjects, events, onExamEdit, onTaskEdit
           {cells.map((day, i) => {
             if (!day) return <div key={i} className="agenda-cell agenda-cell-empty" />;
             const iso = isoOf(day);
-            const { dayExams, dayTasks, dayClasses, dayEvents } = eventsForDay(iso);
+            const { dayExams, dayTasks, dayEvents } = eventsForDay(iso);
             const isToday = iso === todayStr;
             const isSel = iso === selectedIso;
             const MAX_VISIBLE = 3;
+            // As aulas fixas não entram no calendário: por serem as mesmas toda
+            // semana, enchiam todas as células e escondiam o que é de fato
+            // marcado. A grade da semana continua na Home e em Ajustes.
             const allEvents = [
               ...dayEvents.map((ev) => ({ kind: 'event' as const, label: ev.title, color: CATEGORY_COLORS[ev.category], id: ev.id })),
               ...dayExams.map((e) => {
@@ -158,10 +153,6 @@ function AgendaCalendar({ exams, tasks, subjects, events, onExamEdit, onTaskEdit
                 return { kind: 'exam' as const, label: subj ? `${subj.name} — ${e.title}` : e.title, color: subj?.color ?? 'var(--over)', id: e.id };
               }),
               ...dayTasks.map((t) => ({ kind: 'task' as const, label: t.title, color: 'var(--primary)', id: t.id })),
-              ...dayClasses.map((c, ci) => {
-                const subj = subjectByName(c.name);
-                return { kind: 'class' as const, label: c.name, color: subj?.color ? subj.color + 'aa' : 'var(--surface-2)', id: `class-${iso}-${ci}` };
-              }),
             ];
             const overflow = allEvents.length - MAX_VISIBLE;
             return (
@@ -175,7 +166,7 @@ function AgendaCalendar({ exams, tasks, subjects, events, onExamEdit, onTaskEdit
                   {allEvents.slice(0, MAX_VISIBLE).map((ev) => (
                     <div
                       key={ev.id}
-                      className={`agenda-event-pill${ev.kind === 'class' ? ' agenda-event-class' : ''}`}
+                      className="agenda-event-pill"
                       style={{ background: ev.color }}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -211,7 +202,7 @@ function AgendaCalendar({ exams, tasks, subjects, events, onExamEdit, onTaskEdit
             <span className="agenda-sidebar-label">Agenda do dia</span>
             <button className="btn-primary btn-sm" onClick={() => onAddEvent(selectedIso)}>+ Evento</button>
           </div>
-          {selEvents.length === 0 && selExams.length === 0 && selTasks.length === 0 && selClasses.length === 0 ? (
+          {selEvents.length === 0 && selExams.length === 0 && selTasks.length === 0 ? (
             <p className="agenda-sidebar-empty">Nenhum evento.</p>
           ) : (
             <div className="agenda-sidebar-events">
@@ -240,15 +231,6 @@ function AgendaCalendar({ exams, tasks, subjects, events, onExamEdit, onTaskEdit
                   </div>
                 </div>
               ))}
-              {selClasses.map((c, ci) => {
-                const subj = subjectByName(c.name);
-                return (
-                  <div key={`class-${ci}`} className="agenda-sidebar-event" style={{ borderLeftColor: subj?.color ?? 'var(--text-muted)' }}>
-                    <span className="agenda-sidebar-event-label">{c.time}</span>
-                    <span className="agenda-sidebar-event-title">{c.name}</span>
-                  </div>
-                );
-              })}
               {selExams.map((ex) => {
                 const subj = subjectById(ex.subjectId);
                 return (

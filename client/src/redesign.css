@@ -799,8 +799,19 @@
 .agenda-main {
   min-width: 0;
 }
-.agenda-grid-scroll {
-  overflow-x: auto;
+
+/* `repeat(7, 1fr)` tem piso de min-content: as colunas não encolhiam abaixo do
+   texto mais largo da célula, a grade estourava o contêiner e o overflow:hidden
+   do canto arredondado cortava sexta e sábado. `minmax(0, 1fr)` deixa as sete
+   colunas caberem sempre. */
+.agenda-grid {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+.agenda-cell,
+.agenda-cell-empty,
+.agenda-weekday,
+.agenda-events {
+  min-width: 0;
 }
 .agenda-event-pill,
 .agenda-sidebar-event-label,
@@ -811,10 +822,15 @@
   text-overflow: ellipsis;
 }
 
-/* Células maiores no mobile: os pontos coloridos eram pequenos demais. */
+/* Sem as aulas fixas ocupando todas as células, o calendário respira: dá para
+   dar mais altura à linha e mostrar mais eventos por dia. */
+.agenda-cell {
+  min-height: 108px;
+}
+
 @media (max-width: 899px) {
   .agenda-cell {
-    min-height: 64px;
+    min-height: 72px;
   }
   .agenda-event-pill {
     font-size: var(--fs-label);
