@@ -1,6 +1,8 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api, ApiError } from '../api/client';
+import { PageHeader } from '../components/PageHeader';
 import type { Investment, InvestmentInput, InvestmentSummary } from '../api/types';
 import { formatCurrency, formatDayMonth, monthShort } from '../utils/format';
 import { INVESTMENT_TYPE_COLOR, INVESTMENT_TYPE_LABEL } from '../utils/investments';
@@ -20,7 +22,58 @@ const overviewItem = {
 
 type ModalState = { kind: 'closed' } | { kind: 'create' } | { kind: 'edit'; investment: Investment };
 
+/**
+ * Anel de composição da carteira. Um donut lê a proporção entre os tipos de
+ * uma vez só — a lista de barras abaixo continua para os valores exatos.
+ */
+function CompositionRing({
+  slices,
+  total,
+}: {
+  slices: { label: string; amount: number; color: string }[];
+  total: number;
+}) {
+  if (total <= 0) return null;
+  const r = 70;
+  const circumference = 2 * Math.PI * r;
+  let offset = 0;
+
+  return (
+    <div className="composition">
+      <svg className="composition-ring" viewBox="0 0 180 180" role="img" aria-label="Composição da carteira por tipo">
+        {slices.map((s) => {
+          const fraction = s.amount / total;
+          const dash = fraction * circumference;
+          const el = (
+            <circle
+              key={s.label}
+              cx="90"
+              cy="90"
+              r={r}
+              fill="none"
+              stroke={s.color}
+              strokeWidth="18"
+              strokeDasharray={`${dash} ${circumference - dash}`}
+              strokeDashoffset={-offset}
+              transform="rotate(-90 90 90)"
+            />
+          );
+          offset += dash;
+          return el;
+        })}
+        <text x="90" y="86" className="composition-total">
+          {slices.length}
+        </text>
+        <text x="90" y="104" className="composition-caption">
+          {slices.length === 1 ? 'tipo' : 'tipos'}
+        </text>
+      </svg>
+    </div>
+  );
+}
+
 export function InvestmentsPage() {
+  const navigate = useNavigate();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [summary, setSummary] = useState<InvestmentSummary | null>(null);
@@ -74,19 +127,26 @@ export function InvestmentsPage() {
 
   return (
     <div className="page">
-      <h2 className="page-title">Investimentos</h2>
-
-      <div className="section-head">
-        <span />
-        <motion.button
-          className="btn-primary btn-sm"
-          onClick={() => setModal({ kind: 'create' })}
-          whileTap={{ scale: 0.95 }}
-          transition={springTap}
-        >
-          + Novo
-        </motion.button>
-      </div>
+      {/* Investimentos saiu da navegação principal: chega-se aqui pelo card de
+          saldo em Finanças, então o cabeçalho oferece a volta. */}
+      <PageHeader
+        title="Investimentos"
+        actions={
+          <>
+            <button className="btn-ghost btn-sm" onClick={() => navigate('/financas')}>
+              ← Finanças
+            </button>
+            <motion.button
+              className="btn-primary btn-sm"
+              onClick={() => setModal({ kind: 'create' })}
+              whileTap={{ scale: 0.95 }}
+              transition={springTap}
+            >
+              + Novo
+            </motion.button>
+          </>
+        }
+      />
 
       <div className="year-nav">
         <button className="month-arrow" onClick={() => setYear((y) => y - 1)} aria-label="Ano anterior">
@@ -134,21 +194,25 @@ export function InvestmentsPage() {
               <h3 className="section-title">Aportes e resgates por mês</h3>
               <span className="hint">{summary.totals.entryCount} lançamentos no total</span>
             </div>
-            <div className="chart">
+            {/* Barras divergentes a partir de um eixo zero: aporte sobe,
+                resgate desce. Duas séries lado a lado escondiam o que
+                importa — se o mês foi de entrada ou de saída. */}
+            <div className="diverging-chart">
               {summary.months.map((m) => {
-                const contribH = (m.contributed / maxMonthValue) * 100;
-                const withdrawH = (m.withdrawn / maxMonthValue) * 100;
+                const upH = (m.contributed / maxMonthValue) * 100;
+                const downH = (m.withdrawn / maxMonthValue) * 100;
                 return (
                   <div
                     key={m.month}
-                    className="chart-col"
+                    className="diverging-col"
                     title={`${monthShort(m.month)}: aporte ${formatCurrency(m.contributed)}, resgate ${formatCurrency(m.withdrawn)}`}
                   >
-                    <div className="chart-bars">
-                      <div className="chart-income" style={{ height: `${contribH}%` }} />
-                      {m.withdrawn > 0 && (
-                        <div className="chart-spent over" style={{ height: `${withdrawH}%` }} />
-                      )}
+                    <div className="diverging-up">
+                      <div className="diverging-bar pos" style={{ height: `${upH}%` }} />
+                    </div>
+                    <div className="diverging-axis" />
+                    <div className="diverging-down">
+                      <div className="diverging-bar neg" style={{ height: `${downH}%` }} />
                     </div>
                     <span className="chart-label">{monthShort(m.month)}</span>
                   </div>
@@ -165,10 +229,19 @@ export function InvestmentsPage() {
             </div>
           </motion.section>
 
-          {/* Saldo por tipo */}
+          {/* Saldo por tipo — composição antes do histórico: primeiro o que se
+              tem, depois o que se movimentou. */}
           {summary.byType.length > 0 && (
             <motion.section className="card overview-item overview-span-2" variants={overviewItem}>
-              <h3 className="section-title">Saldo por tipo</h3>
+              <h3 className="section-title">Composição da carteira</h3>
+              <CompositionRing
+                slices={summary.byType.map((t) => ({
+                  label: INVESTMENT_TYPE_LABEL[t.type],
+                  amount: t.amount,
+                  color: INVESTMENT_TYPE_COLOR[t.type],
+                }))}
+                total={summary.totalBalance}
+              />
               <ul className="cat-list">
                 {summary.byType.map((t) => {
                   const pct = summary.totalBalance > 0 ? (t.amount / summary.totalBalance) * 100 : 0;

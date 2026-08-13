@@ -1,25 +1,35 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { api, ApiError } from '../api/client';
 import type { AgendaEvent, AgendaEventCategory, Exam, StudiesOverview, StudyTask, Subject } from '../api/types';
 import { formatDayMonth } from '../utils/format';
-import { CheckIcon, ChevronDownIcon, EditIcon, PlusIcon, TrashIcon } from '../components/icons';
+import { EditIcon, TrashIcon } from '../components/icons';
+import { PageHeader } from '../components/PageHeader';
+import { Button, EmptyState } from '../components/ui';
 import { AgendaEventModal, ExamModal, StudyTaskModal } from '../components/StudyModals';
-import { springSmooth, springTap } from '../lib/motion';
+import { springSmooth } from '../lib/motion';
+import { AGENDA_CATEGORY_COLORS, AGENDA_CATEGORY_LABELS } from '../utils/palette';
 
 const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const WEEKDAYS_LONG = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 const WEEKDAYS_FULL = ['Domingo','Segunda-Feira','Terça-Feira','Quarta-Feira','Quinta-Feira','Sexta-Feira','Sábado'];
 
-type StudiesTab = 'agenda' | 'provas' | 'tarefas' | 'materias';
+/** As antigas abas Provas/Tarefas viraram filtros da mesma lista. */
+type StudiesFilter = 'tudo' | 'provas' | 'tarefas' | 'eventos';
 
-const overviewContainer = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
-const overviewItem = {
-  hidden: { opacity: 0, y: 22, scale: 0.97 },
-  show: { opacity: 1, y: 0, scale: 1, transition: springSmooth },
-};
-
-const SUBJECT_COLORS = ['#007aff', '#34c759', '#ff9500', '#af52de', '#ff2d55', '#5ac8fa', '#ffcc00', '#ff3b30'];
+/** Prova, tarefa e evento normalizados para a lista única de "Próximos". */
+interface AgendaItem {
+  kind: 'prova' | 'tarefa' | 'evento';
+  id: string;
+  title: string;
+  date: string | null;
+  subject?: Subject;
+  color?: string;
+  exam?: Exam;
+  task?: StudyTask;
+  event?: AgendaEvent;
+}
 
 function daysUntil(iso: string): number {
   const today = new Date();
@@ -42,45 +52,8 @@ function todayIsoStr() {
   return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
 }
 
-// Horário fixo semanal (1=Seg … 5=Sex)
-const CLASS_SCHEDULE: Record<number, { time: string; name: string }[]> = {
-  1: [
-    { time: '18:55–20:35', name: 'Cálculo Diferencial e Integral II' },
-    { time: '20:50–22:30', name: 'Estática em Engenharia' },
-  ],
-  2: [
-    { time: '18:55–20:35', name: 'Física Geral e Experimental II' },
-    { time: '20:50–22:30', name: 'Estática em Engenharia' },
-  ],
-  3: [
-    { time: '18:55–20:35', name: 'Cálculo Diferencial e Integral II' },
-    { time: '20:50–22:30', name: 'Física Geral e Experimental II' },
-  ],
-  4: [
-    { time: '18:55–20:35', name: 'Geometria e Álgebra Linear' },
-    { time: '20:50–22:30', name: 'Introdução à Ciência dos Materiais' },
-  ],
-  5: [
-    { time: '18:55–20:35', name: 'Desenho e Modelagem Geométrica' },
-    { time: '20:50–22:30', name: 'Geometria e Álgebra Linear' },
-  ],
-};
-
-const CATEGORY_COLORS: Record<AgendaEventCategory, string> = {
-  CONSULTA: '#ff6b35',
-  EVENTO: '#af52de',
-  COMPROMISSO: '#007aff',
-  LEMBRETE: '#ffcc00',
-  OUTRO: '#8e8e93',
-};
-
-const CATEGORY_LABELS: Record<AgendaEventCategory, string> = {
-  CONSULTA: 'Consulta',
-  EVENTO: 'Evento',
-  COMPROMISSO: 'Compromisso',
-  LEMBRETE: 'Lembrete',
-  OUTRO: 'Outro',
-};
+const CATEGORY_COLORS = AGENDA_CATEGORY_COLORS;
+const CATEGORY_LABELS = AGENDA_CATEGORY_LABELS;
 
 // ─── CALENDÁRIO AGENDA ────────────────────────────────────────────────────────
 interface AgendaCalendarProps {
@@ -121,26 +94,19 @@ function AgendaCalendar({ exams, tasks, subjects, events, onExamEdit, onTaskEdit
   }
 
   const subjectById = (id: string | null) => subjects.find((s) => s.id === id);
-  const subjectByName = (name: string) => subjects.find((s) => s.name === name);
-
-  function classesForIso(iso: string) {
-    const dow = new Date(iso + 'T00:00:00').getDay(); // 0=Dom
-    return CLASS_SCHEDULE[dow] ?? [];
-  }
 
   function eventsForDay(iso: string) {
     const dayExams = exams.filter((e) => e.date === iso);
     const dayTasks = tasks.filter((t) => t.dueDate === iso);
-    const dayClasses = classesForIso(iso);
     const dayEvents = events.filter((ev) => ev.date === iso);
-    return { dayExams, dayTasks, dayClasses, dayEvents };
+    return { dayExams, dayTasks, dayEvents };
   }
 
   const cells: (number | null)[] = [...Array(firstDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
   while (cells.length % 7 !== 0) cells.push(null);
 
   const selDate = selectedIso ? new Date(selectedIso + 'T00:00:00') : null;
-  const { dayExams: selExams, dayTasks: selTasks, dayClasses: selClasses, dayEvents: selEvents } = eventsForDay(selectedIso);
+  const { dayExams: selExams, dayTasks: selTasks, dayEvents: selEvents } = eventsForDay(selectedIso);
 
   const upcomingExams = [...exams]
     .filter((e) => daysUntil(e.date) >= 0)
@@ -173,10 +139,13 @@ function AgendaCalendar({ exams, tasks, subjects, events, onExamEdit, onTaskEdit
           {cells.map((day, i) => {
             if (!day) return <div key={i} className="agenda-cell agenda-cell-empty" />;
             const iso = isoOf(day);
-            const { dayExams, dayTasks, dayClasses, dayEvents } = eventsForDay(iso);
+            const { dayExams, dayTasks, dayEvents } = eventsForDay(iso);
             const isToday = iso === todayStr;
             const isSel = iso === selectedIso;
             const MAX_VISIBLE = 3;
+            // As aulas fixas não entram no calendário: por serem as mesmas toda
+            // semana, enchiam todas as células e escondiam o que é de fato
+            // marcado. A grade da semana continua na Home e em Ajustes.
             const allEvents = [
               ...dayEvents.map((ev) => ({ kind: 'event' as const, label: ev.title, color: CATEGORY_COLORS[ev.category], id: ev.id })),
               ...dayExams.map((e) => {
@@ -184,10 +153,6 @@ function AgendaCalendar({ exams, tasks, subjects, events, onExamEdit, onTaskEdit
                 return { kind: 'exam' as const, label: subj ? `${subj.name} — ${e.title}` : e.title, color: subj?.color ?? 'var(--over)', id: e.id };
               }),
               ...dayTasks.map((t) => ({ kind: 'task' as const, label: t.title, color: 'var(--primary)', id: t.id })),
-              ...dayClasses.map((c, ci) => {
-                const subj = subjectByName(c.name);
-                return { kind: 'class' as const, label: c.name, color: subj?.color ? subj.color + 'aa' : 'var(--surface-2)', id: `class-${iso}-${ci}` };
-              }),
             ];
             const overflow = allEvents.length - MAX_VISIBLE;
             return (
@@ -201,7 +166,7 @@ function AgendaCalendar({ exams, tasks, subjects, events, onExamEdit, onTaskEdit
                   {allEvents.slice(0, MAX_VISIBLE).map((ev) => (
                     <div
                       key={ev.id}
-                      className={`agenda-event-pill${ev.kind === 'class' ? ' agenda-event-class' : ''}`}
+                      className="agenda-event-pill"
                       style={{ background: ev.color }}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -237,7 +202,7 @@ function AgendaCalendar({ exams, tasks, subjects, events, onExamEdit, onTaskEdit
             <span className="agenda-sidebar-label">Agenda do dia</span>
             <button className="btn-primary btn-sm" onClick={() => onAddEvent(selectedIso)}>+ Evento</button>
           </div>
-          {selEvents.length === 0 && selExams.length === 0 && selTasks.length === 0 && selClasses.length === 0 ? (
+          {selEvents.length === 0 && selExams.length === 0 && selTasks.length === 0 ? (
             <p className="agenda-sidebar-empty">Nenhum evento.</p>
           ) : (
             <div className="agenda-sidebar-events">
@@ -266,15 +231,6 @@ function AgendaCalendar({ exams, tasks, subjects, events, onExamEdit, onTaskEdit
                   </div>
                 </div>
               ))}
-              {selClasses.map((c, ci) => {
-                const subj = subjectByName(c.name);
-                return (
-                  <div key={`class-${ci}`} className="agenda-sidebar-event" style={{ borderLeftColor: subj?.color ?? 'var(--text-muted)' }}>
-                    <span className="agenda-sidebar-event-label">{c.time}</span>
-                    <span className="agenda-sidebar-event-title">{c.name}</span>
-                  </div>
-                );
-              })}
               {selExams.map((ex) => {
                 const subj = subjectById(ex.subjectId);
                 return (
@@ -330,16 +286,24 @@ export function EstudosPage() {
   const [data, setData] = useState<StudiesOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState<StudiesTab>('agenda');
+  const [filter, setFilter] = useState<StudiesFilter>('tudo');
 
-  const [addingSubject, setAddingSubject] = useState(false);
-  const [subjectName, setSubjectName] = useState('');
-  const [expanded, setExpanded] = useState<string | null>(null);
-  const [topicInputs, setTopicInputs] = useState<Record<string, string>>({});
   const [examModal, setExamModal] = useState<{ exam?: Exam } | null>(null);
   const [taskModal, setTaskModal] = useState<{ task?: StudyTask } | null>(null);
   const [agendaEvents, setAgendaEvents] = useState<AgendaEvent[]>([]);
   const [eventModal, setEventModal] = useState<{ event?: AgendaEvent; defaultDate?: string } | null>(null);
+
+  // O "+" global chega aqui por query param e abre o formulário certo.
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    const intent = searchParams.get('new');
+    if (intent === 'task') setTaskModal({});
+    else if (intent === 'event') setEventModal({});
+    if (intent) {
+      searchParams.delete('new');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const loadRef = useRef(0);
   const load = useCallback(async () => {
@@ -362,35 +326,7 @@ export function EstudosPage() {
 
   const subjects: Subject[] = data?.subjects ?? [];
 
-  async function addSubject(e: FormEvent) {
-    e.preventDefault();
-    if (!subjectName.trim()) return;
-    const color = SUBJECT_COLORS[subjects.length % SUBJECT_COLORS.length];
-    await api.createSubject({ name: subjectName.trim(), color });
-    setSubjectName('');
-    setAddingSubject(false);
-    await load();
-  }
-  async function deleteSubject(id: string) {
-    if (!confirm('Excluir esta matéria e seus assuntos?')) return;
-    await api.deleteSubject(id);
-    await load();
-  }
-  async function addTopic(subjectId: string) {
-    const name = (topicInputs[subjectId] ?? '').trim();
-    if (!name) return;
-    await api.addTopic(subjectId, { name });
-    setTopicInputs((p) => ({ ...p, [subjectId]: '' }));
-    await load();
-  }
-  async function toggleTopic(id: string, done: boolean) {
-    await api.updateTopic(id, { done });
-    await load();
-  }
-  async function deleteTopic(id: string) {
-    await api.deleteTopic(id);
-    await load();
-  }
+  // O cadastro de matérias saiu daqui: virou <SubjectsManager /> em Ajustes.
   async function toggleTask(id: string, done: boolean) {
     await api.updateStudyTask(id, { done });
     await load();
@@ -430,228 +366,159 @@ export function EstudosPage() {
 
   const subjectById = (id: string | null) => subjects.find((s) => s.id === id);
 
-  const TABS: { id: StudiesTab; label: string }[] = [
-    { id: 'agenda', label: 'Agenda' },
+  const FILTERS: { id: StudiesFilter; label: string }[] = [
+    { id: 'tudo', label: 'Tudo' },
     { id: 'provas', label: 'Provas' },
     { id: 'tarefas', label: 'Tarefas' },
-    { id: 'materias', label: 'Matérias' },
+    { id: 'eventos', label: 'Eventos' },
   ];
+
+  // Provas, tarefas e eventos são o mesmo objeto — item com data — e estavam
+  // espalhados em três abas. Aqui viram uma lista só, ordenada por urgência.
+  const items: AgendaItem[] = [];
+  if (data) {
+    if (filter === 'tudo' || filter === 'provas') {
+      for (const ex of data.upcomingExams) {
+        items.push({ kind: 'prova', id: ex.id, title: ex.title, date: ex.date, subject: subjectById(ex.subjectId), exam: ex });
+      }
+    }
+    if (filter === 'tudo' || filter === 'tarefas') {
+      for (const t of data.pendingTasks) {
+        items.push({ kind: 'tarefa', id: t.id, title: t.title, date: t.dueDate, subject: subjectById(t.subjectId), task: t });
+      }
+    }
+    if (filter === 'tudo' || filter === 'eventos') {
+      for (const ev of agendaEvents) {
+        items.push({ kind: 'evento', id: ev.id, title: ev.title, date: ev.date, color: CATEGORY_COLORS[ev.category], event: ev });
+      }
+    }
+  }
+  items.sort((a, b) => {
+    if (!a.date) return 1;
+    if (!b.date) return -1;
+    return a.date.localeCompare(b.date);
+  });
 
   return (
     <div className="page">
-      <div className="estudos-tabs">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            className={`estudos-tab${tab === t.id ? ' active' : ''}`}
-            onClick={() => setTab(t.id)}
-          >
-            {t.label}
-            {tab === t.id && <motion.span layoutId="estudos-tab-pill" className="estudos-tab-pill" transition={springSmooth} />}
-          </button>
-        ))}
-      </div>
+      <PageHeader title="Estudos" subtitle="Agenda, provas e entregas" />
 
       {loading && !data ? (
         <div className="center-pad"><div className="spinner" /></div>
       ) : error ? (
         <div className="alert alert-error">{error}</div>
       ) : data ? (
-        <>
-          {/* ── AGENDA ── */}
-          {tab === 'agenda' && (
-            <AgendaCalendar
-              exams={data.upcomingExams}
-              tasks={data.pendingTasks}
-              subjects={subjects}
-              events={agendaEvents}
-              onExamEdit={(ex) => setExamModal({ exam: ex })}
-              onTaskEdit={(t) => setTaskModal({ task: t })}
-              onEventEdit={(ev) => setEventModal({ event: ev })}
-              onAddEvent={(date) => setEventModal({ defaultDate: date })}
-              onDeleteEvent={deleteEvent}
-            />
-          )}
+        <div className="dashboard-stack">
+          <AgendaCalendar
+            exams={filter === 'tudo' || filter === 'provas' ? data.upcomingExams : []}
+            tasks={filter === 'tudo' || filter === 'tarefas' ? data.pendingTasks : []}
+            subjects={subjects}
+            events={filter === 'tudo' || filter === 'eventos' ? agendaEvents : []}
+            onExamEdit={(ex) => setExamModal({ exam: ex })}
+            onTaskEdit={(t) => setTaskModal({ task: t })}
+            onEventEdit={(ev) => setEventModal({ event: ev })}
+            onAddEvent={(date) => setEventModal({ defaultDate: date })}
+            onDeleteEvent={deleteEvent}
+          />
 
-          {/* ── PROVAS ── */}
-          {tab === 'provas' && (
-            <motion.div className="overview-grid" variants={overviewContainer} initial="hidden" animate="show">
-              <motion.section className="card overview-item overview-span-2" variants={overviewItem}>
-                <div className="section-head">
-                  <h3 className="section-title">Próximas provas</h3>
-                  <motion.button className="btn-primary btn-sm" onClick={() => setExamModal({})} whileTap={{ scale: 0.95 }} transition={springTap}>
-                    + Prova
-                  </motion.button>
-                </div>
-                {data.upcomingExams.length === 0 ? (
-                  <p className="empty">Nenhuma prova marcada.</p>
-                ) : (
-                  <div className="exam-list">
-                    {data.upcomingExams.map((ex) => {
-                      const subj = subjectById(ex.subjectId);
-                      const d = daysUntil(ex.date);
-                      const urgent = d <= 3;
-                      return (
-                        <div key={ex.id} className="exam-card" style={{ borderColor: subj?.color ?? 'var(--border)' }}>
-                          <div className="exam-countdown" style={{ color: urgent ? 'var(--over)' : 'var(--primary)' }}>
-                            {countdownLabel(ex.date)}
-                          </div>
-                          <div className="exam-title">{ex.title}</div>
-                          <div className="exam-meta">
-                            {subj && <span className="exam-subject" style={{ background: subj.color }}>{subj.name}</span>}
-                            <span>{formatDayMonth(ex.date)}</span>
-                          </div>
-                          <div className="exam-actions">
-                            <button className="icon-btn" title="Editar" onClick={() => setExamModal({ exam: ex })}><EditIcon /></button>
-                            <button className="icon-btn" title="Excluir" onClick={() => deleteExam(ex.id)}><TrashIcon /></button>
-                          </div>
+          <section className="card">
+            <div className="section-head">
+              <h3 className="section-title">Próximos ({items.length})</h3>
+              <div className="section-head-actions">
+                <Button variant="secondary" size="sm" onClick={() => setExamModal({})}>+ Prova</Button>
+                <Button variant="secondary" size="sm" onClick={() => setTaskModal({})}>+ Tarefa</Button>
+                <Button size="sm" onClick={() => setEventModal({})}>+ Evento</Button>
+              </div>
+            </div>
+
+            <div className="chip-row">
+              {FILTERS.map((f) => (
+                <button
+                  key={f.id}
+                  className={`chip${filter === f.id ? ' chip-active' : ''}`}
+                  onClick={() => setFilter(f.id)}
+                  aria-pressed={filter === f.id}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+
+            {items.length === 0 ? (
+              <EmptyState
+                title="Nada por aqui"
+                text={filter === 'tudo' ? 'Sem provas, tarefas ou eventos pendentes.' : 'Nenhum item deste tipo.'}
+              />
+            ) : (
+              <ul className="agenda-item-list">
+                <AnimatePresence initial={false}>
+                  {items.map((it) => {
+                    const days = it.date ? daysUntil(it.date) : null;
+                    const overdue = days !== null && days < 0;
+                    const urgent = days !== null && days >= 0 && days <= 3;
+                    const accent = it.subject?.color ?? it.color ?? 'var(--border-strong)';
+                    return (
+                      <motion.li
+                        key={`${it.kind}-${it.id}`}
+                        className="agenda-item"
+                        layout
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={springSmooth}
+                        style={{ overflow: 'hidden' }}
+                      >
+                        <span className="agenda-item-accent" style={{ background: accent }} />
+                        {it.kind === 'tarefa' ? (
+                          <button className="check-box" onClick={() => toggleTask(it.id, true)} title="Concluir" />
+                        ) : (
+                          <span className="agenda-item-kind">{it.kind === 'prova' ? 'Prova' : 'Evento'}</span>
+                        )}
+                        <div className="agenda-item-main">
+                          <span className="agenda-item-title">{it.title}</span>
+                          <span className="agenda-item-meta">
+                            {it.subject?.name}
+                            {it.subject && it.date ? ' · ' : ''}
+                            {it.date && formatDayMonth(it.date)}
+                          </span>
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </motion.section>
-            </motion.div>
-          )}
-
-          {/* ── TAREFAS ── */}
-          {tab === 'tarefas' && (
-            <motion.div className="overview-grid" variants={overviewContainer} initial="hidden" animate="show">
-              <motion.section className="card overview-item overview-span-2" variants={overviewItem}>
-                <div className="section-head">
-                  <h3 className="section-title">Tarefas e entregas ({data.totals.pendingTaskCount})</h3>
-                  <motion.button className="btn-primary btn-sm" onClick={() => setTaskModal({})} whileTap={{ scale: 0.95 }} transition={springTap}>
-                    + Tarefa
-                  </motion.button>
-                </div>
-                {data.pendingTasks.length === 0 ? (
-                  <p className="empty">Tudo em dia! 🎉</p>
-                ) : (
-                  <ul className="task-list">
-                    <AnimatePresence initial={false}>
-                      {data.pendingTasks.map((t) => {
-                        const subj = subjectById(t.subjectId);
-                        const overdue = t.dueDate ? daysUntil(t.dueDate) < 0 : false;
-                        return (
-                          <motion.li
-                            key={t.id}
-                            className="task-row"
-                            layout
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            transition={springSmooth}
-                            style={{ overflow: 'hidden' }}
+                        {days !== null && (
+                          <span className={`countdown-chip${overdue ? ' over' : urgent ? ' urgent' : ''}`}>
+                            {overdue ? 'Atrasada' : countdownLabel(it.date!)}
+                          </span>
+                        )}
+                        <div className="exp-actions">
+                          <button
+                            className="icon-btn"
+                            title="Editar"
+                            onClick={() => {
+                              if (it.exam) setExamModal({ exam: it.exam });
+                              else if (it.task) setTaskModal({ task: it.task });
+                              else if (it.event) setEventModal({ event: it.event });
+                            }}
                           >
-                            <button className="check-box" onClick={() => toggleTask(t.id, true)} title="Concluir" />
-                            <div className="task-main">
-                              <span className="task-title">{t.title}</span>
-                              <span className="task-meta">
-                                {subj && <span className="dot" style={{ background: subj.color }} />}
-                                {subj?.name}
-                                {t.dueDate && (
-                                  <span style={{ color: overdue ? 'var(--over)' : 'inherit' }}>
-                                    {subj ? ' · ' : ''}
-                                    {overdue ? 'Atrasada' : countdownLabel(t.dueDate)} ({formatDayMonth(t.dueDate)})
-                                  </span>
-                                )}
-                              </span>
-                            </div>
-                            <div className="exp-actions">
-                              <button className="icon-btn" title="Editar" onClick={() => setTaskModal({ task: t })}><EditIcon /></button>
-                              <button className="icon-btn" title="Excluir" onClick={() => deleteTask(t.id)}><TrashIcon /></button>
-                            </div>
-                          </motion.li>
-                        );
-                      })}
-                    </AnimatePresence>
-                  </ul>
-                )}
-              </motion.section>
-            </motion.div>
-          )}
-
-          {/* ── MATÉRIAS ── */}
-          {tab === 'materias' && (
-            <motion.div className="overview-grid" variants={overviewContainer} initial="hidden" animate="show">
-              <motion.section className="card overview-item overview-span-2" variants={overviewItem}>
-                <div className="section-head">
-                  <h3 className="section-title">Matérias</h3>
-                  <span className="hint">{data.totals.overallProgress}% concluído</span>
-                </div>
-
-                {subjects.length === 0 && !addingSubject ? (
-                  <p className="empty">Adicione suas matérias.</p>
-                ) : (
-                  <div className="subject-grid">
-                    {subjects.map((s) => (
-                      <div key={s.id} className="subject-card">
-                        <button className="subject-head" onClick={() => setExpanded(expanded === s.id ? null : s.id)}>
-                          <span className="subject-color" style={{ background: s.color }} />
-                          <div className="subject-info">
-                            <span className="subject-name">{s.name}</span>
-                            <span className="subject-progress-text">{s.doneCount}/{s.topicCount} assuntos · {s.progress}%</span>
-                          </div>
-                          <span className={`subject-chevron${expanded === s.id ? ' open' : ''}`}><ChevronDownIcon /></span>
-                        </button>
-                        <div className="subject-bar">
-                          <div className="subject-bar-fill" style={{ width: `${s.progress}%`, background: s.color }} />
+                            <EditIcon />
+                          </button>
+                          <button
+                            className="icon-btn"
+                            title="Excluir"
+                            onClick={() => {
+                              if (it.exam) void deleteExam(it.id);
+                              else if (it.task) void deleteTask(it.id);
+                              else void deleteEvent(it.id);
+                            }}
+                          >
+                            <TrashIcon />
+                          </button>
                         </div>
-                        <AnimatePresence initial={false}>
-                          {expanded === s.id && (
-                            <motion.div
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: 'auto' }}
-                              exit={{ opacity: 0, height: 0 }}
-                              transition={springSmooth}
-                              style={{ overflow: 'hidden' }}
-                            >
-                              <ul className="topic-list">
-                                {s.topics.map((t) => (
-                                  <li key={t.id} className="topic-row">
-                                    <button className={`check-box${t.done ? ' checked' : ''}`} onClick={() => toggleTopic(t.id, !t.done)} title={t.done ? 'Desmarcar' : 'Concluir'}>
-                                      {t.done && <CheckIcon />}
-                                    </button>
-                                    <span className={`topic-name${t.done ? ' done' : ''}`}>{t.name}</span>
-                                    <button className="icon-btn" title="Remover" onClick={() => deleteTopic(t.id)}><TrashIcon /></button>
-                                  </li>
-                                ))}
-                              </ul>
-                              <form className="topic-add" onSubmit={(e) => { e.preventDefault(); void addTopic(s.id); }}>
-                                <input
-                                  type="text"
-                                  value={topicInputs[s.id] ?? ''}
-                                  onChange={(e) => setTopicInputs((p) => ({ ...p, [s.id]: e.target.value }))}
-                                  placeholder="Novo assunto…"
-                                />
-                                <button type="submit" className="btn-primary btn-sm"><PlusIcon /></button>
-                              </form>
-                              <div className="subject-footer">
-                                <button className="btn-ghost btn-sm" onClick={() => deleteSubject(s.id)}>Excluir matéria</button>
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {addingSubject ? (
-                  <form className="topic-add" style={{ marginTop: 12 }} onSubmit={addSubject}>
-                    <input type="text" value={subjectName} onChange={(e) => setSubjectName(e.target.value)} placeholder="Nome da matéria" autoFocus />
-                    <button type="submit" className="btn-primary btn-sm">Adicionar</button>
-                    <button type="button" className="btn-ghost btn-sm" onClick={() => setAddingSubject(false)}>Cancelar</button>
-                  </form>
-                ) : (
-                  <motion.button className="btn-ghost btn-sm" style={{ marginTop: 12, alignSelf: 'flex-start' }} onClick={() => setAddingSubject(true)} whileTap={{ scale: 0.95 }} transition={springTap}>
-                    <PlusIcon /> Matéria
-                  </motion.button>
-                )}
-              </motion.section>
-            </motion.div>
-          )}
-        </>
+                      </motion.li>
+                    );
+                  })}
+                </AnimatePresence>
+              </ul>
+            )}
+          </section>
+        </div>
       ) : null}
 
       {eventModal && (

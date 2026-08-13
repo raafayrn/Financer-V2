@@ -1,29 +1,34 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { useRef, type ComponentType } from 'react';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useRef, useState, type ComponentType } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useShell } from '../context/ShellContext';
 import { springSheet, springSmooth, springTap } from '../lib/motion';
+import { ChatBox } from './ChatBox';
+import {
+  BookIcon,
+  DropletIcon,
+  DumbbellIcon,
+  GearIcon,
+  HeartPulseIcon,
+  MoonIcon,
+  PlusIcon,
+  SunIcon,
+  WalletIcon,
+} from './icons';
 
-const ROUTE_ORDER = ['/', '/financas', '/relatorios', '/investimentos', '/saude', '/estudos'];
+const ROUTE_ORDER = ['/', '/financas', '/investimentos', '/saude', '/estudos', '/ajustes'];
 function routeIndex(p: string) {
   const i = ROUTE_ORDER.indexOf(p);
   return i === -1 ? 0 : i;
 }
 
 const pageVariants = {
-  initial: (dir: number) => ({ opacity: 0, x: dir * 28, scale: 0.985, filter: 'blur(2px)' }),
-  animate: { opacity: 1, x: 0, scale: 1, filter: 'blur(0px)' },
-  exit: (dir: number) => ({ opacity: 0, x: dir * -18, scale: 0.99, filter: 'blur(2px)' }),
+  initial: (dir: number) => ({ opacity: 0, x: dir * 28, scale: 0.985 }),
+  animate: { opacity: 1, x: 0, scale: 1 },
+  exit: (dir: number) => ({ opacity: 0, x: dir * -18, scale: 0.99 }),
 };
-import {
-  BookIcon,
-  HeartPulseIcon,
-  MoonIcon,
-  PiggyBankIcon,
-  SunIcon,
-  WalletIcon,
-} from './icons';
 
 function HomeIcon() {
   return (
@@ -34,94 +39,92 @@ function HomeIcon() {
   );
 }
 
-function ChartIcon() {
-  return (
-    <svg viewBox="0 0 24 24" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="4" y="12" width="4" height="8" rx="1" />
-      <rect x="10" y="7" width="4" height="13" rx="1" />
-      <rect x="16" y="3" width="4" height="17" rx="1" />
-    </svg>
-  );
-}
+type Section = { id: string; label: string; home: string; icon: ComponentType };
 
-type NavItem = { to: string; end: boolean; icon: ComponentType; label: string };
-type Section = { id: string; label: string; home: string; icon: ComponentType; items: NavItem[] };
-
-// As 4 seções do planner. As seções são a navegação primária (barra inferior no
-// mobile / pills no topo do desktop); os `items` são as sub-abas de cada uma.
 const SECTIONS: Section[] = [
-  {
-    id: 'home',
-    label: 'Home',
-    home: '/',
-    icon: HomeIcon,
-    items: [{ to: '/', end: true, icon: HomeIcon, label: 'Home' }],
-  },
-  {
-    id: 'financas',
-    label: 'Finanças',
-    home: '/financas',
-    icon: WalletIcon,
-    items: [
-      { to: '/financas', end: true, icon: HomeIcon, label: 'Início' },
-      { to: '/relatorios', end: false, icon: ChartIcon, label: 'Relatórios' },
-      { to: '/investimentos', end: false, icon: PiggyBankIcon, label: 'Investimentos' },
-    ],
-  },
-  {
-    id: 'saude',
-    label: 'Saúde',
-    home: '/saude',
-    icon: HeartPulseIcon,
-    items: [{ to: '/saude', end: false, icon: HeartPulseIcon, label: 'Saúde' }],
-  },
-  {
-    id: 'estudos',
-    label: 'Estudos',
-    home: '/estudos',
-    icon: BookIcon,
-    items: [{ to: '/estudos', end: false, icon: BookIcon, label: 'Estudos' }],
-  },
+  { id: 'home', label: 'Home', home: '/', icon: HomeIcon },
+  { id: 'financas', label: 'Finanças', home: '/financas', icon: WalletIcon },
+  { id: 'saude', label: 'Saúde', home: '/saude', icon: HeartPulseIcon },
+  { id: 'estudos', label: 'Estudos', home: '/estudos', icon: BookIcon },
 ];
 
-function sectionForPath(pathname: string): Section {
+function sectionForPath(pathname: string): Section | null {
   if (pathname === '/') return SECTIONS[0];
   if (pathname.startsWith('/saude')) return SECTIONS[2];
   if (pathname.startsWith('/estudos')) return SECTIONS[3];
-  return SECTIONS[1]; // /financas, /relatorios, /investimentos
+  if (pathname.startsWith('/financas') || pathname.startsWith('/investimentos')) return SECTIONS[1];
+  return null; // /ajustes não é seção primária
 }
 
-function isItemActive(pathname: string, item: NavItem) {
-  return item.end ? pathname === item.to : pathname.startsWith(item.to);
+type QuickAction = { label: string; hint: string; to: string; icon: ComponentType };
+
+const ACTION_EXPENSE: QuickAction = { label: 'Gasto', hint: 'Registrar uma saída', to: '/financas?new=expense', icon: WalletIcon };
+const ACTION_INCOME: QuickAction = { label: 'Receita', hint: 'Registrar uma entrada', to: '/financas?new=income', icon: WalletIcon };
+const ACTION_WATER: QuickAction = { label: 'Água', hint: 'Somar no total do dia', to: '/saude?new=water', icon: DropletIcon };
+const ACTION_WORKOUT: QuickAction = { label: 'Treino', hint: 'Registrar o treino de hoje', to: '/saude?new=workout', icon: DumbbellIcon };
+const ACTION_TASK: QuickAction = { label: 'Tarefa', hint: 'Com matéria e prazo', to: '/estudos?new=task', icon: BookIcon };
+const ACTION_EVENT: QuickAction = { label: 'Evento', hint: 'Compromisso na agenda', to: '/estudos?new=event', icon: BookIcon };
+
+function actionsForPath(pathname: string): QuickAction[] {
+  if (pathname.startsWith('/saude')) {
+    return [ACTION_WATER, ACTION_WORKOUT, ACTION_EXPENSE, ACTION_TASK];
+  }
+  if (pathname.startsWith('/estudos')) {
+    return [ACTION_TASK, ACTION_EVENT, ACTION_EXPENSE, ACTION_WATER];
+  }
+  return [ACTION_EXPENSE, ACTION_INCOME, ACTION_WATER, ACTION_TASK];
 }
 
-/** Sub-abas da seção ativa como controle segmentado (mobile) ou linha (desktop). */
-function SubTabs({ section, layoutId, variant }: { section: Section; layoutId: string; variant: 'segment' | 'row' }) {
+function QuickAddMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
   const location = useLocation();
-  if (section.items.length < 2) return null; // seções de 1 aba não precisam de sub-nav
+  const navigate = useNavigate();
+  const actions = actionsForPath(location.pathname);
+
   return (
-    <div className={variant === 'segment' ? 'subtabs-segment' : 'subtabs-row'}>
-      {section.items.map((item) => {
-        const active = isItemActive(location.pathname, item);
-        return (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.end}
-            className={variant === 'segment' ? 'subtab-seg-item' : 'subtab-row-item'}
+    <AnimatePresence>
+      {open && (
+        <>
+          <motion.div
+            className="quickadd-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+          />
+          <motion.div
+            className="quickadd-sheet"
+            role="dialog"
+            aria-label="Registrar"
+            initial={{ opacity: 0, y: 24, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 16, scale: 0.97 }}
+            transition={springSheet}
           >
-            {active && (
-              <motion.span
-                layoutId={layoutId}
-                className={variant === 'segment' ? 'subtab-seg-pill' : 'subtab-row-underline'}
-                transition={springSheet}
-              />
-            )}
-            <span style={{ position: 'relative' }}>{item.label}</span>
-          </NavLink>
-        );
-      })}
-    </div>
+            <span className="quickadd-title">Registrar</span>
+            <div className="quickadd-grid">
+              {actions.map((a) => (
+                <button
+                  key={a.to}
+                  className="quickadd-item"
+                  onClick={() => {
+                    onClose();
+                    navigate(a.to);
+                  }}
+                >
+                  <span className="quickadd-icon">
+                    <a.icon />
+                  </span>
+                  <span className="quickadd-item-text">
+                    <strong>{a.label}</strong>
+                    <small>{a.hint}</small>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
   );
 }
 
@@ -130,6 +133,8 @@ export function Layout() {
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
+  const { requestRefresh, setPendingPreviews } = useShell();
+  const [quickAdd, setQuickAdd] = useState(false);
   const prevPath = useRef(location.pathname);
   const navDir = useRef(1);
   if (prevPath.current !== location.pathname) {
@@ -138,68 +143,67 @@ export function Layout() {
   }
   const section = sectionForPath(location.pathname);
 
-
-  const themeButton = (
-    <motion.button
-      className="icon-btn-outline"
-      title={theme === 'dark' ? 'Ativar modo claro' : 'Ativar modo escuro'}
-      onClick={toggleTheme}
-      whileTap={{ scale: 0.9 }}
-      transition={springTap}
-    >
-      {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
-    </motion.button>
-  );
-
   return (
     <div className="layout">
-      {/* Navbar — desktop (2 níveis: seções em cima, sub-abas embaixo) */}
-      <header className="navbar-desktop">
+      <nav className="navbar-desktop" aria-label="Navegação principal">
         <div className="navbar-desktop-top">
           <span className="brand">Orbit</span>
-          <nav className="navbar-desktop-sections">
-            {SECTIONS.map((s) => (
-              <button
-                key={s.id}
-                className={`navbar-section-item${s.id === section.id ? ' active' : ''}`}
-                onClick={() => navigate(s.home)}
-              >
-                {s.id === section.id && (
-                  <motion.span layoutId="desktop-section-pill" className="navbar-section-pill" transition={springSheet} />
-                )}
-                <span className="navbar-section-icon">
-                  <s.icon />
-                </span>
-                <span style={{ position: 'relative' }}>{s.label}</span>
-              </button>
-            ))}
-          </nav>
+          <div className="navbar-desktop-sections">
+            {SECTIONS.map((s) => {
+              const active = s.id === section?.id;
+              return (
+                <button
+                  key={s.id}
+                  className={`navbar-section-item${active ? ' active' : ''}`}
+                  onClick={() => navigate(s.home)}
+                  aria-current={active ? 'page' : undefined}
+                >
+                  {active && (
+                    <motion.span layoutId="navbar-pill" className="navbar-section-pill" transition={springSheet} />
+                  )}
+                  <span className="navbar-section-icon">
+                    <s.icon />
+                  </span>
+                  <span style={{ position: 'relative', zIndex: 1 }}>{s.label}</span>
+                </button>
+              );
+            })}
+          </div>
           <div className="navbar-desktop-right">
-            {themeButton}
-            <span className="user-name">{user?.name}</span>
+            <motion.button
+              className="btn-primary btn-sm"
+              onClick={() => setQuickAdd(true)}
+              whileTap={{ scale: 0.97 }}
+              transition={springTap}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+            >
+              <PlusIcon />
+              <span>Registrar</span>
+            </motion.button>
+            <motion.button
+              className="icon-btn-outline"
+              title={theme === 'dark' ? 'Ativar modo claro' : 'Ativar modo escuro'}
+              aria-label={theme === 'dark' ? 'Ativar modo claro' : 'Ativar modo escuro'}
+              onClick={toggleTheme}
+              whileTap={{ scale: 0.9 }}
+              transition={springTap}
+            >
+              {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+            </motion.button>
+            <motion.button
+              className={`icon-btn-outline${location.pathname === '/ajustes' ? ' icon-btn-outline-active' : ''}`}
+              title="Ajustes"
+              aria-label="Ajustes"
+              onClick={() => navigate('/ajustes')}
+              whileTap={{ scale: 0.9 }}
+              transition={springTap}
+            >
+              <GearIcon />
+            </motion.button>
+            <span className="user-name" title={user?.name}>{user?.name}</span>
           </div>
         </div>
-        {section.items.length > 1 && (
-          <div className="navbar-desktop-sub">
-            <SubTabs section={section} layoutId="desktop-subtab-underline" variant="row" />
-          </div>
-        )}
-      </header>
-
-      {/* Topo — mobile (marca + controles; sub-abas logo abaixo) */}
-      <header className="topbar">
-        <div className="topbar-inner">
-          <span className="brand">Orbit</span>
-          <div className="topbar-right">
-            {themeButton}
-          </div>
-        </div>
-        {section.items.length > 1 && (
-          <div className="topbar-subtabs">
-            <SubTabs section={section} layoutId="mobile-subtab-pill" variant="segment" />
-          </div>
-        )}
-      </header>
+      </nav>
 
       <main className="content">
         <AnimatePresence mode="wait" initial={false} custom={navDir.current}>
@@ -217,25 +221,50 @@ export function Layout() {
         </AnimatePresence>
       </main>
 
-      {/* Menu inferior — mobile: SEÇÕES (navegação primária) */}
+      <ChatBox
+        onSaved={requestRefresh}
+        onPreviews={(previews) => {
+          setPendingPreviews(previews);
+          navigate('/financas');
+        }}
+      />
+
+      <QuickAddMenu open={quickAdd} onClose={() => setQuickAdd(false)} />
+
+      {/* Barra inferior — mobile. O "+" ocupa o centro, o ponto mais alcançável
+          do polegar, porque registrar é a ação mais repetida do app. */}
       <nav className="bottom-nav">
-        {SECTIONS.map((s) => {
-          const active = s.id === section.id;
-          return (
-            <button
-              key={s.id}
-              className={`nav-item${active ? ' active' : ''}`}
-              onClick={() => navigate(s.home)}
-            >
-              {active && <motion.span layoutId="bottom-nav-pill" className="nav-item-pill" transition={springSheet} />}
-              <span className="nav-icon">
-                <s.icon />
-              </span>
-              <span style={{ position: 'relative' }}>{s.label}</span>
-            </button>
-          );
-        })}
+        {SECTIONS.slice(0, 2).map((s) => (
+          <BottomNavItem key={s.id} section={s} active={s.id === section?.id} onClick={() => navigate(s.home)} />
+        ))}
+
+        <button
+          className={`nav-add${quickAdd ? ' open' : ''}`}
+          onClick={() => setQuickAdd((v) => !v)}
+          aria-label="Registrar"
+          aria-expanded={quickAdd}
+        >
+          <motion.span animate={{ rotate: quickAdd ? 45 : 0 }} transition={springTap} style={{ display: 'flex' }}>
+            <PlusIcon />
+          </motion.span>
+        </button>
+
+        {SECTIONS.slice(2).map((s) => (
+          <BottomNavItem key={s.id} section={s} active={s.id === section?.id} onClick={() => navigate(s.home)} />
+        ))}
       </nav>
     </div>
+  );
+}
+
+function BottomNavItem({ section, active, onClick }: { section: Section; active: boolean; onClick: () => void }) {
+  return (
+    <button className={`nav-item${active ? ' active' : ''}`} onClick={onClick} aria-current={active ? 'page' : undefined}>
+      {active && <motion.span layoutId="bottom-nav-pill" className="nav-item-pill" transition={springSheet} />}
+      <span className="nav-icon">
+        <section.icon />
+      </span>
+      <span style={{ position: 'relative' }}>{section.label}</span>
+    </button>
   );
 }

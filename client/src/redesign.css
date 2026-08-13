@@ -1,0 +1,1279 @@
+/* ============================================================================
+   ORBIT — COMPONENTES DO REDESIGN
+   Carregado depois de index.css (ver main.tsx). Primeiro passo da quebra do
+   CSS monolítico: o que é novo nasce fora do arquivo de 3.400 linhas.
+   ========================================================================= */
+
+/* ---------- Cabeçalho de tela (substitui a topbar fixa do mobile) ---------- */
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding-top: var(--s2);
+}
+.page-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.page-header .page-title {
+  margin: 0;
+  font-size: var(--fs-title);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.page-subtitle {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+.page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  flex-shrink: 0;
+}
+
+/* ============================================================================
+   BIBLIOTECA DE COMPONENTES (ver components/ui)
+   ========================================================================= */
+
+/* ---------- Card: três densidades ----------
+   A densidade é o que devolve hierarquia. Antes todo bloco era o mesmo card. */
+.card--compact {
+  padding: var(--s3) var(--s4);
+  gap: var(--s2);
+}
+.card--feature {
+  padding: var(--s5);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-float);
+}
+.card--feature .home-value,
+.card--feature .stat-value {
+  font-size: var(--fs-display);
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+.card--clickable {
+  position: relative;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: border-color 0.16s ease, background 0.16s ease;
+}
+.card--clickable:hover {
+  border-color: var(--primary);
+}
+.card-chevron {
+  position: absolute;
+  top: var(--s4);
+  right: var(--s4);
+  color: var(--text-faint);
+  font-size: var(--fs-sm);
+}
+
+/* ---------- StatTile ---------- */
+.stat-tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+}
+.stat-tile-hint {
+  font-size: var(--fs-label);
+  color: var(--text-muted);
+}
+.stat-tile-bar {
+  height: 5px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+  margin-top: var(--s1);
+}
+.stat-tile-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--primary);
+}
+.stat-tile-bar-fill.pos { background: var(--ok); }
+.stat-tile-bar-fill.neg { background: var(--over); }
+.stat-tile-bar-fill.warn { background: var(--warning); }
+.warn { color: var(--warning); }
+
+/* ---------- DataRow ---------- */
+.data-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s3) 0 var(--s3) var(--s3);
+  border-bottom: 1px solid var(--border);
+}
+.data-row:last-child {
+  border-bottom: none;
+}
+.data-row-accent {
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  border-radius: 2px;
+}
+.data-row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+.data-row-title {
+  font-size: var(--fs-body);
+  font-weight: 550;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.data-row-meta {
+  font-size: var(--fs-label);
+  color: var(--text-muted);
+}
+.data-row-value {
+  flex-shrink: 0;
+  font-weight: 650;
+}
+.data-row-actions {
+  display: flex;
+  gap: var(--s1);
+  flex-shrink: 0;
+}
+
+/* ---------- Field ---------- */
+.field-label {
+  font-size: var(--fs-label);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.field-hint {
+  font-size: var(--fs-label);
+  color: var(--text-muted);
+}
+.field-error {
+  font-size: var(--fs-label);
+  font-weight: 600;
+  color: var(--over);
+}
+.field--error input,
+.field--error select {
+  border-color: var(--over);
+}
+
+/* ---------- Button: variante destrutiva ---------- */
+.btn-danger {
+  color: var(--over);
+}
+.btn-danger:hover {
+  background: var(--over-bg);
+}
+
+/* ---------- Sparkline ---------- */
+.sparkline {
+  width: 100%;
+  height: 48px;
+  display: block;
+  margin: var(--s2) 0;
+}
+.sparkline-area {
+  fill: var(--primary);
+  fill-opacity: 0.14;
+  stroke: none;
+}
+.sparkline-line {
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+.sparkline-last {
+  fill: var(--primary);
+}
+.spark-meta {
+  font-size: var(--fs-label);
+  color: var(--text-muted);
+}
+
+/* ============================================================================
+   DESKTOP SHELL — navbar no topo, conteúdo largo e sem sidebars.
+   ========================================================================= */
+
+.sidebar,
+.right-rail {
+  display: none;
+}
+
+/* ============================================================================
+   DASHBOARD FINANÇAS
+   A tela é lida em três faixas: (1) a conta do mês como uma fórmula
+   — receita − fixas = livre; (2) o detalhe do compromisso fixo e das três
+   carteiras; (3) contexto. Tudo cabe numa dobra no desktop.
+   ========================================================================= */
+
+/* ---------- Faixa 1: a fórmula ---------- */
+.fin-flow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  margin-bottom: 12px;
+}
+.fin-flow-step {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.fin-flow-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.fin-flow-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.fin-flow-value {
+  font-size: 1.7rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.fin-flow-result {
+  font-size: 2.2rem;
+}
+.fin-flow-value.pos {
+  color: var(--ok);
+}
+.fin-flow-value.neg {
+  color: var(--over);
+}
+.fin-flow-status {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+/* Barra de composição: mostra a PROPORÇÃO de cada parcela de uma vez. Antes
+   isto era uma lista de "rótulo … número", em que salário e carteira tinham o
+   mesmo peso visual apesar de um ser 4x o outro. */
+.fin-mix {
+  display: flex;
+  height: 7px;
+  margin: 10px 0 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--surface-2);
+  gap: 1.5px;
+}
+.fin-mix-seg {
+  height: 100%;
+  min-width: 2px;
+  transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.fin-mix-seg:first-child {
+  border-radius: 999px 0 0 999px;
+}
+.fin-mix-seg:last-child {
+  border-radius: 0 999px 999px 0;
+}
+
+/* Paleta das parcelas — a mesma cor liga o segmento da barra ao ponto da
+   legenda, então a leitura não depende de ordem. */
+.tone-primary { background: var(--primary); }
+.tone-vr { background: var(--warning); }
+.tone-ok { background: var(--ok); }
+.tone-wallet { background: #8b5cf6; }
+.tone-fixed { background: var(--over); }
+.tone-pending {
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--over) 0 4px,
+    color-mix(in srgb, var(--over) 40%, transparent) 4px 8px
+  );
+}
+.tone-variable { background: var(--warning); }
+
+.fin-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.fin-legend li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+.fin-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+/* Parcela negativa não tem fatia na barra — o contorno vazado diz isso. */
+.fin-legend-dot.is-neg {
+  background: none;
+  border: 1.5px solid var(--over);
+}
+.fin-legend-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fin-legend-value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+  color: var(--text);
+  white-space: nowrap;
+}
+.fin-legend-value.neg {
+  color: var(--over);
+}
+.fin-flow-op {
+  display: none;
+  font-size: 1.5rem;
+  font-weight: 300;
+  color: var(--text-muted);
+  align-self: center;
+}
+.fin-flow-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+/* ---------- Faixas 2 e 3: colunas ---------- */
+.fin-cols {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+/* Cards da faixa: viram coluna flex para o rodapé (ex.: "Total por mês")
+   poder ancorar embaixo quando o grid estica todos à mesma altura. */
+.fin-cols > .card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* ---------- Contas fixas ---------- */
+.fin-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.fin-card-head .section-title {
+  margin: 0;
+}
+.fin-card-head-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.fin-fixed-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.fin-fixed-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 0;
+  border-bottom: 0.5px solid var(--border);
+  font-size: 0.85rem;
+}
+.fin-fixed-row:last-child {
+  border-bottom: none;
+}
+.fin-fixed-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 550;
+}
+.fin-fixed-day {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.fin-fixed-tag {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--warning-bg, var(--surface-2));
+  color: var(--warning);
+  white-space: nowrap;
+}
+.fin-fixed-tag.launched {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+.fin-fixed-value {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.fin-fixed-total {
+  display: flex;
+  justify-content: space-between;
+  margin-top: auto; /* ancora no rodapé do card esticado */
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Carteiras ---------- */
+.fin-wallet-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+.fin-wallet {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.fin-wallet-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.fin-wallet-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.fin-wallet-value {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.fin-wallet-bar {
+  height: 5px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.fin-wallet-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--primary);
+  transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.fin-wallet-fill.vr {
+  background: var(--warning);
+}
+.fin-wallet-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+.fin-wallet-btn {
+  align-self: flex-start;
+  margin-top: 4px;
+}
+/* Ancorado no rodapé do card esticado, para não brigar com a altura igual. */
+.fin-invest-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  margin-top: auto;
+  padding: 7px 0 0;
+  border: none;
+  border-top: 1px solid var(--border);
+  background: none;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--primary);
+  cursor: pointer;
+  transition: opacity 0.16s ease;
+}
+.fin-invest-link:hover {
+  opacity: 0.7;
+}
+
+@media (min-width: 900px) {
+  /* A fórmula vira uma linha só: três blocos separados por − e =. */
+  .fin-flow {
+    flex-direction: row;
+    align-items: stretch;
+    gap: var(--s4);
+    padding: 16px 20px;
+  }
+  .fin-flow-step {
+    flex: 1;
+  }
+  .fin-flow-step--result {
+    flex: 1.15;
+    padding-left: var(--s4);
+    border-left: 1px solid var(--border);
+  }
+  .fin-flow-op {
+    display: block;
+  }
+
+  .fin-cols {
+    display: grid;
+    grid-template-columns: 1.25fr 0.95fr 1fr;
+    gap: 12px;
+    /* stretch (e não start) para os três cards fecharem na mesma linha de base
+       — com alturas soltas a faixa ficava serrilhada. */
+    align-items: stretch;
+  }
+
+  /* Densidade: a tela inteira precisa caber sem rolar. */
+  .fin-cols .card,
+  .fin-flow.card {
+    padding: 14px 18px;
+  }
+  .fin-cols .section-title {
+    font-size: 0.85rem;
+  }
+  .fin-cols .cat-row {
+    padding: 3px 0;
+  }
+  .fin-cols .cat-name,
+  .fin-cols .cat-value {
+    font-size: 0.8rem;
+  }
+  /* Categorias distribuem as linhas na altura esticada, em vez de amontoar
+     tudo no topo e deixar um vão embaixo. */
+  .fin-cols .cat-list {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    flex: 1;
+  }
+}
+
+/* ---------- Topo da Home ----------
+   Largura total acima do grid de três colunas dos domínios. */
+.home-top {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  margin-bottom: var(--s5);
+}
+
+/* ---------- Rótulo de seção ---------- */
+.section-eyebrow {
+  font-family: var(--font-num);
+  font-size: var(--fs-label);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* ---------- Foco de hoje (Home) ---------- */
+.focus-card {
+  gap: var(--s3);
+}
+.focus-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+}
+.focus-item {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  width: 100%;
+  padding: var(--s2);
+  min-height: var(--tap);
+  border: none;
+  background: none;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: var(--fs-body);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.16s ease;
+}
+.focus-item:hover {
+  background: var(--surface-2);
+}
+.focus-bullet {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.focus-over .focus-bullet { background: var(--over); }
+.focus-warning .focus-bullet { background: var(--warning); }
+.focus-primary .focus-bullet { background: var(--primary); }
+
+.focus-card--clear {
+  align-items: flex-start;
+  gap: 2px;
+}
+.focus-clear-title {
+  font-size: var(--fs-heading);
+  font-weight: 650;
+  letter-spacing: -0.015em;
+}
+.focus-clear-text {
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+
+/* ---------- Botão "+" central da barra inferior ---------- */
+.bottom-nav {
+  align-items: center;
+}
+.nav-add {
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  margin: 0 var(--s2);
+  border: none;
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--primary-contrast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--shadow-float);
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+.nav-add:hover { background: var(--primary-hover); }
+.nav-add:active { transform: scale(0.94); }
+.nav-add svg {
+  width: 26px;
+  height: 26px;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  fill: none;
+}
+
+/* ---------- Menu do "+" ---------- */
+.quickadd-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: var(--blur-overlay);
+  -webkit-backdrop-filter: var(--blur-overlay);
+  z-index: 40;
+}
+.quickadd-sheet {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(96px + env(safe-area-inset-bottom));
+  width: min(420px, calc(100vw - 24px));
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-float);
+  padding: var(--s4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  z-index: 41;
+}
+.quickadd-title {
+  font-family: var(--font-num);
+  font-size: var(--fs-label);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.quickadd-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s2);
+}
+.quickadd-item {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s3);
+  min-height: var(--tap);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font-family: inherit;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.16s ease, background 0.16s ease;
+}
+.quickadd-item:hover {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+.quickadd-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: var(--radius-xs);
+  background: var(--surface);
+  color: var(--primary);
+}
+.quickadd-icon svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+}
+.quickadd-item-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.quickadd-item-text strong {
+  font-size: var(--fs-sm);
+  font-weight: 650;
+}
+.quickadd-item-text small {
+  font-size: var(--fs-label);
+  color: var(--text-muted);
+}
+
+.navbar-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.navbar-add svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  fill: none;
+}
+
+/* ---------- Seletor de período (Mês / Ano) ---------- */
+.range-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  flex-wrap: wrap;
+}
+/* No desktop o seletor e o navegador de mês dividem UMA linha. O `width: 100%`
+   herdado de .segmented empurrava o navegador para a linha de baixo e custava
+   ~80px da dobra — caro numa tela que precisa caber inteira. */
+@media (min-width: 900px) {
+  .range-bar {
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .range-bar .segmented {
+    width: auto;
+    flex: 0 0 auto;
+  }
+  .range-bar .segmented-item {
+    min-height: 32px;
+  }
+}
+.segmented-item {
+  position: relative;
+  min-height: 36px;
+  padding: 0 var(--s4);
+  border: none;
+  border-radius: var(--radius-xs);
+  background: none;
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease;
+}
+.segmented-item.active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+
+/* ---------- Busca ---------- */
+.search-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+.search-input {
+  flex: 1;
+  min-height: var(--tap);
+  padding: 0 var(--s3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: var(--fs-body);
+}
+.search-input:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: -1px;
+}
+
+/* ---------- Lista unificada da Agenda (provas + tarefas + eventos) ---------- */
+.agenda-item-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.agenda-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s3) 0 var(--s3) var(--s3);
+  border-bottom: 1px solid var(--border);
+}
+.agenda-item:last-child {
+  border-bottom: none;
+}
+.agenda-item-accent {
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  border-radius: 2px;
+}
+.agenda-item-kind {
+  flex-shrink: 0;
+  font-family: var(--font-num);
+  font-size: var(--fs-label);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  min-width: 48px;
+}
+.agenda-item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+.agenda-item-title {
+  font-size: var(--fs-body);
+  font-weight: 550;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.agenda-item-meta {
+  font-size: var(--fs-label);
+  color: var(--text-muted);
+}
+.countdown-chip {
+  flex-shrink: 0;
+  font-size: var(--fs-label);
+  font-weight: 600;
+  padding: 3px var(--s2);
+  border-radius: var(--radius-xs);
+  background: var(--surface-2);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.countdown-chip.urgent {
+  background: var(--warning-bg);
+  color: var(--warning);
+}
+.countdown-chip.over {
+  background: var(--over-bg);
+  color: var(--over);
+}
+
+/* ---------- Estado vazio (antes ficava simplesmente em branco) ---------- */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s1);
+  padding: var(--s6) var(--s4);
+  text-align: center;
+}
+.empty-state-title {
+  margin: 0;
+  font-size: var(--fs-body);
+  font-weight: 650;
+}
+.empty-state-text {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+  max-width: 42ch;
+}
+
+/* ---------- Ajustes ---------- */
+.settings-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+}
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding: var(--s3) 0;
+  border-bottom: 1px solid var(--border);
+}
+.settings-row:last-child {
+  border-bottom: none;
+}
+.settings-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.settings-row-text strong {
+  font-size: var(--fs-body);
+  font-weight: 600;
+}
+.settings-row-text small {
+  font-size: var(--fs-label);
+  color: var(--text-muted);
+}
+.schedule-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.schedule-day {
+  display: flex;
+  gap: var(--s4);
+  padding: var(--s3) 0;
+  border-bottom: 1px solid var(--border);
+}
+.schedule-day:last-child {
+  border-bottom: none;
+}
+.schedule-weekday {
+  flex: 0 0 76px;
+  font-size: var(--fs-sm);
+  font-weight: 650;
+}
+.schedule-classes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  min-width: 0;
+}
+.schedule-class {
+  display: flex;
+  flex-direction: column;
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+.schedule-time {
+  font-family: var(--font-num);
+  font-size: var(--fs-label);
+  color: var(--text-faint);
+}
+
+/* ---------- Rebalanceamento da tela de Saúde ----------
+   O treino — o dado que exige mais esforço para registrar — subiu para o topo
+   e a água desceu. A troca foi feita no JSX, não com `order`: reordenar só
+   visualmente deixaria a ordem de tabulação diferente da ordem na tela. */
+
+/* O anel de água encolhe: ocupava a tela toda sendo o dado mais simples. */
+.water-ring svg {
+  max-width: 168px;
+  height: auto;
+}
+
+/* ---------- Cabeçalho de dia na lista de lançamentos ----------
+   A lista era um rolo contínuo sem marco temporal. */
+.day-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s3);
+  /* A lista de lançamentos é edge-to-edge (margin: 0 -18px), então cada linha
+     precisa reintroduzir o padding lateral que compensa a extensão. Sem isso,
+     "14/08" e ",00" caíam nos 18px que passam da borda do card. */
+  padding: var(--s4) 18px var(--s1);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  z-index: 1;
+}
+.day-header-date {
+  font-family: var(--font-num);
+  font-size: var(--fs-label);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.day-header-total {
+  font-size: var(--fs-label);
+  font-weight: 650;
+}
+.day-header-total.neg,
+.neg { color: var(--over); }
+.day-header-total.pos,
+.pos { color: var(--ok); }
+
+/* ---------- Chips de filtro ativo ---------- */
+.active-filters {
+  align-items: center;
+}
+.chip-removable {
+  background: var(--primary-soft);
+  color: var(--primary);
+  border-color: transparent;
+}
+
+/* ---------- Card de saldo investido (porta de Investimentos) ---------- */
+.invest-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s1);
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.16s ease;
+}
+.invest-card:hover {
+  border-color: var(--primary);
+}
+.invest-card-meta {
+  font-size: var(--fs-label);
+  color: var(--text-muted);
+}
+.invest-card-cta {
+  margin-top: var(--s1);
+  font-size: var(--fs-label);
+  font-weight: 600;
+  color: var(--primary);
+}
+
+/* ---------- Anel de composição da carteira ---------- */
+.composition {
+  display: flex;
+  justify-content: center;
+  padding: var(--s2) 0 var(--s4);
+}
+.composition-ring {
+  width: 100%;
+  max-width: 180px;
+  height: auto;
+}
+.composition-total {
+  fill: var(--text);
+  font-size: 30px;
+  font-weight: 700;
+  text-anchor: middle;
+}
+.composition-caption {
+  fill: var(--text-muted);
+  font-size: 12px;
+  text-anchor: middle;
+}
+
+/* ---------- Barras divergentes (aportes x resgates) ---------- */
+.diverging-chart {
+  display: flex;
+  align-items: stretch;
+  gap: var(--s1);
+  height: 180px;
+  overflow-x: auto;
+  padding-bottom: var(--s2);
+}
+.diverging-col {
+  display: flex;
+  flex: 1;
+  min-width: 26px;
+  flex-direction: column;
+}
+.diverging-up,
+.diverging-down {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+.diverging-up {
+  align-items: flex-end;
+}
+.diverging-down {
+  align-items: flex-start;
+}
+.diverging-bar {
+  width: 100%;
+  border-radius: 3px 3px 0 0;
+  min-height: 0;
+}
+.diverging-bar.pos {
+  background: var(--ok);
+}
+.diverging-bar.neg {
+  background: var(--over);
+  border-radius: 0 0 3px 3px;
+}
+.diverging-axis {
+  height: 1px;
+  background: var(--border-strong);
+  flex: none;
+}
+
+/* ---------- Gráfico de linha com área e ponto final ---------- */
+.line-chart-area {
+  fill: var(--primary);
+  fill-opacity: 0.12;
+  stroke: none;
+}
+.line-chart-dot-last {
+  fill: var(--primary);
+  stroke: var(--surface);
+  stroke-width: 2;
+}
+.line-chart-last-label {
+  fill: var(--text);
+  font-size: 11px;
+  font-weight: 650;
+  font-family: var(--font-num);
+}
+
+/* ---------- Correção de overflow horizontal na Agenda ----------
+   Itens de grid têm `min-width: auto` por padrão, então o conteúdo largo do
+   calendário (nomes longos de matéria) esticava a coluna e a página inteira
+   rolava de lado no mobile. O `min-width: 0` deixa a coluna encolher e o
+   calendário rola dentro do próprio contêiner. */
+.agenda-layout > *,
+.agenda-main {
+  min-width: 0;
+}
+
+/* `repeat(7, 1fr)` tem piso de min-content: as colunas não encolhiam abaixo do
+   texto mais largo da célula, a grade estourava o contêiner e o overflow:hidden
+   do canto arredondado cortava sexta e sábado. `minmax(0, 1fr)` deixa as sete
+   colunas caberem sempre. */
+.agenda-grid {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+.agenda-cell,
+.agenda-cell-empty,
+.agenda-weekday,
+.agenda-events {
+  min-width: 0;
+}
+.agenda-event-pill,
+.agenda-sidebar-event-label,
+.agenda-sidebar-weekday,
+.agenda-sidebar-day {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Sem as aulas fixas ocupando todas as células, o calendário respira: dá para
+   dar mais altura à linha e mostrar mais eventos por dia. */
+.agenda-cell {
+  min-height: 108px;
+}
+
+@media (max-width: 899px) {
+  .agenda-cell {
+    min-height: 72px;
+  }
+  .agenda-event-pill {
+    font-size: var(--fs-label);
+    padding: 1px 4px;
+  }
+}
+
+/* ---------- Densidade geral ---------- */
+/* Glassmorfismo removido: as superfícies agora são opacas e a separação entre
+   camadas vem do contraste, não do blur. */
+.card {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.bottom-nav {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+/* A topbar sumiu do mobile; o padding inferior encolhe junto. */
+.content {
+  padding: var(--s3) var(--s4) 148px;
+}
+
+/* ============================ DESKTOP ============================ */
+@media (min-width: 900px) {
+  /* Tema e ajustes já vivem na navbar do desktop. */
+  .page-header-only-mobile {
+    display: none;
+  }
+  .page-header .page-title {
+    font-size: 2rem;
+  }
+  .quickadd-sheet {
+    bottom: auto;
+    top: 88px;
+    left: auto;
+    right: 24px;
+    transform: none;
+    width: 420px;
+  }
+}

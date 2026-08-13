@@ -15,6 +15,7 @@ import { CheckIcon, EditIcon, PlayCircleIcon, PlusIcon } from '../components/ico
 import { exerciseVideoSearchUrl } from '../utils/exerciseLibrary';
 import { WorkoutSessionModal } from '../components/WorkoutSessionModal';
 import { WorkoutPlanModal } from '../components/WorkoutPlanModal';
+import { PageHeader } from '../components/PageHeader';
 import { springSmooth, springTap } from '../lib/motion';
 
 const WEEKDAYS = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
@@ -26,8 +27,12 @@ const overviewItem = {
 };
 
 // Botões rápidos de adição de água (ml).
+// Três volumes cobrem quase todo registro; antes só existia "Garrafa" e
+// qualquer outro valor exigia digitar no campo customizado.
 const QUICK_ADDS = [
+  { label: 'Copo', ml: 250 },
   { label: 'Garrafa', ml: 600 },
+  { label: 'Garrafão', ml: 1000 },
 ];
 
 function formatMl(ml: number): string {
@@ -113,12 +118,21 @@ function LineChart({ points }: { points: { date: string; maxWeight: number }[] }
     return [x, y] as const;
   });
   const path = coords.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  // Área preenchida sob a linha + ponto final destacado: uma polyline nua não
+  // dizia onde a série termina nem qual é a leitura mais recente.
+  const areaPath = `${path} L${coords[coords.length - 1][0].toFixed(1)},${h} L${coords[0][0].toFixed(1)},${h} Z`;
+  const [lastX, lastY] = coords[coords.length - 1];
   return (
-    <svg className="line-chart" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
+    <svg className="line-chart" viewBox={`0 0 ${w} ${h}`}>
+      <path d={areaPath} className="line-chart-area" />
       <path d={path} className="line-chart-path" />
-      {coords.map(([x, y], i) => (
-        <circle key={i} cx={x} cy={y} r={2.5} className="line-chart-dot" />
+      {coords.slice(0, -1).map(([x, y], i) => (
+        <circle key={i} cx={x} cy={y} r={2} className="line-chart-dot" />
       ))}
+      <circle cx={lastX} cy={lastY} r={4.5} className="line-chart-dot-last" />
+      <text x={lastX} y={Math.max(12, lastY - 9)} className="line-chart-last-label" textAnchor="end">
+        {points[points.length - 1].maxWeight} kg
+      </text>
     </svg>
   );
 }
@@ -275,12 +289,14 @@ export function SaudePage() {
 
   return (
     <div className="page">
-      <div className="section-head">
-        <h2 className="page-title">Saúde</h2>
-        <motion.button className="btn-ghost btn-sm" onClick={() => setPlanOpen(true)} whileTap={{ scale: 0.95 }} transition={springTap}>
-          Rotina semanal
-        </motion.button>
-      </div>
+      <PageHeader
+        title="Saúde"
+        actions={
+          <motion.button className="btn-ghost btn-sm" onClick={() => setPlanOpen(true)} whileTap={{ scale: 0.95 }} transition={springTap}>
+            Rotina semanal
+          </motion.button>
+        }
+      />
 
       {loading && !ready ? (
         <div className="center-pad">
@@ -289,81 +305,9 @@ export function SaudePage() {
       ) : error ? (
         <div className="alert alert-error">{error}</div>
       ) : waterDay && today && summary ? (
-        <motion.div className="overview-grid" variants={overviewContainer} initial="hidden" animate="show">
-          {/* Água */}
-          <motion.section className="card overview-item overview-span-2 water-hero" variants={overviewItem}>
-            <WaterRing percent={waterDay.percent} consumedMl={waterDay.consumedMl} goalMl={waterDay.goalMl} />
-
-            <div className="water-quick">
-              {QUICK_ADDS.map((q) => (
-                <motion.button
-                  key={q.ml}
-                  className="water-quick-btn"
-                  onClick={() => addWater(q.ml)}
-                  whileTap={{ scale: 0.92 }}
-                  transition={springTap}
-                >
-                  <span className="water-quick-label">{q.label}</span>
-                  <span className="water-quick-ml">+{q.ml} ml</span>
-                </motion.button>
-              ))}
-            </div>
-
-            <div className="water-custom">
-              <input
-                type="number"
-                inputMode="numeric"
-                placeholder="Outro valor (ml)"
-                value={customMl}
-                onChange={(e) => setCustomMl(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && addCustomWater()}
-              />
-              <motion.button className="btn-primary btn-sm" onClick={addCustomWater} whileTap={{ scale: 0.95 }} transition={springTap}>
-                Adicionar
-              </motion.button>
-            </div>
-
-            <div className="water-goal-row">
-              {editingGoal ? (
-                <>
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    className="water-goal-input"
-                    value={goalInput}
-                    onChange={(e) => setGoalInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && saveGoal()}
-                    autoFocus
-                  />
-                  <button className="btn-primary btn-sm" onClick={saveGoal}>
-                    Salvar
-                  </button>
-                  <button className="btn-ghost btn-sm" onClick={() => setEditingGoal(false)}>
-                    Cancelar
-                  </button>
-                </>
-              ) : (
-                <>
-                  <span className="hint">Meta diária: {formatMl(waterDay.goalMl)}</span>
-                  <button
-                    className="btn-ghost btn-sm"
-                    onClick={() => {
-                      setGoalInput(String(waterDay.goalMl));
-                      setEditingGoal(true);
-                    }}
-                  >
-                    Alterar meta
-                  </button>
-                  <button className="btn-ghost btn-sm" onClick={resetWaterDay}>
-                    Resetar dia
-                  </button>
-                </>
-              )}
-            </div>
-          </motion.section>
-
+        <motion.div className="overview-grid saude-grid" variants={overviewContainer} initial="hidden" animate="show">
           {/* Treino de hoje em destaque */}
-          <motion.section className="card overview-item overview-span-2 today-card" variants={overviewItem}>
+          <motion.section className="card overview-item today-card" variants={overviewItem}>
             <div className="today-head">
               <div>
                 <span className="today-weekday">{WEEKDAYS[today.weekday]}</span>
@@ -442,6 +386,78 @@ export function SaudePage() {
             )}
           </motion.section>
 
+          {/* Água */}
+          <motion.section className="card overview-item water-hero" variants={overviewItem}>
+            <WaterRing percent={waterDay.percent} consumedMl={waterDay.consumedMl} goalMl={waterDay.goalMl} />
+
+            <div className="water-quick">
+              {QUICK_ADDS.map((q) => (
+                <motion.button
+                  key={q.ml}
+                  className="water-quick-btn"
+                  onClick={() => addWater(q.ml)}
+                  whileTap={{ scale: 0.92 }}
+                  transition={springTap}
+                >
+                  <span className="water-quick-label">{q.label}</span>
+                  <span className="water-quick-ml">+{q.ml} ml</span>
+                </motion.button>
+              ))}
+            </div>
+
+            <div className="water-custom">
+              <input
+                type="number"
+                inputMode="numeric"
+                placeholder="Outro valor (ml)"
+                value={customMl}
+                onChange={(e) => setCustomMl(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && addCustomWater()}
+              />
+              <motion.button className="btn-primary btn-sm" onClick={addCustomWater} whileTap={{ scale: 0.95 }} transition={springTap}>
+                Adicionar
+              </motion.button>
+            </div>
+
+            <div className="water-goal-row">
+              {editingGoal ? (
+                <>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    className="water-goal-input"
+                    value={goalInput}
+                    onChange={(e) => setGoalInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && saveGoal()}
+                    autoFocus
+                  />
+                  <button className="btn-primary btn-sm" onClick={saveGoal}>
+                    Salvar
+                  </button>
+                  <button className="btn-ghost btn-sm" onClick={() => setEditingGoal(false)}>
+                    Cancelar
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span className="hint">Meta diária: {formatMl(waterDay.goalMl)}</span>
+                  <button
+                    className="btn-ghost btn-sm"
+                    onClick={() => {
+                      setGoalInput(String(waterDay.goalMl));
+                      setEditingGoal(true);
+                    }}
+                  >
+                    Alterar meta
+                  </button>
+                  <button className="btn-ghost btn-sm" onClick={resetWaterDay}>
+                    Resetar dia
+                  </button>
+                </>
+              )}
+            </div>
+          </motion.section>
+
           {/* Treinos na semana */}
           <motion.div className="stat-card overview-item" variants={overviewItem}>
             <span className="stat-label">Treinos na semana</span>
@@ -449,7 +465,7 @@ export function SaudePage() {
           </motion.div>
 
           {/* Evolução de carga */}
-          <motion.section className="card overview-item overview-span-2" variants={overviewItem}>
+          <motion.section className="card overview-item" variants={overviewItem}>
             <h3 className="section-title">Evolução de carga</h3>
             {summary.exercises.length === 0 ? (
               <p className="empty">Registre treinos com carga para ver sua evolução e recordes aqui.</p>

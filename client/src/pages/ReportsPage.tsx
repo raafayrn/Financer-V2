@@ -5,6 +5,7 @@ import type { ReportsOverview } from '../api/types';
 import { formatCurrency, formatDayMonth, monthShort } from '../utils/format';
 import { ChevronLeftIcon, ChevronRightIcon } from '../components/icons';
 import { springSmooth } from '../lib/motion';
+import { NEUTRAL_COLOR } from '../utils/palette';
 
 const overviewContainer = {
   hidden: {},
@@ -16,7 +17,13 @@ const overviewItem = {
   show: { opacity: 1, y: 0, scale: 1, transition: springSmooth },
 };
 
-export function ReportsPage() {
+/**
+ * Visão anual. Deixou de ser uma tela própria — é renderizada dentro de
+ * Finanças quando o período está em "Ano", para que comparar meses não exija
+ * mais trocar de contexto. O modo `embedded` remove o wrapper e o título,
+ * que passam a ser responsabilidade de Finanças.
+ */
+export function ReportsPage({ embedded = false }: { embedded?: boolean } = {}) {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [overview, setOverview] = useState<ReportsOverview | null>(null);
@@ -50,10 +57,8 @@ export function ReportsPage() {
 
   const savingsPct = overview ? Math.round(overview.totals.savingsRate * 100) : 0;
 
-  return (
-    <div className="page">
-      <h2 className="page-title">Relatórios</h2>
-
+  const body = (
+    <>
       <div className="year-nav">
         <button className="month-arrow" onClick={() => setYear((y) => y - 1)} aria-label="Ano anterior">
           <ChevronLeftIcon />
@@ -183,7 +188,7 @@ export function ReportsPage() {
               <ul className="exp-list">
                 {overview.topExpenses.map((e) => (
                   <li key={e.id} className="exp-row">
-                    <span className="exp-dot" style={{ background: '#94a3b8' }} />
+                    <span className="exp-dot" style={{ background: NEUTRAL_COLOR }} />
                     <div className="exp-main">
                       <span className="exp-desc">{e.description}</span>
                       <span className="exp-meta">
@@ -198,6 +203,8 @@ export function ReportsPage() {
           )}
         </motion.div>
       ) : null}
-    </div>
+    </>
   );
+
+  return embedded ? body : <div className="page">{body}</div>;
 }

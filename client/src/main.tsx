@@ -4,7 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
-import './index.css';
+import './index.css'; // manifesto: importa tokens, base, layout, components, screens, redesign
 import { setupServiceWorker } from './registerSW';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

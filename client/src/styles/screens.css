@@ -1,0 +1,1719 @@
+/* Estilos especificos de tela: graficos, saude, agenda, estudos e home,
+   com as media queries de desktop de cada uma. */
+
+/* ---------- Chart (relatórios) ---------- */
+.chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 180px;
+  padding-top: 8px;
+}
+.chart-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  gap: 4px;
+}
+.chart-bars {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 3px;
+  position: relative;
+}
+.chart-budget {
+  width: 40%;
+  background: var(--surface-2);
+  border-radius: 4px 4px 0 0;
+  min-height: 2px;
+}
+.chart-spent {
+  width: 40%;
+  background: var(--primary);
+  border-radius: 4px 4px 0 0;
+  min-height: 2px;
+}
+.chart-spent.over {
+  background: var(--over);
+}
+.chart-spent.trend-muted {
+  background: var(--text-muted);
+  opacity: 0.45;
+}
+.chart-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.chart-legend {
+  display: flex;
+  gap: 16px;
+  margin-top: 12px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.chart-legend span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.legend-box {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  display: inline-block;
+}
+.legend-box.spent {
+  background: var(--primary);
+}
+.legend-box.budget {
+  background: var(--surface-2);
+}
+.legend-box.income {
+  background: var(--ok);
+}
+.chart-income {
+  width: 40%;
+  background: var(--ok);
+  border-radius: 4px 4px 0 0;
+  min-height: 2px;
+}
+
+/* =====================================================================
+   LAYOUT DESKTOP — a partir de 880px a navegação vira uma navbar minimalista
+   no topo (em vez de menu inferior), o conteúdo ganha mais largura, e o
+   resumo do mês é compacto para caber na tela sem rolar.
+   ===================================================================== */
+@media (min-width: 900px) {
+  /* Esconde os elementos pensados para mobile */
+  .topbar,
+  .bottom-nav {
+    display: none;
+  }
+
+  /* Navbar flutuante em 2 níveis: seções em cima, sub-abas embaixo */
+  .navbar-desktop {
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    top: 16px;
+    z-index: 10;
+    width: 96%;
+    max-width: var(--maxw-desktop);
+    margin: 16px auto 0;
+    background: var(--surface);
+    backdrop-filter: var(--blur);
+    -webkit-backdrop-filter: var(--blur);
+    border: 0.5px solid var(--border);
+    border-radius: 20px;
+    box-shadow: var(--shadow-float);
+  }
+  .navbar-desktop-top {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    padding: 13px 28px;
+  }
+  .navbar-desktop .brand {
+    font-size: 1.3rem;
+  }
+  /* Nível 1 — seções */
+  .navbar-desktop-sections {
+    display: flex;
+    gap: 4px;
+    flex: 1;
+  }
+  .navbar-section-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 9px 18px;
+    border-radius: 12px;
+    border: none;
+    background: none;
+    font-family: inherit;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 1rem;
+    font-weight: 600;
+    transition: color 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .navbar-section-icon {
+    position: relative;
+    z-index: 1;
+    display: flex;
+  }
+  .navbar-section-icon svg {
+    width: 20px;
+    height: 20px;
+    stroke: currentColor;
+    fill: none;
+  }
+  .navbar-section-item:hover {
+    color: var(--text);
+  }
+  .navbar-section-item.active {
+    color: var(--primary);
+  }
+  .navbar-section-item.active .navbar-section-icon svg {
+    fill: currentColor;
+    fill-opacity: 0.12;
+  }
+  .navbar-section-pill {
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    background: var(--info-bg);
+    z-index: 0;
+  }
+  /* Nível 2 — sub-abas */
+  .navbar-desktop-sub {
+    padding: 0 28px 4px;
+  }
+  .subtabs-row {
+    display: flex;
+    gap: 24px;
+    border-top: 0.5px solid var(--border);
+    padding-top: 8px;
+  }
+  .subtab-row-item {
+    position: relative;
+    text-decoration: none;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    font-weight: 600;
+    padding: 4px 2px 9px;
+    transition: color 0.2s ease;
+  }
+  .subtab-row-item:hover {
+    color: var(--text);
+  }
+  .subtab-row-item.active {
+    color: var(--primary);
+  }
+  .subtab-row-underline {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2.5px;
+    border-radius: 2px;
+    background: var(--primary);
+  }
+  .navbar-desktop-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .navbar-desktop-right .user-name {
+    font-size: 0.95rem;
+  }
+
+  .layout {
+    display: flex;
+    flex-direction: column;
+  }
+  .content {
+    width: 96%;
+    max-width: var(--maxw-desktop);
+    margin: 0 auto;
+    padding: 14px 0 72px;
+    flex: 1;
+  }
+
+  /* Página mais densa: menos espaço entre cards */
+  .page {
+    gap: 14px;
+  }
+  .card {
+    padding: 16px 18px;
+  }
+
+  /* Resumo do mês: hero + renda + sobra + gasto até agora + carteira, todos
+     do mesmo tamanho, preenchendo a largura disponível numa única linha
+     (5 cards = 5 colunas, sem sobrar espaço). */
+  .overview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    align-items: start;
+    gap: 14px;
+  }
+  .overview-span-2 {
+    grid-column: span 2;
+  }
+
+  /* Hero compacto no desktop (a versão mobile é maior de propósito) */
+  .hero {
+    gap: 2px;
+    padding: 14px 18px;
+  }
+  .hero-value {
+    font-size: 2.1rem;
+  }
+  .hero-details {
+    margin-top: 10px;
+    padding-top: 10px;
+  }
+
+  /* Dashboard: categoria e lançamentos lado a lado */
+  .dash-columns {
+    display: grid;
+    grid-template-columns: 1fr 1.3fr;
+    align-items: start;
+    gap: 16px;
+  }
+
+  /* Modais centralizados como diálogo, não mais como bottom sheet */
+  .modal {
+    max-width: 480px;
+  }
+
+  /* No desktop o FAB sobe um pouco pois não há bottom-nav */
+  .chat-fab {
+    bottom: 24px;
+  }
+  .chat-panel {
+    bottom: 92px;
+  }
+}
+
+/* ============================================================
+   Sub-abas da seção — mobile (controle segmentado no topo)
+   ============================================================ */
+.topbar-subtabs {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 0 16px 12px;
+}
+.subtabs-segment {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  background: var(--surface-2);
+  border-radius: 13px;
+}
+.subtab-seg-item {
+  position: relative;
+  flex: 1;
+  text-align: center;
+  text-decoration: none;
+  color: var(--text-muted);
+  font-size: 0.86rem;
+  font-weight: 600;
+  padding: 7px 10px;
+  border-radius: 10px;
+  transition: color 0.2s ease;
+  white-space: nowrap;
+}
+.subtab-seg-item.active {
+  color: var(--primary);
+}
+.subtab-seg-pill {
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  background: var(--surface-solid);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  z-index: 0;
+}
+
+/* ============================================================
+   Mini gráfico de linha (evolução de carga / peso)
+   ============================================================ */
+.line-chart {
+  width: 100%;
+  height: 90px;
+  overflow: visible;
+}
+.line-chart-path {
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.line-chart-dot {
+  fill: var(--primary);
+}
+
+/* Saúde: grid fixo de 2 colunas no desktop */
+@media (min-width: 900px) {
+  .saude-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ============================================================
+   Água
+   ============================================================ */
+.water-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+.water-ring {
+  position: relative;
+  width: 160px;
+  max-width: 50vw;
+  aspect-ratio: 1;
+}
+.water-ring svg {
+  width: 100%;
+  height: 100%;
+}
+.water-ring-track {
+  fill: none;
+  stroke: var(--surface-2);
+  stroke-width: 14;
+}
+.water-ring-fill {
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 14;
+  stroke-linecap: round;
+}
+.water-ring-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+}
+.water-ring-pct {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+.water-ring-amount {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--primary);
+  line-height: 1.3;
+}
+.water-ring-goal {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.2;
+}
+.water-ring-fill--done {
+  stroke: #22c55e;
+}
+.water-ring-check {
+  font-size: 2.8rem;
+  font-weight: 900;
+  color: #22c55e;
+  line-height: 1;
+}
+.water-ring-done-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #22c55e;
+  letter-spacing: 0.01em;
+}
+.water-quick {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.water-quick-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 92px;
+  padding: 12px 14px;
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text);
+  cursor: pointer;
+}
+.water-quick-label {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+.water-quick-ml {
+  font-size: 0.8rem;
+  color: var(--primary);
+  font-weight: 600;
+}
+.water-custom {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  max-width: 340px;
+}
+.water-custom input {
+  flex: 1;
+}
+.water-goal-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.water-goal-input {
+  max-width: 120px;
+}
+
+/* ============================================================
+   Treinos — treino de hoje
+   ============================================================ */
+.today-card {
+  gap: 4px;
+}
+.today-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+.today-weekday {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: capitalize;
+}
+.today-title {
+  margin: 2px 0 0;
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.today-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.today-badge svg {
+  width: 15px;
+  height: 15px;
+  stroke: currentColor;
+  fill: none;
+}
+.today-badge.done {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+.today-badge.rest {
+  background: var(--surface-2);
+  color: var(--text-muted);
+}
+.today-ex-list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.today-ex-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 2px;
+  border-bottom: 0.5px solid var(--border);
+}
+.today-ex-row:last-child {
+  border-bottom: none;
+}
+.today-ex-name {
+  font-weight: 600;
+  flex: 1;
+  min-width: 0;
+}
+.today-ex-target {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.today-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+.today-actions .btn-primary,
+.today-actions .btn-primary.btn-sm {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.today-actions svg {
+  width: 17px;
+  height: 17px;
+  stroke: currentColor;
+  fill: none;
+}
+.flame-icon svg {
+  width: 20px;
+  height: 20px;
+  stroke: var(--warning);
+  fill: var(--warning);
+  fill-opacity: 0.15;
+}
+
+/* ============================================================
+   Treinos — evolução de carga
+   ============================================================ */
+.exercise-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.exercise-item {
+  border-bottom: 0.5px solid var(--border);
+}
+.exercise-item:last-child {
+  border-bottom: none;
+}
+.exercise-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 2px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text);
+}
+.exercise-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.exercise-name {
+  font-weight: 600;
+}
+.exercise-meta {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+.exercise-pr {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--primary);
+  background: var(--info-bg);
+  padding: 5px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.exercise-history {
+  padding: 6px 2px 14px;
+}
+
+/* ============================================================
+   Treinos — peso e medidas
+   ============================================================ */
+.body-latest {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.body-latest > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.body-latest .line-chart {
+  flex: 1;
+  min-width: 180px;
+}
+.body-fields {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+/* ============================================================
+   Treinos — modais (rotina / sessão)
+   ============================================================ */
+.weekday-tabs {
+  display: flex;
+  gap: 4px;
+  margin: 8px 0 16px;
+}
+.weekday-tab {
+  position: relative;
+  flex: 1;
+  padding: 9px 4px;
+  border: 0.5px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.weekday-tab.has-workout::after {
+  content: '';
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+.weekday-tab.active {
+  background: var(--primary);
+  color: var(--primary-contrast);
+  border-color: var(--primary);
+}
+.weekday-tab.active.has-workout::after {
+  background: var(--primary-contrast);
+}
+.workout-exercises {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.workout-ex-card {
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  background: var(--surface-2);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.workout-ex-head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.workout-ex-name {
+  flex: 1;
+  font-weight: 600;
+}
+.workout-sets {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.workout-set-head,
+.workout-set-row {
+  display: grid;
+  grid-template-columns: 34px 1fr 1fr 34px;
+  gap: 8px;
+  align-items: center;
+}
+/* Permite que os inputs encolham dentro do grid (senão o min-width intrínseco
+   do <input> estoura a largura e o campo "Reps" sai da tela). */
+.workout-set-head > *,
+.workout-set-row > * {
+  min-width: 0;
+}
+.workout-set-row input {
+  width: 100%;
+}
+.workout-set-head {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  padding: 0 2px;
+}
+.workout-set-idx {
+  text-align: center;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+.workout-add-set {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.workout-add-set svg,
+.plan-ex-add svg {
+  width: 15px;
+  height: 15px;
+  stroke: currentColor;
+  fill: none;
+}
+.plan-ex-list {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.plan-ex-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 2px;
+  border-bottom: 0.5px solid var(--border);
+}
+.plan-ex-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+.plan-ex-name {
+  font-weight: 600;
+}
+.plan-ex-meta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.plan-ex-add {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.plan-ex-add input {
+  min-width: 0;
+}
+.plan-ex-num {
+  max-width: 72px;
+}
+
+/* ============================================================
+   Estudos — provas
+   ============================================================ */
+/* ===== STUDY CALENDAR ===== */
+.study-cal { display: flex; flex-direction: column; gap: 8px; }
+.study-cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.study-cal-title { font-weight: 600; font-size: 0.95rem; }
+.study-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.study-cal-weekday {
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  padding: 4px 0;
+  font-weight: 500;
+}
+.study-cal-day {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text);
+  transition: background 0.15s;
+  gap: 2px;
+}
+.study-cal-day:hover { background: var(--surface-2); }
+.study-cal-day.today { background: var(--surface-2); font-weight: 700; color: var(--primary); }
+.study-cal-day.selected { background: var(--primary); color: #fff; }
+.study-cal-day.selected.today { background: var(--primary); }
+.study-cal-dots { display: flex; gap: 3px; }
+.study-cal-dot { width: 5px; height: 5px; border-radius: 50%; }
+.study-cal-dot.exam { background: var(--over); }
+.study-cal-dot.task { background: var(--primary); }
+.study-cal-day.selected .study-cal-dot.exam { background: var(--primary-contrast); }
+.study-cal-day.selected .study-cal-dot.task { background: var(--primary-contrast); }
+.study-cal-detail { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+.study-cal-event {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--surface-2);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.study-cal-event:hover { opacity: 0.8; }
+.study-cal-event-type {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fff;
+  padding: 2px 7px;
+  border-radius: 20px;
+  flex-shrink: 0;
+}
+.study-cal-event-title { font-size: 0.88rem; font-weight: 500; flex: 1; }
+.study-cal-event-subj { font-size: 0.75rem; color: var(--text-muted); flex-shrink: 0; }
+.study-cal-empty { font-size: 0.82rem; color: var(--text-muted); margin: 4px 0 0; }
+
+/* ===== ESTUDOS TABS ===== */
+.estudos-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0;
+}
+.estudos-tab {
+  position: relative;
+  padding: 8px 16px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.estudos-tab.active { color: var(--primary); }
+.estudos-tab-pill {
+  position: absolute;
+  bottom: -1px;
+  left: 0; right: 0;
+  height: 2px;
+  background: var(--primary);
+  border-radius: 2px 2px 0 0;
+}
+
+/* ===== AGENDA CALENDAR ===== */
+.agenda-layout {
+  display: grid;
+  grid-template-columns: 1fr 260px;
+  gap: 16px;
+  align-items: start;
+}
+.agenda-main { display: flex; flex-direction: column; gap: 0; }
+.agenda-cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.agenda-cal-month {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0;
+  text-transform: capitalize;
+}
+.agenda-cal-nav { display: flex; align-items: center; gap: 6px; }
+.agenda-nav-btn {
+  height: 36px;
+  padding: 0 18px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.agenda-nav-btn:hover { background: var(--surface-2); }
+.agenda-today-btn { font-weight: 500; }
+.agenda-arrow { width: 36px; padding: 0; font-size: 1.1rem; }
+
+.agenda-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--surface);
+}
+.agenda-weekday {
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 8px 4px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.agenda-cell {
+  min-height: 90px;
+  padding: 6px;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.12s;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: var(--surface);
+}
+.agenda-cell:hover { background: var(--surface-2); }
+.agenda-cell-empty { background: var(--surface); cursor: default; }
+.agenda-cell:nth-child(7n) { border-right: none; }
+.agenda-today { background: color-mix(in srgb, var(--primary) 8%, transparent); }
+.agenda-selected { background: color-mix(in srgb, var(--primary) 14%, transparent) !important; }
+.agenda-day-num {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  align-self: flex-end;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+.agenda-day-num-today {
+  background: var(--primary);
+  color: #fff;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.78rem;
+}
+.agenda-events { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.agenda-event-pill {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #fff;
+  padding: 2px 5px;
+  border-radius: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: opacity 0.12s;
+}
+.agenda-event-pill:hover { opacity: 0.8; }
+.agenda-event-class {
+  opacity: 0.7;
+  font-style: normal;
+}
+.agenda-event-more {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  padding: 0 4px;
+}
+
+/* Sidebar */
+.agenda-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: sticky;
+  top: 16px;
+  background: var(--surface-2);
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid var(--border);
+}
+.agenda-sidebar-date {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.agenda-sidebar-weekday {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+.agenda-sidebar-day { font-size: 1.05rem; font-weight: 700; }
+.agenda-sidebar-section { display: flex; flex-direction: column; gap: 8px; }
+.agenda-sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.agenda-sidebar-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.agenda-sidebar-events { display: flex; flex-direction: column; gap: 6px; }
+.agenda-sidebar-event {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  border-left: 3px solid var(--primary);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  cursor: pointer;
+  transition: opacity 0.12s;
+}
+.agenda-sidebar-event:hover { opacity: 0.8; }
+.exam-sidebar { border-left-color: var(--over); }
+.agenda-sidebar-event-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.agenda-sidebar-event-title { font-size: 0.85rem; font-weight: 600; }
+.agenda-sidebar-event-sub { font-size: 0.75rem; color: var(--text-muted); }
+.agenda-sidebar-empty { font-size: 0.82rem; color: var(--text-muted); margin: 0; }
+.agenda-upcoming-exam {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+.agenda-upcoming-exam:last-child { border-bottom: none; }
+.agenda-upcoming-title { font-size: 0.82rem; font-weight: 500; flex: 1; }
+.agenda-upcoming-countdown {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+/* Alinhado ao breakpoint do sistema (900px). Antes era 768px — um valor solto
+   que não batia com nenhum outro e deixava uma faixa de larguras no layout
+   errado. */
+@media (max-width: 899px) {
+  .agenda-layout { grid-template-columns: 1fr; }
+  .agenda-cell { min-height: 56px; padding: 4px; }
+  .agenda-sidebar { position: static; }
+}
+
+.exam-list {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scroll-snap-type: x mandatory;
+}
+.exam-card {
+  position: relative;
+  flex: 0 0 auto;
+  min-width: 180px;
+  border: 0.5px solid var(--border);
+  border-left-width: 4px;
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  background: var(--surface-2);
+  scroll-snap-align: start;
+}
+.exam-countdown {
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+.exam-title {
+  font-weight: 700;
+  margin: 4px 0 8px;
+}
+.exam-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+.exam-subject {
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.exam-actions {
+  display: flex;
+  gap: 2px;
+  margin-top: 10px;
+}
+
+/* ============================================================
+   Estudos — tarefas
+   ============================================================ */
+.task-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.task-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 2px;
+  border-bottom: 0.5px solid var(--border);
+}
+.task-row:last-child {
+  border-bottom: none;
+}
+.check-box {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.check-box.checked {
+  background: var(--ok);
+  border-color: var(--ok);
+}
+.check-box svg {
+  width: 15px;
+  height: 15px;
+  stroke: #fff;
+  fill: none;
+}
+.task-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.task-title {
+  font-weight: 600;
+}
+.task-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+}
+.task-meta .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* ============================================================
+   Estudos — matérias
+   ============================================================ */
+.subject-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.subject-card {
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  background: var(--surface-2);
+}
+.subject-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text);
+  text-align: left;
+  padding: 0;
+}
+.subject-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+  flex: 0 0 auto;
+}
+.subject-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.subject-name {
+  font-weight: 700;
+}
+.subject-progress-text {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.subject-chevron {
+  transition: transform 0.25s ease;
+  color: var(--text-muted);
+  display: flex;
+}
+.subject-chevron svg {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  fill: none;
+}
+.subject-chevron.open {
+  transform: rotate(180deg);
+}
+.subject-bar {
+  height: 7px;
+  border-radius: 999px;
+  background: var(--surface-solid);
+  overflow: hidden;
+  margin-top: 10px;
+}
+.subject-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.topic-list {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.topic-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 0.5px solid var(--border);
+}
+.topic-name {
+  flex: 1;
+  min-width: 0;
+}
+.topic-name.done {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+.topic-add {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.topic-add input {
+  flex: 1;
+  min-width: 0;
+}
+.subject-footer {
+  margin-top: 10px;
+}
+
+/* ============================================================
+   Inputs fora de .field (telas de Saúde/Estudos) — alinham ao tema
+   ============================================================ */
+.workout-ex-card input,
+.workout-set-row input,
+.plan-ex-add input,
+.topic-add input,
+.water-custom input,
+.water-goal-input {
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  border: none;
+}
+.workout-ex-card input:focus,
+.workout-set-row input:focus,
+.plan-ex-add input:focus,
+.topic-add input:focus,
+.water-custom input:focus,
+.water-goal-input:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: -1px;
+}
+/* Sobre fundo de modal/card translúcido (--surface): fundo surface-2 */
+.plan-ex-add input,
+.water-custom input,
+.water-goal-input {
+  background: var(--surface-2);
+}
+/* Dentro de cards surface-2 (exercício/matéria): fundo sólido + borda p/ contraste */
+.workout-ex-card input,
+.topic-add input {
+  background: var(--surface-solid);
+  border: 0.5px solid var(--border);
+}
+/* Inputs compactos de série (carga/reps) num grid apertado */
+.workout-set-row input {
+  padding: 9px 8px;
+  text-align: center;
+  background: var(--surface-solid);
+  border: 0.5px solid var(--border);
+}
+
+/* Botões com ícone inline (novas telas) */
+.btn-primary svg,
+.btn-ghost svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  fill: none;
+}
+
+@media (min-width: 900px) {
+  .body-fields {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .subject-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ============================================================
+   Home page — painel geral
+   ============================================================ */
+.home-page {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.home-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.home-section-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+.home-hero-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.home-action-btn {
+  flex: 1;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+  text-transform: none;
+}
+.home-action-btn:hover { opacity: 0.8; }
+
+.home-action-expense {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.home-action-income {
+  background: var(--primary);
+  color: var(--primary-contrast);
+}
+
+.home-action-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.home-water-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.home-action-water {
+  background: var(--info-bg);
+  color: var(--primary);
+}
+
+.home-section-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.home-clickable {
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+.home-clickable:hover {
+  opacity: 0.85;
+}
+
+.home-hero-value {
+  font-size: 1.9rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  margin: 4px 0 0;
+}
+
+.home-progress-bar {
+  height: 5px;
+  background: var(--surface-2);
+  border-radius: 999px;
+  margin: 10px 0 4px;
+  overflow: hidden;
+}
+
+.home-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.home-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 0 0 3px;
+}
+
+.home-value {
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin: 0;
+}
+
+.home-value-inline {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.home-sub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 4px 0 0;
+}
+
+.home-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+/* Account row */
+.home-accounts {
+  display: flex;
+  gap: 0;
+}
+.home-accounts > div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.home-account-val {
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+/* Mini bar chart */
+.home-mini-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  height: 44px;
+}
+.home-mini-bar-col {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  height: 100%;
+}
+.home-mini-bar {
+  width: 100%;
+  border-radius: 3px 3px 0 0;
+  min-height: 3px;
+}
+.home-mini-labels {
+  display: flex;
+  gap: 5px;
+  margin-top: 5px;
+}
+.home-mini-label {
+  flex: 1;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* Water */
+.home-water-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.home-water-ring {
+  position: relative;
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.home-water-pct {
+  position: absolute;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+/* Workout head */
+.home-workout-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+.home-tag-done {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+
+/* List items */
+.home-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 0.5px solid var(--border);
+  font-size: 0.88rem;
+  gap: 8px;
+}
+.home-list-item:last-child {
+  border-bottom: none;
+}
+.home-list-left {
+  color: var(--text-muted);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.home-list-right {
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* Chips (countdown) */
+.home-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* Row with space-between */
+.home-row-space {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+
+/* Subject progress */
+.home-subj-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 0.5px solid var(--border);
+}
+.home-subj-row:last-child {
+  border-bottom: none;
+}
+.home-subj-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.home-subj-name {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.home-subj-bar {
+  width: 60px;
+  height: 4px;
+  background: var(--surface-2);
+  border-radius: 999px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.home-subj-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.home-subj-pct {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  width: 32px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+@media (min-width: 900px) {
+  .home-page {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+}

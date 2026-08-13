@@ -1,0 +1,191 @@
+/* ============================================================================
+   ORBIT — SISTEMA DE DESIGN
+   Direção "painel de instrumentos": superfícies sólidas e opacas, neutro de
+   viés quente, acento petróleo. As camadas se separam por contraste de
+   superfície, não por blur.
+   ========================================================================= */
+
+:root {
+  /* ---- Superfícies — tema claro "bege quente" ----
+     O ground é bege puxado para o marrom e os cards são um creme mais claro
+     que ele. É a inversão do padrão anterior (card branco sobre quase-branco):
+     a camada elevada agora se destaca por ser mais clara e mais quente que o
+     fundo, o que dá profundidade sem precisar de sombra forte — e tira o
+     branco puro da tela, que é o que cansa a vista em uso longo. */
+  --bg: #f1e9dd;
+  --surface: #fbf6ee;
+  --surface-solid: #fbf6ee;
+  --surface-2: #e8dfd0; /* rebaixado: chips, inputs, trilhos */
+  --surface-3: #dbcfbb;
+  --menu-bg: #fbf6ee;
+
+  /* ---- Texto — marrom escuro, não preto neutro ----
+     Preto puro sobre bege vibra e endurece a tela. */
+  --text: #2b2521; /* 12,6:1 sobre --bg */
+  --text-muted: #5f554c; /* 6,0:1 sobre --bg — passa WCAG AA */
+  --text-faint: #857a6e; /* apenas decorativo: ícones, separadores */
+
+  --border: #ddd2c0;
+  --border-strong: #c3b6a1;
+
+  /* ---- Acento petróleo ----
+     Mantido: o teal é o complemento do bege, então continua sendo o ponto
+     frio que organiza a tela sem competir com o fundo quente. 5,1:1. */
+  --primary: #0e6c78;
+  --primary-hover: #0a545e;
+  --primary-contrast: #fbf6ee;
+  --primary-soft: #dde9e8;
+
+  /* ---- Semânticas — dessaturadas para o fundo quente ----
+     Os tons anteriores eram calibrados para fundo branco e gritavam sobre
+     bege. Aqui viram sage, ocre e terracota. */
+  --ok: #3d7a52;
+  --ok-bg: #e2ebdf;
+  --warning: #8a5e17;
+  --warning-bg: #f2e6cd;
+  --over: #a8443a;
+  --over-bg: #f2e0d9;
+  --info-bg: #dde9e8;
+
+  /* ---- Paleta categórica: matérias, categorias, tipos de investimento.
+         Consumida por índice. Nenhum hex deve voltar a aparecer em .tsx.
+         Também rebaixada de saturação para conviver com o bege. ---- */
+  --data-1: #0e6c78;
+  --data-2: #7d5296;
+  --data-3: #b5541f;
+  --data-4: #3d7a52;
+  --data-5: #a63e63;
+  --data-6: #2c5f92;
+  --data-7: #8a7326;
+  --data-8: #6b6157;
+
+  /* ---- Escala de espaçamento (base 4px) ---- */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+  --s7: 48px;
+  --s8: 72px;
+
+  /* ---- Escala tipográfica — piso de 12px, sem exceção ---- */
+  --fs-label: 0.75rem; /* 12px */
+  --fs-sm: 0.875rem; /* 14px */
+  --fs-body: 1rem; /* 16px */
+  --fs-heading: 1.25rem; /* 20px */
+  --fs-title: 1.5rem; /* 24px */
+  --fs-display: 2.75rem; /* 44px */
+
+  --font-ui: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI',
+    Roboto, sans-serif;
+  --font-num: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Segoe UI Mono', Menlo, monospace;
+
+  /* ---- Raio proporcional ao elemento (era 22px universal) ---- */
+  --radius-xs: 6px; /* chips, badges, pontos */
+  --radius-sm: 10px; /* inputs, botões */
+  --radius: 14px; /* cards */
+  --radius-lg: 20px; /* sheets, modais */
+
+  /* Sombra marrom, não cinza: sombra neutra sobre bege lê como sujeira. */
+  --shadow: 0 1px 2px rgba(87, 66, 44, 0.06), 0 4px 12px rgba(87, 66, 44, 0.07);
+  --shadow-float: 0 4px 12px rgba(87, 66, 44, 0.12), 0 12px 32px rgba(87, 66, 44, 0.14);
+
+  /* Glassmorfismo desativado: superfícies agora são opacas. Mantido como token
+     para os overlays modais, que ainda se beneficiam do blur. */
+  --blur: none;
+  --blur-overlay: blur(16px) saturate(160%);
+
+  --tap: 44px; /* alvo mínimo de toque */
+  --maxw: 640px;
+  --maxw-desktop: 1440px;
+  /* Breakpoints: 600px / 900px / 1280px (literais nas media queries — custom
+     properties não funcionam dentro de condições de @media). */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #131513;
+    --surface: #1b1e1d;
+    --surface-solid: #1b1e1d;
+    --surface-2: #232726;
+    --surface-3: #2c3130;
+    --menu-bg: #232726;
+
+    --text: #edebe6;
+    --text-muted: #a2a9a6; /* 7,1:1 sobre --bg */
+    --text-faint: #7f8683;
+
+    --border: #2e3331;
+    --border-strong: #434a47;
+
+    /* O acento clareia no escuro, então o texto sobre ele precisa ser escuro. */
+    --primary: #4ecbd9;
+    --primary-hover: #7adbe6;
+    --primary-contrast: #0b2e33;
+    --primary-soft: #14343a;
+
+    --ok: #62c98a;
+    --ok-bg: #162c20;
+    --warning: #dfa946;
+    --warning-bg: #322817;
+    --over: #e8796b;
+    --over-bg: #331c19;
+    --info-bg: #14343a;
+
+    --data-1: #4ecbd9;
+    --data-2: #c08ce8;
+    --data-3: #ef8b4e;
+    --data-4: #62c98a;
+    --data-5: #ea6f9c;
+    --data-6: #6fa4e8;
+    --data-7: #cbb63f;
+    --data-8: #93a8b2;
+
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.35);
+    --shadow-float: 0 4px 12px rgba(0, 0, 0, 0.5), 0 12px 32px rgba(0, 0, 0, 0.45);
+  }
+}
+
+/* Override manual — vence a preferência do sistema quando o usuário escolhe
+   explicitamente um tema pelo botão da navbar (ver ThemeContext). */
+:root[data-theme='dark'] {
+  --bg: #131513;
+  --surface: #1b1e1d;
+  --surface-solid: #1b1e1d;
+  --surface-2: #232726;
+  --surface-3: #2c3130;
+  --menu-bg: #232726;
+
+  --text: #edebe6;
+  --text-muted: #a2a9a6;
+  --text-faint: #7f8683;
+
+  --border: #2e3331;
+  --border-strong: #434a47;
+
+  --primary: #4ecbd9;
+  --primary-hover: #7adbe6;
+  --primary-contrast: #0b2e33;
+  --primary-soft: #14343a;
+
+  --ok: #62c98a;
+  --ok-bg: #162c20;
+  --warning: #dfa946;
+  --warning-bg: #322817;
+  --over: #e8796b;
+  --over-bg: #331c19;
+  --info-bg: #14343a;
+
+  --data-1: #4ecbd9;
+  --data-2: #c08ce8;
+  --data-3: #ef8b4e;
+  --data-4: #62c98a;
+  --data-5: #ea6f9c;
+  --data-6: #6fa4e8;
+  --data-7: #cbb63f;
+  --data-8: #93a8b2;
+
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.35);
+  --shadow-float: 0 4px 12px rgba(0, 0, 0, 0.5), 0 12px 32px rgba(0, 0, 0, 0.45);
+}
