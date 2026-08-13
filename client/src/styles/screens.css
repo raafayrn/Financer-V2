@@ -216,13 +216,15 @@
   }
 
   .layout {
-    display: block;
+    display: flex;
+    flex-direction: column;
   }
   .content {
     width: 96%;
     max-width: var(--maxw-desktop);
     margin: 0 auto;
     padding: 14px 0 72px;
+    flex: 1;
   }
 
   /* Página mais densa: menos espaço entre cards */
@@ -341,6 +343,13 @@
   fill: var(--primary);
 }
 
+/* Saúde: grid fixo de 2 colunas no desktop */
+@media (min-width: 900px) {
+  .saude-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 /* ============================================================
    Água
    ============================================================ */
@@ -352,8 +361,8 @@
 }
 .water-ring {
   position: relative;
-  width: 210px;
-  max-width: 60vw;
+  width: 160px;
+  max-width: 50vw;
   aspect-ratio: 1;
 }
 .water-ring svg {
@@ -378,21 +387,24 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 0;
 }
 .water-ring-pct {
-  font-size: 2.4rem;
+  font-size: 1.6rem;
   font-weight: 800;
   letter-spacing: -0.03em;
+  line-height: 1;
 }
 .water-ring-amount {
-  font-size: 1rem;
+  font-size: 0.78rem;
   font-weight: 600;
   color: var(--primary);
+  line-height: 1.3;
 }
 .water-ring-goal {
-  font-size: 0.82rem;
+  font-size: 0.72rem;
   color: var(--text-muted);
+  line-height: 1.2;
 }
 .water-ring-fill--done {
   stroke: #22c55e;

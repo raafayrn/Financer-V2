@@ -24,7 +24,6 @@ import { CLASS_SCHEDULE } from '../utils/schedule';
 import { springSmooth } from '../lib/motion';
 import { ExpenseFormModal } from '../components/ExpenseFormModal';
 import { IncomeFormModal } from '../components/IncomeFormModal';
-import { PageHeader } from '../components/PageHeader';
 
 function daysUntil(dateStr: string): number {
   const today = new Date();
@@ -219,35 +218,6 @@ export function HomePage() {
 
   return (
     <>
-      {/* Cabeçalho e foco ficam FORA de .home-page: no desktop ela é um grid de
-          três colunas, e como filhos diretos eles virariam células — foi o que
-          jogou Finanças para a terceira coluna e esvaziou as duas primeiras. */}
-      <div className="home-top">
-        <PageHeader title="Hoje" subtitle={WEEKDAYS_PT[new Date().getDay()]} />
-
-        {/* ===== FOCO DE HOJE ===== */}
-        {focus.length === 0 ? (
-          <div className="card focus-card focus-card--clear">
-            <span className="focus-clear-title">Tudo em dia</span>
-            <span className="focus-clear-text">Nenhuma pendência de dinheiro, estudo ou saúde.</span>
-          </div>
-        ) : (
-          <div className="card focus-card">
-            <span className="section-eyebrow">Foco de hoje</span>
-            <ul className="focus-list">
-              {focus.slice(0, 4).map((f) => (
-                <li key={f.text}>
-                  <button className={`focus-item focus-${f.tone}`} onClick={() => navigate(f.to)}>
-                    <span className="focus-bullet" />
-                    <span>{f.text}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
-
       <motion.div className="home-page" variants={stagger} initial="hidden" animate="show">
 
         {/* ===== DINHEIRO =====

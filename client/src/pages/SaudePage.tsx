@@ -305,9 +305,9 @@ export function SaudePage() {
       ) : error ? (
         <div className="alert alert-error">{error}</div>
       ) : waterDay && today && summary ? (
-        <motion.div className="overview-grid" variants={overviewContainer} initial="hidden" animate="show">
+        <motion.div className="overview-grid saude-grid" variants={overviewContainer} initial="hidden" animate="show">
           {/* Treino de hoje em destaque */}
-          <motion.section className="card overview-item overview-span-2 today-card" variants={overviewItem}>
+          <motion.section className="card overview-item today-card" variants={overviewItem}>
             <div className="today-head">
               <div>
                 <span className="today-weekday">{WEEKDAYS[today.weekday]}</span>
@@ -387,7 +387,7 @@ export function SaudePage() {
           </motion.section>
 
           {/* Água */}
-          <motion.section className="card overview-item overview-span-2 water-hero" variants={overviewItem}>
+          <motion.section className="card overview-item water-hero" variants={overviewItem}>
             <WaterRing percent={waterDay.percent} consumedMl={waterDay.consumedMl} goalMl={waterDay.goalMl} />
 
             <div className="water-quick">
@@ -465,7 +465,7 @@ export function SaudePage() {
           </motion.div>
 
           {/* Evolução de carga */}
-          <motion.section className="card overview-item overview-span-2" variants={overviewItem}>
+          <motion.section className="card overview-item" variants={overviewItem}>
             <h3 className="section-title">Evolução de carga</h3>
             {summary.exercises.length === 0 ? (
               <p className="empty">Registre treinos com carga para ver sua evolução e recordes aqui.</p>

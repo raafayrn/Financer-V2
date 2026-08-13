@@ -98,7 +98,7 @@
 
   --tap: 44px; /* alvo mínimo de toque */
   --maxw: 640px;
-  --maxw-desktop: 1200px;
+  --maxw-desktop: 1440px;
   /* Breakpoints: 600px / 900px / 1280px (literais nas media queries — custom
      properties não funcionam dentro de condições de @media). */
 }

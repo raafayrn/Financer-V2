@@ -6,7 +6,6 @@ import { useTheme } from '../context/ThemeContext';
 import { useShell } from '../context/ShellContext';
 import { springSheet, springSmooth, springTap } from '../lib/motion';
 import { ChatBox } from './ChatBox';
-import { RightRail } from './RightRail';
 import {
   BookIcon,
   DropletIcon,
@@ -129,15 +128,6 @@ function QuickAddMenu({ open, onClose }: { open: boolean; onClose: () => void })
   );
 }
 
-/**
- * Shell do app. No desktop passou a ser um grid de três colunas: sidebar de
- * navegação à esquerda, conteúdo no meio, trilha de contexto à direita. O
- * espaço vazio dos lados era o maior sintoma do redesign anterior — o app se
- * comportava como uma coluna estreita centrada em telas largas.
- *
- * No mobile o layout continua sendo o mesmo: cabeçalho rolável por tela +
- * barra inferior com o "+" ao centro.
- */
 export function Layout() {
   const { user } = useAuth();
   const { theme, toggleTheme } = useTheme();
@@ -152,47 +142,44 @@ export function Layout() {
     prevPath.current = location.pathname;
   }
   const section = sectionForPath(location.pathname);
-  const showRail = !location.pathname.startsWith('/ajustes');
 
   return (
     <div className="layout">
-      {/* Sidebar — desktop. Vertical, marca no topo, ações fixas no rodapé. */}
-      <aside className="sidebar">
-        <div className="sidebar-brand">
+      <nav className="navbar-desktop" aria-label="Navegação principal">
+        <div className="navbar-desktop-top">
           <span className="brand">Orbit</span>
-        </div>
-        <nav className="sidebar-nav" aria-label="Navegação principal">
-          {SECTIONS.map((s) => {
-            const active = s.id === section?.id;
-            return (
-              <button
-                key={s.id}
-                className={`sidebar-item${active ? ' active' : ''}`}
-                onClick={() => navigate(s.home)}
-                aria-current={active ? 'page' : undefined}
-              >
-                {active && (
-                  <motion.span layoutId="sidebar-pill" className="sidebar-pill" transition={springSheet} />
-                )}
-                <span className="sidebar-icon">
-                  <s.icon />
-                </span>
-                <span className="sidebar-label">{s.label}</span>
-              </button>
-            );
-          })}
-        </nav>
-        <div className="sidebar-bottom">
-          <motion.button
-            className="btn-primary sidebar-add"
-            onClick={() => setQuickAdd(true)}
-            whileTap={{ scale: 0.97 }}
-            transition={springTap}
-          >
-            <PlusIcon />
-            <span>Registrar</span>
-          </motion.button>
-          <div className="sidebar-utility">
+          <div className="navbar-desktop-sections">
+            {SECTIONS.map((s) => {
+              const active = s.id === section?.id;
+              return (
+                <button
+                  key={s.id}
+                  className={`navbar-section-item${active ? ' active' : ''}`}
+                  onClick={() => navigate(s.home)}
+                  aria-current={active ? 'page' : undefined}
+                >
+                  {active && (
+                    <motion.span layoutId="navbar-pill" className="navbar-section-pill" transition={springSheet} />
+                  )}
+                  <span className="navbar-section-icon">
+                    <s.icon />
+                  </span>
+                  <span style={{ position: 'relative', zIndex: 1 }}>{s.label}</span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="navbar-desktop-right">
+            <motion.button
+              className="btn-primary btn-sm"
+              onClick={() => setQuickAdd(true)}
+              whileTap={{ scale: 0.97 }}
+              transition={springTap}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+            >
+              <PlusIcon />
+              <span>Registrar</span>
+            </motion.button>
             <motion.button
               className="icon-btn-outline"
               title={theme === 'dark' ? 'Ativar modo claro' : 'Ativar modo escuro'}
@@ -213,10 +200,10 @@ export function Layout() {
             >
               <GearIcon />
             </motion.button>
-            <span className="sidebar-user" title={user?.name}>{user?.name}</span>
+            <span className="user-name" title={user?.name}>{user?.name}</span>
           </div>
         </div>
-      </aside>
+      </nav>
 
       <main className="content">
         <AnimatePresence mode="wait" initial={false} custom={navDir.current}>
@@ -233,11 +220,6 @@ export function Layout() {
           </motion.div>
         </AnimatePresence>
       </main>
-
-      {/* Trilha à direita — só a partir de 1280px. Foco, atalho de registrar e
-          últimos lançamentos ficam sempre visíveis. Em Ajustes ela some,
-          porque tema/registrar/ajustes já estão no fluxo da própria tela. */}
-      {showRail && <RightRail />}
 
       <ChatBox
         onSaved={requestRefresh}
