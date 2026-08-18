@@ -9,16 +9,14 @@ import { ChatBox } from './ChatBox';
 import {
   BookIcon,
   DropletIcon,
-  DumbbellIcon,
   GearIcon,
-  HeartPulseIcon,
   MoonIcon,
   PlusIcon,
   SunIcon,
   WalletIcon,
 } from './icons';
 
-const ROUTE_ORDER = ['/', '/financas', '/investimentos', '/saude', '/estudos', '/ajustes'];
+const ROUTE_ORDER = ['/', '/financas', '/investimentos', '/estudos', '/ajustes'];
 function routeIndex(p: string) {
   const i = ROUTE_ORDER.indexOf(p);
   return i === -1 ? 0 : i;
@@ -44,16 +42,14 @@ type Section = { id: string; label: string; home: string; icon: ComponentType };
 const SECTIONS: Section[] = [
   { id: 'home', label: 'Home', home: '/', icon: HomeIcon },
   { id: 'financas', label: 'Finanças', home: '/financas', icon: WalletIcon },
-  { id: 'saude', label: 'Saúde', home: '/saude', icon: HeartPulseIcon },
   { id: 'estudos', label: 'Estudos', home: '/estudos', icon: BookIcon },
 ];
 
 function sectionForPath(pathname: string): Section | null {
   if (pathname === '/') return SECTIONS[0];
-  if (pathname.startsWith('/saude')) return SECTIONS[2];
-  if (pathname.startsWith('/estudos')) return SECTIONS[3];
+  if (pathname.startsWith('/estudos')) return SECTIONS[2];
   if (pathname.startsWith('/financas') || pathname.startsWith('/investimentos')) return SECTIONS[1];
-  return null; // /ajustes não é seção primária
+  return null; // /ajustes e /saude não são seções primárias
 }
 
 type QuickAction = { label: string; hint: string; to: string; icon: ComponentType };
@@ -61,14 +57,10 @@ type QuickAction = { label: string; hint: string; to: string; icon: ComponentTyp
 const ACTION_EXPENSE: QuickAction = { label: 'Gasto', hint: 'Registrar uma saída', to: '/financas?new=expense', icon: WalletIcon };
 const ACTION_INCOME: QuickAction = { label: 'Receita', hint: 'Registrar uma entrada', to: '/financas?new=income', icon: WalletIcon };
 const ACTION_WATER: QuickAction = { label: 'Água', hint: 'Somar no total do dia', to: '/saude?new=water', icon: DropletIcon };
-const ACTION_WORKOUT: QuickAction = { label: 'Treino', hint: 'Registrar o treino de hoje', to: '/saude?new=workout', icon: DumbbellIcon };
 const ACTION_TASK: QuickAction = { label: 'Tarefa', hint: 'Com matéria e prazo', to: '/estudos?new=task', icon: BookIcon };
 const ACTION_EVENT: QuickAction = { label: 'Evento', hint: 'Compromisso na agenda', to: '/estudos?new=event', icon: BookIcon };
 
 function actionsForPath(pathname: string): QuickAction[] {
-  if (pathname.startsWith('/saude')) {
-    return [ACTION_WATER, ACTION_WORKOUT, ACTION_EXPENSE, ACTION_TASK];
-  }
   if (pathname.startsWith('/estudos')) {
     return [ACTION_TASK, ACTION_EVENT, ACTION_EXPENSE, ACTION_WATER];
   }

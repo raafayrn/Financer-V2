@@ -6,7 +6,7 @@ import { springTap } from '../lib/motion';
 import { GearIcon, MoonIcon, SunIcon } from './icons';
 
 interface Props {
-  title: string;
+  title?: string;
   subtitle?: string;
   /** Ações específicas da tela, à direita do título. */
   actions?: ReactNode;
@@ -24,10 +24,12 @@ export function PageHeader({ title, subtitle, actions }: Props) {
 
   return (
     <header className="page-header">
-      <div className="page-header-text">
-        <h1 className="page-title">{title}</h1>
-        {subtitle && <p className="page-subtitle">{subtitle}</p>}
-      </div>
+      {(title || subtitle) && (
+        <div className="page-header-text">
+          {title && <h1 className="page-title">{title}</h1>}
+          {subtitle && <p className="page-subtitle">{subtitle}</p>}
+        </div>
+      )}
       <div className="page-header-actions">
         {actions}
         <motion.button

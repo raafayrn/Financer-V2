@@ -5,7 +5,6 @@ import { api } from '../api/client';
 import type {
   Account,
   AgendaEvent,
-  BodyMetric,
   Category,
   Expense,
   ExpenseInput,
@@ -14,8 +13,6 @@ import type {
   StudiesOverview,
   Summary,
   WaterDay,
-  WorkoutSummary,
-  WorkoutToday,
 } from '../api/types';
 import { useMonth } from '../context/MonthContext';
 import { formatCurrency, formatDayMonth, todayIso } from '../utils/format';
@@ -63,9 +60,6 @@ interface HomeData {
   categories: Category[];
   accounts: Account[];
   waterDay: WaterDay | null;
-  workoutToday: WorkoutToday | null;
-  workoutSummary: WorkoutSummary | null;
-  bodyMetrics: BodyMetric[];
   studies: StudiesOverview | null;
   agendaEvents: AgendaEvent[];
 }
@@ -75,8 +69,7 @@ export function HomePage() {
   const navigate = useNavigate();
   const [data, setData] = useState<HomeData>({
     summary: null, expenses: [], incomes: [], categories: [], accounts: [],
-    waterDay: null, workoutToday: null, workoutSummary: null,
-    bodyMetrics: [], studies: null, agendaEvents: [],
+    waterDay: null, studies: null, agendaEvents: [],
   });
   const [loading, setLoading] = useState(true);
   const [finModal, setFinModal] = useState<FinModal>('closed');
@@ -85,7 +78,7 @@ export function HomePage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [summary, expenses, incomes, categories, accounts, waterDay, workoutToday, workoutSummary, bodyMetrics, studies, agendaEvents] =
+    const [summary, expenses, incomes, categories, accounts, waterDay, studies, agendaEvents] =
       await Promise.all([
         api.getSummary(year, month).catch(() => null),
         api.listExpenses(year, month).catch((): Expense[] => []),
@@ -93,13 +86,10 @@ export function HomePage() {
         api.listCategories().catch((): Category[] => []),
         api.listAccounts().catch((): Account[] => []),
         api.getWaterDay(todayIso()).catch(() => null),
-        api.getWorkoutToday().catch(() => null),
-        api.getWorkoutSummary().catch(() => null),
-        api.listBodyMetrics().catch((): BodyMetric[] => []),
         api.getStudiesOverview().catch(() => null),
         api.listAgendaEvents().catch((): AgendaEvent[] => []),
       ]);
-    setData({ summary, expenses, incomes, categories, accounts, waterDay, workoutToday, workoutSummary, bodyMetrics, studies, agendaEvents });
+    setData({ summary, expenses, incomes, categories, accounts, waterDay, studies, agendaEvents });
     setLoading(false);
   }, [year, month]);
 
@@ -139,7 +129,7 @@ export function HomePage() {
     return hideValues ? '••••' : value;
   }
 
-  const { summary, expenses, incomes, categories, accounts, waterDay, workoutToday, workoutSummary, bodyMetrics, studies, agendaEvents } = data;
+  const { summary, expenses, incomes, categories, accounts, waterDay, studies, agendaEvents } = data;
 
   type Entry = { id: string; description: string; amount: number; date: string; kind: 'expense' | 'income' };
   const recentEntries: Entry[] = [
@@ -148,15 +138,6 @@ export function HomePage() {
   ]
     .sort((a, b) => b.date.localeCompare(a.date))
     .slice(0, 5);
-
-  const latestWeight = bodyMetrics
-    .filter((m) => m.weightKg !== null)
-    .sort((a, b) => b.date.localeCompare(a.date))[0]?.weightKg ?? null;
-
-  const topPRs = (workoutSummary?.exercises ?? [])
-    .filter((e) => e.pr > 0)
-    .sort((a, b) => b.pr - a.pr)
-    .slice(0, 3);
 
   const upcomingExams = (studies?.upcomingExams ?? [])
     .map((e) => ({ ...e, daysLeft: daysUntil(e.date) }))
@@ -569,58 +550,6 @@ export function HomePage() {
             </div>
           </div>
 
-          <div className="card home-clickable" onClick={() => navigate('/saude')}>
-            {workoutToday?.day ? (
-              <>
-                <div className="home-workout-head">
-                  <span style={{ fontWeight: 700 }}>
-                    {WEEKDAYS_PT[workoutToday.weekday]} — {workoutToday.day.name}
-                  </span>
-                  {workoutToday.session && <span className="home-tag-done">Feito</span>}
-                </div>
-                {!workoutToday.session && workoutToday.day.exercises.map((ex) => (
-                  <div key={ex.id} className="home-list-item">
-                    <span className="home-list-left">{ex.name}</span>
-                    <span className="home-list-right">
-                      {ex.targetSets && ex.targetReps ? `${ex.targetSets}×${ex.targetReps}` : '—'}
-                    </span>
-                  </div>
-                ))}
-              </>
-            ) : (
-              <>
-                <p className="home-label">Treino de hoje</p>
-                <p style={{ color: 'var(--text-muted)', margin: '4px 0 0', fontSize: '0.9rem' }}>Dia de descanso</p>
-              </>
-            )}
-          </div>
-
-          <div className="home-grid-2">
-            <div className="card">
-              <p className="home-label">Semana</p>
-              <p className="home-value" style={{ color: 'var(--ok)' }}>{workoutSummary?.thisWeekCount ?? 0}</p>
-              <p className="home-sub">treinos feitos</p>
-            </div>
-            <div className="card">
-              <p className="home-label">Peso</p>
-              <p className="home-value">
-                {latestWeight != null ? `${String(latestWeight).replace('.', ',')} kg` : '—'}
-              </p>
-              <p className="home-sub">último registro</p>
-            </div>
-          </div>
-
-          {topPRs.length > 0 && (
-            <div className="card home-clickable" onClick={() => navigate('/saude')}>
-              <p className="home-label" style={{ marginBottom: 8 }}>PRs</p>
-              {topPRs.map((ex) => (
-                <div key={ex.name} className="home-list-item">
-                  <span className="home-list-left">{ex.name}</span>
-                  <span className="home-list-right" style={{ color: 'var(--ok)' }}>{ex.pr} kg</span>
-                </div>
-              ))}
-            </div>
-          )}
         </motion.section>
 
       </motion.div>

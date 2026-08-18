@@ -5,7 +5,6 @@ import { api, ApiError } from '../api/client';
 import type { AgendaEvent, AgendaEventCategory, Exam, StudiesOverview, StudyTask, Subject } from '../api/types';
 import { formatDayMonth } from '../utils/format';
 import { EditIcon, TrashIcon } from '../components/icons';
-import { PageHeader } from '../components/PageHeader';
 import { Button, EmptyState } from '../components/ui';
 import { AgendaEventModal, ExamModal, StudyTaskModal } from '../components/StudyModals';
 import { springSmooth } from '../lib/motion';
@@ -401,9 +400,7 @@ export function EstudosPage() {
 
   return (
     <div className="page">
-      <PageHeader title="Estudos" subtitle="Agenda, provas e entregas" />
-
-      {loading && !data ? (
+{loading && !data ? (
         <div className="center-pad"><div className="spinner" /></div>
       ) : error ? (
         <div className="alert alert-error">{error}</div>
