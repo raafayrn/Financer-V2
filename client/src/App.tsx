@@ -3,7 +3,10 @@ import { useAuth } from './context/AuthContext';
 import { MonthProvider } from './context/MonthContext';
 import { Layout } from './components/Layout';
 import { HomePage } from './pages/HomePage';
-import { DashboardPage } from './pages/DashboardPage';
+import { FinancasPage } from './pages/financas/FinancasPage';
+import { ResumoTab } from './pages/financas/ResumoTab';
+import { LancamentosTab } from './pages/financas/LancamentosTab';
+import { CategoriasTab } from './pages/financas/CategoriasTab';
 import { ReportsPage } from './pages/ReportsPage';
 import { InvestmentsPage } from './pages/InvestmentsPage';
 import { SaudePage } from './pages/SaudePage';
@@ -50,7 +53,11 @@ export default function App() {
       <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<HomePage />} />
-          <Route path="/financas" element={<DashboardPage />} />
+          <Route path="/financas" element={<FinancasPage />}>
+            <Route index element={<ResumoTab />} />
+            <Route path="lancamentos" element={<LancamentosTab />} />
+            <Route path="categorias" element={<CategoriasTab />} />
+          </Route>
           <Route path="/relatorios" element={<ReportsPage />} />
           <Route path="/investimentos" element={<InvestmentsPage />} />
           <Route path="/saude" element={<SaudePage />} />

@@ -1,0 +1,743 @@
+/* =========================================================================
+   Design system "Monarch" — Fase 0 do redesign.
+   Carregado DEPOIS do index.css: os tokens abaixo vencem os antigos, entao as
+   telas que ainda nao migraram ja herdam a paleta e os raios novos.
+   Principios: fundo cinza quase branco, cards brancos solidos, borda 1px,
+   sombra minima, raio 12px, labels MAIUSCULAS cinza, numeros grandes.
+   ========================================================================= */
+
+:root,
+:root[data-theme='dark'],
+:root[data-theme='light'] {
+  --bg: #f7f7f8;
+  --bg-blob-1: transparent;
+  --bg-blob-2: transparent;
+  --bg-blob-3: transparent;
+
+  --surface: #ffffff;
+  --surface-solid: #ffffff;
+  --surface-2: #f1f1f2;
+  --surface-3: #fafafa;
+  --menu-bg: #ffffff;
+
+  --text: #1a1a1a;
+  --text-muted: #6b6b70;
+  --text-faint: #9a9aa0;
+  --border: #e6e6e8;
+  --border-strong: #d4d4d8;
+
+  --primary: #e8622c;
+  --primary-hover: #d2531f;
+  --primary-contrast: #ffffff;
+  --accent-soft: #fdf0ea;
+
+  --ok: #1a9d5c;
+  --ok-bg: #e8f6ee;
+  --warning: #b8860b;
+  --warning-bg: #fdf5e2;
+  --over: #d93a2b;
+  --over-bg: #fdecea;
+  --info-bg: #eef4fd;
+
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-pill: 999px;
+  --shadow: 0 1px 2px rgba(16, 16, 20, 0.04);
+  --shadow-float: 0 8px 24px rgba(16, 16, 20, 0.12);
+  --blur: none;
+
+  --sidebar-w: 232px;
+  --header-h: 60px;
+  --maxw: 100%;
+  --maxw-desktop: 1400px;
+}
+
+/* O fundo com blobs/gradientes some — o Monarch e liso. */
+body {
+  background-image: none;
+  background-color: var(--bg);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  letter-spacing: 0;
+}
+
+/* Nada de vidro: qualquer superficie translucida vira branco solido. */
+.card,
+.modal,
+.menu,
+.dropdown-menu {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* ---------- Tipografia utilitaria ---------- */
+.ms-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.ms-value {
+  font-size: 26px;
+  font-weight: 500;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.ms-muted {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.ms-pos { color: var(--ok); }
+.ms-neg { color: var(--over); }
+
+/* =========================================================================
+   Shell: sidebar (desktop) + bottom-nav (mobile)
+   ========================================================================= */
+.ms-app {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  background: var(--bg);
+}
+
+.ms-sidebar {
+  display: none;
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  flex-direction: column;
+  padding: 14px 12px 12px;
+  background: var(--bg);
+  border-right: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+.ms-sidebar-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 6px 14px;
+}
+.ms-logo {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: var(--primary);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  font-weight: 700;
+  margin-right: auto;
+}
+.ms-icon-btn {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: none;
+  background: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  padding: 0;
+}
+.ms-icon-btn svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+}
+.ms-icon-btn:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.ms-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  overflow-y: auto;
+}
+.ms-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  background: none;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-align: left;
+  text-decoration: none;
+  transition: background 0.12s, color 0.12s;
+}
+.ms-nav-item svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  flex-shrink: 0;
+}
+.ms-nav-item:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.ms-nav-item.active {
+  background: #ececee;
+  color: var(--text);
+  font-weight: 600;
+}
+.ms-sidebar-foot {
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+  margin-top: 8px;
+}
+
+/* ---------- Coluna de conteudo ---------- */
+.ms-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ms-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 0 16px;
+  min-height: var(--header-h);
+}
+.ms-header-title {
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0;
+  white-space: nowrap;
+}
+.ms-header-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Abas sublinhadas do header */
+.ms-tabs {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  height: var(--header-h);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.ms-tabs::-webkit-scrollbar { display: none; }
+.ms-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 2px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-decoration: none;
+  white-space: nowrap;
+  border: none;
+  background: none;
+}
+.ms-tab:hover { color: var(--text); }
+.ms-tab.active { color: var(--primary); font-weight: 600; }
+.ms-tab-underline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--primary);
+  border-radius: 2px;
+}
+
+.ms-body {
+  flex: 1;
+  padding: 16px;
+  max-width: var(--maxw-desktop);
+  width: 100%;
+}
+
+/* =========================================================================
+   Botoes
+   ========================================================================= */
+.ms-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: #fff;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: background 0.12s, border-color 0.12s;
+}
+.ms-btn svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+}
+.ms-btn:hover { background: var(--surface-3); }
+.ms-btn-primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-contrast);
+  font-weight: 600;
+}
+.ms-btn-primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
+.ms-btn-ghost { border-color: transparent; background: none; color: var(--text-muted); }
+.ms-btn-ghost:hover { background: var(--surface-2); color: var(--text); }
+
+/* Controle segmentado (Total amounts | Change over time) */
+.ms-segment {
+  display: inline-flex;
+  padding: 2px;
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+}
+.ms-segment-item {
+  position: relative;
+  padding: 5px 12px;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.ms-segment-item.active { color: var(--text); font-weight: 600; }
+.ms-segment-pill {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  border-radius: 6px;
+  box-shadow: var(--shadow);
+  z-index: 0;
+}
+.ms-segment-item > span { position: relative; z-index: 1; }
+
+/* =========================================================================
+   Cards, listas e paineis
+   ========================================================================= */
+.ms-card {
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.ms-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.ms-card-head-plain { border-bottom: none; padding-bottom: 4px; }
+.ms-card-title { font-size: 15px; font-weight: 600; margin: 0; }
+.ms-card-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.ms-card-body { padding: 16px; }
+
+/* Linha de lista: logo + nome + categoria + conta + valor + chevron */
+.ms-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 16px;
+  border: none;
+  border-top: 1px solid var(--border);
+  font-size: 14px;
+  text-decoration: none;
+  color: inherit;
+  background: none;
+  width: 100%;
+  text-align: left;
+}
+.ms-row:first-child { border-top: none; }
+.ms-row:hover { background: var(--surface-3); }
+.ms-row-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.ms-row-name {
+  flex: 1 1 40%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.ms-row-meta {
+  flex: 0 1 auto;
+  color: var(--text-muted);
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ms-row-amount {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.ms-row-chevron { color: var(--text-faint); display: flex; }
+.ms-row-chevron svg { width: 14px; height: 14px; fill: none; stroke: currentColor; }
+
+/* Cabecalho de grupo de data dentro da lista */
+.ms-row-group {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: var(--surface-3);
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* Pill de categoria com emoji */
+.ms-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* Painel de resumo (label a esquerda, valor a direita) */
+.ms-summary { display: flex; flex-direction: column; }
+.ms-summary-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  font-size: 14px;
+}
+.ms-summary-row + .ms-summary-row { border-top: 1px solid var(--border); }
+.ms-summary-row dt { color: var(--text-muted); margin: 0; }
+.ms-summary-row dd { margin: 0; font-weight: 500; font-variant-numeric: tabular-nums; }
+
+/* Legenda do donut em grid */
+.ms-legend {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 4px 12px;
+}
+.ms-legend-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  background: none;
+  border: none;
+  text-align: left;
+  width: 100%;
+}
+.ms-legend-item:hover { background: var(--surface-3); }
+.ms-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+.ms-legend-label { font-size: 13px; color: var(--text-muted); display: block; }
+.ms-legend-value { font-size: 14px; font-weight: 500; color: var(--text); }
+
+/* Grid de conteudo: coluna principal + coluna lateral (Summary) */
+.ms-grid-main-side {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: 1fr;
+}
+.ms-stack { display: flex; flex-direction: column; gap: 16px; }
+
+/* =========================================================================
+   Mobile: bottom-nav + drawer
+   ========================================================================= */
+.ms-mobile-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 60;
+  display: flex;
+  background: #fff;
+  border-top: 1px solid var(--border);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.ms-mobile-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 0 7px;
+  border: none;
+  background: none;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-faint);
+  text-decoration: none;
+}
+.ms-mobile-nav-item svg {
+  width: 21px;
+  height: 21px;
+  fill: none;
+  stroke: currentColor;
+}
+.ms-mobile-nav-item.active { color: var(--primary); }
+
+.ms-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: rgba(16, 16, 20, 0.35);
+}
+.ms-drawer {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 71;
+  width: 268px;
+  background: #fff;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 14px 12px 12px;
+}
+
+@media (min-width: 880px) {
+  .ms-sidebar { display: flex; }
+  .ms-mobile-nav { display: none; }
+  .ms-header { padding: 0 24px; }
+  .ms-body { padding: 20px 24px 40px; }
+  .ms-grid-main-side { grid-template-columns: minmax(0, 1fr) 300px; }
+}
+
+@media (max-width: 879px) {
+  .ms-body { padding-bottom: 84px; }
+  .ms-header { padding: 0 14px; gap: 12px; }
+}
+
+/* Botao de menu que so existe no mobile (a sidebar cobre o desktop) */
+.ms-only-mobile { display: grid; }
+@media (min-width: 880px) {
+  .ms-only-mobile { display: none; }
+}
+
+/* Seletor de mes reaproveitado no header, no formato do botao "This month" */
+.ms-header .month-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 34px;
+  padding: 0 4px;
+  background: #fff;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: none;
+}
+.ms-header .month-arrow {
+  width: 26px;
+  height: 26px;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+}
+.ms-header .month-arrow svg { width: 14px; height: 14px; fill: none; stroke: currentColor; }
+.ms-header .month-arrow:hover { background: var(--surface-2); color: var(--text); }
+
+/* =========================================================================
+   Financas — Fase 2
+   ========================================================================= */
+
+/* Destaque "Ainda posso gastar" */
+.ms-hero {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ms-hero-value {
+  font-size: 40px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.ms-hero-status { font-size: 13px; color: var(--text-muted); }
+.ms-hero.status-warning .ms-hero-status { color: var(--warning); }
+.ms-hero.status-over .ms-hero-value,
+.ms-hero.status-over .ms-hero-status { color: var(--over); }
+.ms-hero-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.ms-hero-stats > div { display: flex; flex-direction: column; gap: 3px; }
+.ms-hero-stat-value { font-size: 17px; font-weight: 500; font-variant-numeric: tabular-nums; }
+
+/* Grafico de barras dos ultimos meses */
+.ms-bars { display: flex; align-items: flex-end; gap: 10px; height: 150px; }
+.ms-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; }
+.ms-bar-track { flex: 1; width: 100%; display: flex; align-items: flex-end; }
+.ms-bar-fill {
+  width: 100%;
+  min-height: 2px;
+  background: #d9d9dd;
+  border-radius: 4px 4px 0 0;
+}
+.ms-bar-fill.current { background: var(--primary); }
+.ms-bar-label { font-size: 11px; color: var(--text-muted); }
+
+.ms-card-footer-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+/* Acoes que aparecem no hover da linha */
+.ms-row-actions { display: flex; gap: 2px; opacity: 0; transition: opacity 0.12s; }
+.ms-row:hover .ms-row-actions,
+.ms-row:focus-within .ms-row-actions { opacity: 1; }
+.ms-row-account { flex: 0 0 auto; max-width: 140px; }
+
+.ms-btn-on { border-color: var(--primary); color: var(--primary); background: var(--accent-soft); }
+
+/* Painel de filtros */
+.ms-filters {
+  border-top: 1px solid var(--border);
+  background: var(--surface-3);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+}
+.ms-filter-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.ms-filter-row > .ms-label { min-width: 110px; }
+
+/* Donut + legenda */
+.ms-donut-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  align-items: center;
+}
+.ms-donut-wrap { position: relative; width: 200px; justify-self: center; }
+.ms-donut { width: 200px; height: 200px; display: block; }
+.ms-donut circle { cursor: pointer; }
+.ms-donut-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  pointer-events: none;
+  text-align: center;
+  padding: 0 30px;
+}
+.ms-donut-center-value { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+@media (min-width: 880px) {
+  .ms-donut-layout { grid-template-columns: 240px 1fr; }
+}
+
+/* No celular a lista fica mais enxuta: some a conta e as acoes ficam sempre visiveis */
+@media (max-width: 879px) {
+  .ms-row { gap: 8px; padding: 10px 12px; }
+  .ms-row-account { display: none; }
+  .ms-row-actions { opacity: 1; }
+  .ms-hero-value { font-size: 32px; }
+  .ms-filter-row > .ms-label { min-width: 100%; }
+}
+
+/* -------------------------------------------------------------------------
+   Ajustes de mobile: no celular o header nao cabe numa linha so e a linha de
+   lancamento nao cabe na largura da tela.
+   ------------------------------------------------------------------------- */
+@media (max-width: 879px) {
+  /* Titulo + mes na primeira linha, abas ocupando a segunda inteira. */
+  .ms-header {
+    flex-wrap: wrap;
+    row-gap: 0;
+    padding-bottom: 0;
+  }
+  .ms-header-title { order: 1; }
+  .ms-header-right { order: 2; }
+  .ms-tabs {
+    order: 3;
+    flex-basis: 100%;
+    height: 42px;
+    gap: 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Linha em duas alturas: nome/valor em cima, categoria embaixo. */
+  .ms-row { flex-wrap: wrap; row-gap: 4px; }
+  .ms-row-name { flex: 1 1 auto; order: 2; }
+  .ms-row-avatar { order: 1; }
+  .ms-row-amount { order: 3; margin-left: auto; }
+  .ms-row-actions { order: 4; }
+  .ms-row .ms-chip {
+    order: 5;
+    flex-basis: 100%;
+    margin-left: 42px;
+    align-self: flex-start;
+  }
+}
+
+/* O cabecalho do card (titulo + 3 botoes) nao cabe numa linha no celular. */
+@media (max-width: 879px) {
+  .ms-card-head { flex-wrap: wrap; row-gap: 8px; padding: 12px; }
+  .ms-card-actions { margin-left: 0; flex-basis: 100%; flex-wrap: wrap; }
+  .ms-card-body { padding: 12px; }
+  .ms-body { padding-left: 12px; padding-right: 12px; }
+}

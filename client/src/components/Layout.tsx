@@ -1,38 +1,21 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { useRef, type ComponentType } from 'react';
+import { useEffect, useState, type ComponentType } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
-import { springSheet, springSmooth, springTap } from '../lib/motion';
-
-const ROUTE_ORDER = ['/', '/financas', '/relatorios', '/investimentos', '/saude', '/estudos'];
-function routeIndex(p: string) {
-  const i = ROUTE_ORDER.indexOf(p);
-  return i === -1 ? 0 : i;
-}
-
-const pageVariants = {
-  initial: (dir: number) => ({ opacity: 0, x: dir * 28, scale: 0.985, filter: 'blur(2px)' }),
-  animate: { opacity: 1, x: 0, scale: 1, filter: 'blur(0px)' },
-  exit: (dir: number) => ({ opacity: 0, x: dir * -18, scale: 0.99, filter: 'blur(2px)' }),
-};
+import { springSheet } from '../lib/motion';
+import { MonthNavigator } from './MonthNavigator';
 import {
+  BellIcon,
   BookIcon,
+  GearIcon,
+  GridIcon,
   HeartPulseIcon,
-  MoonIcon,
+  HelpIcon,
+  PanelIcon,
   PiggyBankIcon,
-  SunIcon,
+  SearchIcon,
   WalletIcon,
 } from './icons';
-
-function HomeIcon() {
-  return (
-    <svg viewBox="0 0 24 24" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3.5 10.5 12 3l8.5 7.5" />
-      <path d="M5.5 9.5V20a1 1 0 0 0 1 1H9a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h2.5a1 1 0 0 0 1-1V9.5" />
-    </svg>
-  );
-}
 
 function ChartIcon() {
   return (
@@ -44,197 +27,207 @@ function ChartIcon() {
   );
 }
 
-type NavItem = { to: string; end: boolean; icon: ComponentType; label: string };
-type Section = { id: string; label: string; home: string; icon: ComponentType; items: NavItem[] };
+type Tab = { to: string; label: string; end?: boolean };
 
-// As 4 seções do planner. As seções são a navegação primária (barra inferior no
-// mobile / pills no topo do desktop); os `items` são as sub-abas de cada uma.
-const SECTIONS: Section[] = [
+type Entry = {
+  /** Rota-raiz da seção; também é o que a sidebar destaca. */
+  to: string;
+  label: string;
+  icon: ComponentType;
+  /** Título grande no header da página (default: label). */
+  title?: string;
+  /** Abas sublinhadas ao lado do título. */
+  tabs?: Tab[];
+  /** Mostra o seletor de mês à direita do header. */
+  month?: boolean;
+  /** Aparece na barra inferior do mobile (máx. 5 itens). */
+  mobile?: boolean;
+};
+
+/**
+ * Navegação primária — espelha a sidebar do Monarch: ícone + label, um item por
+ * seção. As sub-telas de cada seção são abas no header, não itens da sidebar.
+ * Recorrentes e Agenda entram junto com suas telas (fases seguintes).
+ */
+const NAV: Entry[] = [
+  { to: '/', label: 'Dashboard', icon: GridIcon, month: true, mobile: true },
   {
-    id: 'home',
-    label: 'Home',
-    home: '/',
-    icon: HomeIcon,
-    items: [{ to: '/', end: true, icon: HomeIcon, label: 'Home' }],
-  },
-  {
-    id: 'financas',
+    to: '/financas',
     label: 'Finanças',
-    home: '/financas',
     icon: WalletIcon,
-    items: [
-      { to: '/financas', end: true, icon: HomeIcon, label: 'Início' },
-      { to: '/relatorios', end: false, icon: ChartIcon, label: 'Relatórios' },
-      { to: '/investimentos', end: false, icon: PiggyBankIcon, label: 'Investimentos' },
+    month: true,
+    mobile: true,
+    tabs: [
+      { to: '/financas', label: 'Resumo', end: true },
+      { to: '/financas/lancamentos', label: 'Lançamentos' },
+      { to: '/financas/categorias', label: 'Categorias' },
     ],
   },
-  {
-    id: 'saude',
-    label: 'Saúde',
-    home: '/saude',
-    icon: HeartPulseIcon,
-    items: [{ to: '/saude', end: false, icon: HeartPulseIcon, label: 'Saúde' }],
-  },
-  {
-    id: 'estudos',
-    label: 'Estudos',
-    home: '/estudos',
-    icon: BookIcon,
-    items: [{ to: '/estudos', end: false, icon: BookIcon, label: 'Estudos' }],
-  },
+  { to: '/relatorios', label: 'Relatórios', icon: ChartIcon, mobile: true },
+  { to: '/investimentos', label: 'Investimentos', icon: PiggyBankIcon },
+  { to: '/saude', label: 'Saúde', icon: HeartPulseIcon, mobile: true },
+  { to: '/estudos', label: 'Estudos', icon: BookIcon, mobile: true },
 ];
 
-function sectionForPath(pathname: string): Section {
-  if (pathname === '/') return SECTIONS[0];
-  if (pathname.startsWith('/saude')) return SECTIONS[2];
-  if (pathname.startsWith('/estudos')) return SECTIONS[3];
-  return SECTIONS[1]; // /financas, /relatorios, /investimentos
+function entryForPath(pathname: string): Entry {
+  if (pathname === '/') return NAV[0];
+  const match = NAV.find((e) => e.to !== '/' && pathname.startsWith(e.to));
+  return match ?? NAV[0];
 }
 
-function isItemActive(pathname: string, item: NavItem) {
-  return item.end ? pathname === item.to : pathname.startsWith(item.to);
-}
-
-/** Sub-abas da seção ativa como controle segmentado (mobile) ou linha (desktop). */
-function SubTabs({ section, layoutId, variant }: { section: Section; layoutId: string; variant: 'segment' | 'row' }) {
-  const location = useLocation();
-  if (section.items.length < 2) return null; // seções de 1 aba não precisam de sub-nav
+/** Abas sublinhadas do header (padrão Cash Flow / Spending / Income). */
+function HeaderTabs({ tabs }: { tabs: Tab[] }) {
+  const { pathname } = useLocation();
   return (
-    <div className={variant === 'segment' ? 'subtabs-segment' : 'subtabs-row'}>
-      {section.items.map((item) => {
-        const active = isItemActive(location.pathname, item);
+    <nav className="ms-tabs">
+      {tabs.map((tab) => {
+        const active = tab.end ? pathname === tab.to : pathname.startsWith(tab.to);
         return (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.end}
-            className={variant === 'segment' ? 'subtab-seg-item' : 'subtab-row-item'}
-          >
+          <NavLink key={tab.to} to={tab.to} end={tab.end} className={`ms-tab${active ? ' active' : ''}`}>
+            {tab.label}
             {active && (
-              <motion.span
-                layoutId={layoutId}
-                className={variant === 'segment' ? 'subtab-seg-pill' : 'subtab-row-underline'}
-                transition={springSheet}
-              />
+              <motion.span layoutId="ms-tab-underline" className="ms-tab-underline" transition={springSheet} />
             )}
-            <span style={{ position: 'relative' }}>{item.label}</span>
           </NavLink>
         );
       })}
-    </div>
+    </nav>
+  );
+}
+
+/** Lista de seções — usada tanto na sidebar fixa quanto no drawer do mobile. */
+function NavList({ activeTo, onNavigate }: { activeTo: string; onNavigate?: () => void }) {
+  return (
+    <nav className="ms-nav">
+      {NAV.map((entry) => (
+        <NavLink
+          key={entry.to}
+          to={entry.to}
+          onClick={onNavigate}
+          className={`ms-nav-item${entry.to === activeTo ? ' active' : ''}`}
+        >
+          <entry.icon />
+          {entry.label}
+        </NavLink>
+      ))}
+    </nav>
   );
 }
 
 export function Layout() {
   const { user } = useAuth();
-  const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
-  const prevPath = useRef(location.pathname);
-  const navDir = useRef(1);
-  if (prevPath.current !== location.pathname) {
-    navDir.current = routeIndex(location.pathname) >= routeIndex(prevPath.current) ? 1 : -1;
-    prevPath.current = location.pathname;
-  }
-  const section = sectionForPath(location.pathname);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const entry = entryForPath(location.pathname);
 
+  // Trocar de rota fecha o drawer (inclusive no botão voltar do navegador).
+  useEffect(() => setDrawerOpen(false), [location.pathname]);
 
-  const themeButton = (
-    <motion.button
-      className="icon-btn-outline"
-      title={theme === 'dark' ? 'Ativar modo claro' : 'Ativar modo escuro'}
-      onClick={toggleTheme}
-      whileTap={{ scale: 0.9 }}
-      transition={springTap}
-    >
-      {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
-    </motion.button>
+  const utilities = (
+    <>
+      <button className="ms-icon-btn" title="Buscar" aria-label="Buscar">
+        <SearchIcon />
+      </button>
+      <button className="ms-icon-btn" title="Notificações" aria-label="Notificações">
+        <BellIcon />
+      </button>
+      <button className="ms-icon-btn" title="Configurações" aria-label="Configurações">
+        <GearIcon />
+      </button>
+    </>
   );
 
   return (
-    <div className="layout">
-      {/* Navbar — desktop (2 níveis: seções em cima, sub-abas embaixo) */}
-      <header className="navbar-desktop">
-        <div className="navbar-desktop-top">
-          <span className="brand">Orbit</span>
-          <nav className="navbar-desktop-sections">
-            {SECTIONS.map((s) => (
-              <button
-                key={s.id}
-                className={`navbar-section-item${s.id === section.id ? ' active' : ''}`}
-                onClick={() => navigate(s.home)}
-              >
-                {s.id === section.id && (
-                  <motion.span layoutId="desktop-section-pill" className="navbar-section-pill" transition={springSheet} />
-                )}
-                <span className="navbar-section-icon">
-                  <s.icon />
-                </span>
-                <span style={{ position: 'relative' }}>{s.label}</span>
-              </button>
-            ))}
-          </nav>
-          <div className="navbar-desktop-right">
-            {themeButton}
-            <span className="user-name">{user?.name}</span>
-          </div>
+    <div className="ms-app">
+      <aside className="ms-sidebar">
+        <div className="ms-sidebar-top">
+          <span className="ms-logo">O</span>
+          {utilities}
         </div>
-        {section.items.length > 1 && (
-          <div className="navbar-desktop-sub">
-            <SubTabs section={section} layoutId="desktop-subtab-underline" variant="row" />
-          </div>
-        )}
-      </header>
-
-      {/* Topo — mobile (marca + controles; sub-abas logo abaixo) */}
-      <header className="topbar">
-        <div className="topbar-inner">
-          <span className="brand">Orbit</span>
-          <div className="topbar-right">
-            {themeButton}
-          </div>
+        <NavList activeTo={entry.to} />
+        <div className="ms-sidebar-foot">
+          <button className="ms-nav-item" title={user?.name}>
+            <HelpIcon />
+            Ajuda e suporte
+          </button>
         </div>
-        {section.items.length > 1 && (
-          <div className="topbar-subtabs">
-            <SubTabs section={section} layoutId="mobile-subtab-pill" variant="segment" />
-          </div>
-        )}
-      </header>
+      </aside>
 
-      <main className="content">
-        <AnimatePresence mode="wait" initial={false} custom={navDir.current}>
-          <motion.div
-            key={location.pathname}
-            custom={navDir.current}
-            variants={pageVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={springSmooth}
+      <div className="ms-main">
+        <header className="ms-header">
+          <button
+            className="ms-icon-btn ms-only-mobile"
+            onClick={() => setDrawerOpen(true)}
+            aria-label="Abrir menu"
           >
-            <Outlet />
-          </motion.div>
-        </AnimatePresence>
-      </main>
+            <PanelIcon />
+          </button>
+          <h1 className="ms-header-title">{entry.title ?? entry.label}</h1>
+          {entry.tabs && <HeaderTabs tabs={entry.tabs} />}
+          <div className="ms-header-right">{entry.month && <MonthNavigator />}</div>
+        </header>
 
-      {/* Menu inferior — mobile: SEÇÕES (navegação primária) */}
-      <nav className="bottom-nav">
-        {SECTIONS.map((s) => {
-          const active = s.id === section.id;
-          return (
-            <button
-              key={s.id}
-              className={`nav-item${active ? ' active' : ''}`}
-              onClick={() => navigate(s.home)}
+        <main className="ms-body">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.16 }}
             >
-              {active && <motion.span layoutId="bottom-nav-pill" className="nav-item-pill" transition={springSheet} />}
-              <span className="nav-icon">
-                <s.icon />
-              </span>
-              <span style={{ position: 'relative' }}>{s.label}</span>
-            </button>
-          );
-        })}
+              <Outlet />
+            </motion.div>
+          </AnimatePresence>
+        </main>
+      </div>
+
+      {/* Mobile: drawer com a sidebar inteira + barra inferior com os atalhos */}
+      <AnimatePresence>
+        {drawerOpen && (
+          <>
+            <motion.div
+              className="ms-drawer-backdrop"
+              onClick={() => setDrawerOpen(false)}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            />
+            <motion.aside
+              className="ms-drawer"
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={springSheet}
+            >
+              <div className="ms-sidebar-top">
+                <span className="ms-logo">O</span>
+                {utilities}
+              </div>
+              <NavList activeTo={entry.to} onNavigate={() => setDrawerOpen(false)} />
+              <div className="ms-sidebar-foot">
+                <button className="ms-nav-item">
+                  <HelpIcon />
+                  Ajuda e suporte
+                </button>
+              </div>
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+
+      <nav className="ms-mobile-nav">
+        {NAV.filter((e) => e.mobile).map((e) => (
+          <button
+            key={e.to}
+            className={`ms-mobile-nav-item${e.to === entry.to ? ' active' : ''}`}
+            onClick={() => navigate(e.to)}
+          >
+            <e.icon />
+            {e.label}
+          </button>
+        ))}
       </nav>
     </div>
   );

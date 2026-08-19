@@ -5,6 +5,7 @@ import App from './App';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import './index.css';
+import './styles/monarch.css';
 import { setupServiceWorker } from './registerSW';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
