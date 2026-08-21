@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, useState, type ComponentType } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { springSheet } from '../lib/motion';
 import { MonthNavigator } from './MonthNavigator';
 import {
@@ -16,6 +17,8 @@ import {
   PanelIcon,
   PiggyBankIcon,
   SearchIcon,
+  SunIcon,
+  MoonIcon,
   WalletIcon,
 } from './icons';
 
@@ -119,8 +122,12 @@ function HeaderTabs({ tabs }: { tabs: Tab[] }) {
   );
 }
 
-/** Lista de seções — usada tanto na sidebar fixa quanto no drawer do mobile. */
-function NavList({ activeTo, onNavigate }: { activeTo: string; onNavigate?: () => void }) {
+/**
+ * Lista de seções — usada tanto na sidebar fixa quanto no drawer do mobile.
+ * Quem decide o item ativo é o próprio NavLink: ele já casa as sub-rotas
+ * (/financas/lancamentos marca Finanças) e trata "/" como match exato.
+ */
+function NavList({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <nav className="ms-nav">
       {NAV.map((entry) => (
@@ -128,7 +135,7 @@ function NavList({ activeTo, onNavigate }: { activeTo: string; onNavigate?: () =
           key={entry.to}
           to={entry.to}
           onClick={onNavigate}
-          className={`ms-nav-item${entry.to === activeTo ? ' active' : ''}`}
+          className={({ isActive }) => `ms-nav-item${isActive ? ' active' : ''}`}
         >
           <entry.icon />
           {entry.label}
@@ -140,6 +147,7 @@ function NavList({ activeTo, onNavigate }: { activeTo: string; onNavigate?: () =
 
 export function Layout() {
   const { user } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -156,6 +164,14 @@ export function Layout() {
       <button className="ms-icon-btn" title="Notificações" aria-label="Notificações">
         <BellIcon />
       </button>
+      <button
+        className="ms-icon-btn"
+        title={theme === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'}
+        aria-label="Alternar tema"
+        onClick={toggleTheme}
+      >
+        {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+      </button>
       <button className="ms-icon-btn" title="Configurações" aria-label="Configurações">
         <GearIcon />
       </button>
@@ -169,7 +185,7 @@ export function Layout() {
           <span className="ms-logo">O</span>
           {utilities}
         </div>
-        <NavList activeTo={entry.to} />
+        <NavList />
         <div className="ms-sidebar-foot">
           <button className="ms-nav-item" title={user?.name}>
             <HelpIcon />
@@ -228,7 +244,7 @@ export function Layout() {
               <span className="ms-logo">O</span>
               {utilities}
             </div>
-            <NavList activeTo={entry.to} onNavigate={() => setDrawerOpen(false)} />
+            <NavList onNavigate={() => setDrawerOpen(false)} />
             <div className="ms-sidebar-foot">
               <button className="ms-nav-item">
                 <HelpIcon />

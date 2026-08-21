@@ -9,6 +9,7 @@ import {
   WEEKDAYS_SHORT,
   classesForIso,
   daysUntil,
+  readableOn,
   todayIsoStr,
 } from '../../lib/studies';
 import { useEstudos } from '../estudos/context';
@@ -159,8 +160,8 @@ export function AgendaPage() {
                       className={`ms-cal-pill${'muted' in p && p.muted ? ' muted' : ''}`}
                       style={
                         'muted' in p && p.muted
-                          ? { color: p.color, borderColor: p.color }
-                          : { background: p.color }
+                          ? { borderColor: p.color }
+                          : { background: p.color, color: readableOn(p.color) }
                       }
                       onClick={(e) => {
                         e.stopPropagation();

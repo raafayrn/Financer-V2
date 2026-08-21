@@ -2,12 +2,14 @@
    Design system "Monarch" — Fase 0 do redesign.
    Carregado DEPOIS do index.css: os tokens abaixo vencem os antigos, entao as
    telas que ainda nao migraram ja herdam a paleta e os raios novos.
-   Principios: fundo cinza quase branco, cards brancos solidos, borda 1px,
-   sombra minima, raio 12px, labels MAIUSCULAS cinza, numeros grandes.
+   Principios: superficie lisa, cards solidos, borda 1px, sombra minima,
+   raio 12px, labels MAIUSCULAS, numeros grandes. Dois temas: o claro do
+   Monarch e um escuro "cozy" em marrom/bege. Toda cor sai de token — nao
+   escreva cor fixa fora do bloco :root, senao um dos temas quebra.
    ========================================================================= */
 
+/* ---------- Tema claro (Monarch) ---------- */
 :root,
-:root[data-theme='dark'],
 :root[data-theme='light'] {
   --bg: #f7f7f8;
   --bg-blob-1: transparent;
@@ -19,15 +21,17 @@
   --surface-2: #f1f1f2;
   --surface-3: #fafafa;
   --menu-bg: #ffffff;
+  --nav-active: #ececee;
+  --bar-idle: #d9d9dd;
 
   --text: #1a1a1a;
   --text-muted: #6b6b70;
-  --text-faint: #9a9aa0;
+  --text-faint: #71717a;
   --border: #e6e6e8;
   --border-strong: #d4d4d8;
 
-  --primary: #e8622c;
-  --primary-hover: #d2531f;
+  --primary: #c9501d;
+  --primary-hover: #ad4315;
   --primary-contrast: #ffffff;
   --accent-soft: #fdf0ea;
 
@@ -35,15 +39,96 @@
   --ok-bg: #e8f6ee;
   --warning: #b8860b;
   --warning-bg: #fdf5e2;
-  --over: #d93a2b;
+  --over: #c4291c;
   --over-bg: #fdecea;
   --info-bg: #eef4fd;
 
+  --shadow: 0 1px 2px rgba(16, 16, 20, 0.04);
+  --shadow-float: 0 8px 24px rgba(16, 16, 20, 0.12);
+}
+
+/* ---------- Tema escuro "cozy": marrom e bege, pouco contraste duro ----------
+   Nada de preto puro nem branco puro: o fundo é um marrom bem escuro e o texto
+   é bege, o que reduz o brilho na leitura noturna. As superfícies sobem de
+   marrom conforme se aproximam do primeiro plano. */
+:root[data-theme='dark'] {
+  --bg: #1b1512;
+  --bg-blob-1: transparent;
+  --bg-blob-2: transparent;
+  --bg-blob-3: transparent;
+
+  --surface: #241d18;
+  --surface-solid: #241d18;
+  --surface-2: #322820;
+  --surface-3: #201a15;
+  --menu-bg: #2a221c;
+  --nav-active: #382c23;
+  --bar-idle: #453629;
+
+  --text: #efe3d2;
+  --text-muted: #b8a793;
+  --text-faint: #a3907a;
+  --border: #362b23;
+  --border-strong: #4a3b2f;
+
+  --primary: #e08b52;
+  --primary-hover: #eca06a;
+  --primary-contrast: #241a12;
+  --accent-soft: #362a20;
+
+  --ok: #8fbf6f;
+  --ok-bg: #29301f;
+  --warning: #d9a441;
+  --warning-bg: #352a17;
+  --over: #e2705c;
+  --over-bg: #3a231e;
+  --info-bg: #24262e;
+
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-float: 0 10px 30px rgba(0, 0, 0, 0.55);
+}
+
+/* Sem escolha explícita, segue o sistema (vence o bloco do index.css). */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #1b1512;
+    --surface: #241d18;
+    --surface-solid: #241d18;
+    --surface-2: #322820;
+    --surface-3: #201a15;
+    --menu-bg: #2a221c;
+    --nav-active: #382c23;
+    --bar-idle: #453629;
+
+    --text: #efe3d2;
+    --text-muted: #b8a793;
+    --text-faint: #a3907a;
+    --border: #362b23;
+    --border-strong: #4a3b2f;
+
+    --primary: #e08b52;
+    --primary-hover: #eca06a;
+    --primary-contrast: #241a12;
+    --accent-soft: #362a20;
+
+    --ok: #8fbf6f;
+    --ok-bg: #29301f;
+    --warning: #d9a441;
+    --warning-bg: #352a17;
+    --over: #e2705c;
+    --over-bg: #3a231e;
+    --info-bg: #24262e;
+
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+    --shadow-float: 0 10px 30px rgba(0, 0, 0, 0.55);
+  }
+}
+
+/* Medidas — iguais nos dois temas. */
+:root {
   --radius: 12px;
   --radius-sm: 8px;
   --radius-pill: 999px;
-  --shadow: 0 1px 2px rgba(16, 16, 20, 0.04);
-  --shadow-float: 0 8px 24px rgba(16, 16, 20, 0.12);
   --blur: none;
 
   --sidebar-w: 232px;
@@ -52,7 +137,7 @@
   --maxw-desktop: 1400px;
 }
 
-/* O fundo com blobs/gradientes some — o Monarch e liso. */
+/* O fundo com blobs/gradientes some — a superficie e lisa nos dois temas. */
 body {
   background-image: none;
   background-color: var(--bg);
@@ -60,7 +145,7 @@ body {
   letter-spacing: 0;
 }
 
-/* Nada de vidro: qualquer superficie translucida vira branco solido. */
+/* Nada de vidro: qualquer superficie translucida vira solida. */
 .card,
 .modal,
 .menu,
@@ -123,7 +208,7 @@ body {
   height: 26px;
   border-radius: 7px;
   background: var(--primary);
-  color: #fff;
+  color: var(--primary-contrast);
   display: grid;
   place-items: center;
   font-size: 14px;
@@ -187,7 +272,7 @@ body {
   color: var(--text);
 }
 .ms-nav-item.active {
-  background: #ececee;
+  background: var(--nav-active);
   color: var(--text);
   font-weight: 600;
 }
@@ -285,7 +370,7 @@ body {
   padding: 0 12px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-strong);
-  background: #fff;
+  background: var(--surface-solid);
   color: var(--text);
   font-size: 13px;
   font-weight: 500;
@@ -331,7 +416,7 @@ body {
 .ms-segment-pill {
   position: absolute;
   inset: 0;
-  background: #fff;
+  background: var(--surface-solid);
   border-radius: 6px;
   box-shadow: var(--shadow);
   z-index: 0;
@@ -499,7 +584,7 @@ body {
   right: 0;
   z-index: 60;
   display: flex;
-  background: #fff;
+  background: var(--surface-solid);
   border-top: 1px solid var(--border);
   padding-bottom: env(safe-area-inset-bottom);
 }
@@ -538,7 +623,7 @@ body {
   left: 0;
   z-index: 71;
   width: 268px;
-  background: #fff;
+  background: var(--surface-solid);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
@@ -571,7 +656,7 @@ body {
   gap: 2px;
   height: 34px;
   padding: 0 4px;
-  background: #fff;
+  background: var(--surface-solid);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
   box-shadow: none;
@@ -629,7 +714,7 @@ body {
 .ms-bar-fill {
   width: 100%;
   min-height: 2px;
-  background: #d9d9dd;
+  background: var(--bar-idle);
   border-radius: 4px 4px 0 0;
 }
 .ms-bar-fill.current { background: var(--primary); }
@@ -832,7 +917,7 @@ body {
   padding: 0 10px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
-  background: #fff;
+  background: var(--surface-solid);
   color: var(--text);
   font-size: 13px;
 }
@@ -877,7 +962,7 @@ body {
   padding: 12px;
   background: var(--surface-3);
 }
-.ms-subject-card.open { background: #fff; box-shadow: var(--shadow); }
+.ms-subject-card.open { background: var(--surface-solid); box-shadow: var(--shadow); }
 .ms-subject-head {
   display: flex;
   align-items: center;
@@ -927,7 +1012,7 @@ body {
   flex-direction: column;
   gap: 3px;
   cursor: pointer;
-  background: #fff;
+  background: var(--surface-solid);
 }
 .ms-cal-cell:nth-child(7n) { border-right: none; }
 .ms-cal-cell:hover { background: var(--surface-3); }
@@ -943,7 +1028,7 @@ body {
   place-items: center;
   border-radius: 50%;
 }
-.ms-cal-cell.today .ms-cal-daynum { background: var(--primary); color: #fff; }
+.ms-cal-cell.today .ms-cal-daynum { background: var(--primary); color: var(--primary-contrast); }
 .ms-cal-pills { display: flex; flex-direction: column; gap: 2px; overflow: hidden; }
 .ms-cal-pill {
   display: block;
@@ -953,7 +1038,7 @@ body {
   padding: 2px 5px;
   font-size: 10px;
   font-weight: 600;
-  color: #fff;
+  color: var(--primary-contrast);
   text-align: left;
   white-space: nowrap;
   overflow: hidden;
@@ -962,8 +1047,8 @@ body {
 .ms-cal-pill.muted {
   background: transparent;
   border: 1px solid;
+  color: var(--text-muted);
   font-weight: 500;
-  opacity: 0.75;
 }
 .ms-cal-more { font-size: 10px; font-weight: 600; color: var(--text-faint); padding-left: 5px; }
 

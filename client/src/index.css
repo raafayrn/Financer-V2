@@ -2882,7 +2882,7 @@ select option {
 .check-box svg {
   width: 15px;
   height: 15px;
-  stroke: #fff;
+  stroke: var(--primary-contrast);
   fill: none;
 }
 .task-main {

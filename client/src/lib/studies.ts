@@ -82,3 +82,27 @@ export function classesForIso(iso: string) {
   const dow = new Date(iso + 'T00:00:00').getDay();
   return CLASS_SCHEDULE[dow] ?? [];
 }
+
+/**
+ * Preto ou branco sobre `bg`, o que tiver mais contraste. As cores de matéria
+ * variam de azul escuro a amarelo claro — texto branco fixo some no amarelo.
+ */
+export function readableOn(bg: string): string {
+  const hex = bg.trim();
+  if (!hex.startsWith('#')) return '#ffffff'; // var(--...) e afins: mantém o padrão
+  const full =
+    hex.length === 4
+      ? `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`
+      : hex;
+  const r = parseInt(full.slice(1, 3), 16);
+  const g = parseInt(full.slice(3, 5), 16);
+  const b = parseInt(full.slice(5, 7), 16);
+  const lin = (v: number) => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  };
+  const L = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+  const vsBlack = (L + 0.05) / 0.05;
+  const vsWhite = 1.05 / (L + 0.05);
+  return vsBlack >= vsWhite ? '#17120e' : '#ffffff';
+}
