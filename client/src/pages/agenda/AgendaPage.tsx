@@ -73,8 +73,9 @@ export function AgendaPage() {
   const selDate = new Date(selectedIso + 'T00:00:00');
   const { dayEvents: selEvents, dayExams: selExams, dayTasks: selTasks, dayClasses: selClasses } =
     itemsForDay(selectedIso);
-  const selEmpty =
-    selEvents.length === 0 && selExams.length === 0 && selTasks.length === 0 && selClasses.length === 0;
+  // As aulas não entram aqui: têm card próprio, então um dia só de aula
+  // continua sendo "sem compromisso".
+  const selEmpty = selEvents.length === 0 && selExams.length === 0 && selTasks.length === 0;
 
   const upcomingExams = [...exams]
     .filter((e) => daysUntil(e.date) >= 0)
@@ -110,7 +111,7 @@ export function AgendaPage() {
           {cells.map((day, i) => {
             if (!day) return <div key={i} className="ms-cal-cell empty" />;
             const iso = isoOf(day);
-            const { dayEvents, dayExams, dayTasks, dayClasses } = itemsForDay(iso);
+            const { dayEvents, dayExams, dayTasks } = itemsForDay(iso);
             const isToday = iso === todayStr;
             const isSel = iso === selectedIso;
 
@@ -136,13 +137,6 @@ export function AgendaPage() {
                 color: 'var(--primary)',
                 onClick: () => openTask(t),
               })),
-              ...dayClasses.map((c, ci) => ({
-                key: `cl-${iso}-${ci}`,
-                label: c.name,
-                color: subjectByName(c.name)?.color ?? '#9a9aa0',
-                muted: true,
-                onClick: undefined,
-              })),
             ];
             const overflow = pills.length - MAX_VISIBLE;
 
@@ -157,15 +151,11 @@ export function AgendaPage() {
                   {pills.slice(0, MAX_VISIBLE).map((p) => (
                     <button
                       key={p.key}
-                      className={`ms-cal-pill${'muted' in p && p.muted ? ' muted' : ''}`}
-                      style={
-                        'muted' in p && p.muted
-                          ? { borderColor: p.color }
-                          : { background: p.color, color: readableOn(p.color) }
-                      }
+                      className="ms-cal-pill"
+                      style={{ background: p.color, color: readableOn(p.color) }}
                       onClick={(e) => {
                         e.stopPropagation();
-                        p.onClick?.();
+                        p.onClick();
                       }}
                     >
                       {p.label}
@@ -200,24 +190,6 @@ export function AgendaPage() {
             <p className="empty">Nenhum compromisso neste dia.</p>
           ) : (
             <>
-              {selClasses.map((c, ci) => {
-                const subj = subjectByName(c.name);
-                return (
-                  <div key={`cl-${ci}`} className="ms-row">
-                    <span className="ms-row-time">{c.time}</span>
-                    <span className="ms-row-name">
-                      {c.name}
-                      <span className="ms-row-sub">Aula</span>
-                    </span>
-                    {subj && (
-                      <span
-                        className="ms-legend-dot"
-                        style={{ margin: 0, background: subj.color }}
-                      />
-                    )}
-                  </div>
-                );
-              })}
               {selEvents.map((ev) => (
                 <div key={ev.id} className="ms-row" onClick={() => openEvent(ev)}>
                   <span className="ms-row-time">{ev.time ?? '—'}</span>
@@ -267,6 +239,39 @@ export function AgendaPage() {
                 );
               })}
             </>
+          )}
+        </section>
+
+        {/* Aulas num card à parte: são a grade fixa da semana, não compromissos
+            avulsos, então poluíam o calendário repetidas em todo dia útil. */}
+        <section className="ms-card">
+          <div className="ms-card-head">
+            <div>
+              <h3 className="ms-card-title">Aulas do dia</h3>
+              <span className="ms-muted">{WEEKDAYS_FULL[selDate.getDay()]}</span>
+            </div>
+          </div>
+          {selClasses.length === 0 ? (
+            <p className="empty">Sem aula neste dia.</p>
+          ) : (
+            selClasses.map((c, ci) => {
+              const subj = subjectByName(c.name);
+              return (
+                <div key={`cl-${ci}`} className="ms-row">
+                  <span className="ms-row-time">{c.time}</span>
+                  <span className="ms-row-name">{c.name}</span>
+                  {subj && (
+                    <span className="ms-chip">
+                      <span
+                        className="ms-legend-dot"
+                        style={{ margin: 0, background: subj.color }}
+                      />
+                      {subj.progress}%
+                    </span>
+                  )}
+                </div>
+              );
+            })
           )}
         </section>
 

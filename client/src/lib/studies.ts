@@ -88,8 +88,14 @@ export function classesForIso(iso: string) {
  * variam de azul escuro a amarelo claro — texto branco fixo some no amarelo.
  */
 export function readableOn(bg: string): string {
-  const hex = bg.trim();
-  if (!hex.startsWith('#')) return '#ffffff'; // var(--...) e afins: mantém o padrão
+  let hex = bg.trim();
+  // Resolve var(--token) antes de medir: sem isso o token cairia no padrão
+  // branco, que some sobre o laranja claro do tema escuro.
+  const varMatch = hex.match(/^var\(\s*(--[\w-]+)\s*\)$/);
+  if (varMatch) {
+    hex = getComputedStyle(document.documentElement).getPropertyValue(varMatch[1]).trim();
+  }
+  if (!hex.startsWith('#')) return '#ffffff';
   const full =
     hex.length === 4
       ? `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`
