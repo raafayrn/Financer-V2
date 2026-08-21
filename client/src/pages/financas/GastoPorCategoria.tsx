@@ -6,7 +6,7 @@ const R = 62; // raio do donut
 const STROKE = 26;
 const C = 2 * Math.PI * R;
 
-export function CategoriasTab() {
+export function GastoPorCategoria() {
   const { summary } = useFinancas();
   const [hovered, setHovered] = useState<string | null>(null);
 

@@ -8,29 +8,17 @@ import { MonthNavigator } from './MonthNavigator';
 import {
   BellIcon,
   BookIcon,
-  RepeatIcon,
   CalendarIcon,
   GearIcon,
   GridIcon,
   HeartPulseIcon,
   HelpIcon,
   PanelIcon,
-  PiggyBankIcon,
   SearchIcon,
   SunIcon,
   MoonIcon,
   WalletIcon,
 } from './icons';
-
-function ChartIcon() {
-  return (
-    <svg viewBox="0 0 24 24" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="4" y="12" width="4" height="8" rx="1" />
-      <rect x="10" y="7" width="4" height="13" rx="1" />
-      <rect x="16" y="3" width="4" height="17" rx="1" />
-    </svg>
-  );
-}
 
 type Tab = { to: string; label: string; end?: boolean };
 
@@ -52,7 +40,8 @@ type Entry = {
 /**
  * Navegação primária — espelha a sidebar do Monarch: ícone + label, um item por
  * seção. As sub-telas de cada seção são abas no header, não itens da sidebar.
- * Recorrentes e Agenda entram junto com suas telas (fases seguintes).
+ * Recorrentes e Investimentos são recortes das mesmas despesas do mês, então
+ * moram dentro de Finanças em vez de disputarem a sidebar.
  */
 const NAV: Entry[] = [
   { to: '/', label: 'Dashboard', icon: GridIcon, month: true, mobile: true },
@@ -65,21 +54,11 @@ const NAV: Entry[] = [
     tabs: [
       { to: '/financas', label: 'Resumo', end: true },
       { to: '/financas/lancamentos', label: 'Lançamentos' },
-      { to: '/financas/categorias', label: 'Categorias' },
+      { to: '/financas/recorrentes', label: 'Fixas', end: true },
+      { to: '/financas/recorrentes/parcelamentos', label: 'Parcelamentos' },
+      { to: '/financas/investimentos', label: 'Investimentos' },
     ],
   },
-  {
-    to: '/recorrentes',
-    label: 'Recorrentes',
-    icon: RepeatIcon,
-    month: true,
-    tabs: [
-      { to: '/recorrentes', label: 'Fixas', end: true },
-      { to: '/recorrentes/parcelamentos', label: 'Parcelamentos' },
-    ],
-  },
-  { to: '/relatorios', label: 'Relatórios', icon: ChartIcon },
-  { to: '/investimentos', label: 'Investimentos', icon: PiggyBankIcon },
   { to: '/agenda', label: 'Agenda', icon: CalendarIcon, mobile: true },
   { to: '/saude', label: 'Saúde', icon: HeartPulseIcon, mobile: true },
   {

@@ -1,3 +1,4 @@
+import { BrandIcon } from '../../components/BrandIcon';
 import { formatCurrency, monthName } from '../../utils/format';
 import { useRecorrentes } from './context';
 
@@ -68,12 +69,7 @@ export function ParcelamentosTab() {
           const left = p.installmentTotal - p.installmentNo;
           return (
             <div key={p.groupId} className="ms-row">
-              <span
-                className="ms-row-avatar"
-                style={{ background: `${cat?.color ?? '#94a3b8'}22`, color: cat?.color ?? '#64748b' }}
-              >
-                {p.description.slice(0, 1).toUpperCase()}
-              </span>
+              <BrandIcon description={p.description} fallbackColor={cat?.color} size={30} />
               <span className="ms-row-name">
                 {p.description}
                 <span className="ms-row-sub">

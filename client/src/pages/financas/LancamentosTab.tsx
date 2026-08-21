@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { AccountKind } from '../../api/types';
+import { BrandIcon } from '../../components/BrandIcon';
 import { Dropdown } from '../../components/Dropdown';
 import { EditIcon, FilterIcon, RepeatIcon, TrashIcon } from '../../components/icons';
 import { springSheet } from '../../lib/motion';
@@ -22,10 +23,27 @@ type LedgerItem =
   | { kind: 'expense'; data: FinancasCtx['expenses'][number] }
   | { kind: 'income'; data: FinancasCtx['incomes'][number] };
 
-/** "2026-08-18" → "18 de agosto de 2026" (cabeçalho de grupo da lista). */
-function fullDate(iso: string): string {
-  const [y, m, d] = iso.split('-');
-  return `${Number(d)} de ${monthName(Number(m)).toLowerCase()} de ${y}`;
+const WEEKDAY = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+
+/** ISO local (sem UTC) — "2026-08-14" não pode virar 13/08 por fuso. */
+function parseIso(iso: string): Date {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+/**
+ * Cabeçalho do grupo: "Hoje" e "Ontem" ganham nome próprio; o resto vira
+ * "Sexta, 14 de agosto". O ano fica de fora — o seletor de mês já diz qual é.
+ */
+function groupDate(iso: string): string {
+  const date = parseIso(iso);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const diff = Math.round((date.getTime() - today.getTime()) / 86400000);
+  if (diff === 0) return 'Hoje';
+  if (diff === -1) return 'Ontem';
+  const [, m, d] = iso.split('-');
+  return `${WEEKDAY[date.getDay()]}, ${Number(d)} de ${monthName(Number(m)).toLowerCase()}`;
 }
 
 export function LancamentosTab() {
@@ -105,39 +123,47 @@ export function LancamentosTab() {
   // Média só das despesas — misturar receitas na conta distorceria o valor.
   const average = spentItems.length > 0 ? spentTotal / spentItems.length : 0;
 
+  /**
+   * Uma linha = descrição em cima, metadados embaixo (categoria · conta) e o
+   * valor à direita. Antes eram cinco colunas disputando espaço; separar em
+   * dois níveis deixa claro o que é o lançamento e o que é contexto.
+   */
   function renderRow(item: LedgerItem) {
     if (item.kind === 'expense') {
       const e = item.data;
       const cat = e.categoryId ? categoryById.get(e.categoryId) : undefined;
+      const color = cat?.color ?? 'var(--text-faint)';
       const acc = e.accountId ? accountById.get(e.accountId) : undefined;
+      const badge = e.recurringExpenseId
+        ? { label: 'Fixa', title: 'Lançada automaticamente pela despesa fixa' }
+        : e.installmentGroupId
+          ? {
+              label: `Parcela ${e.installmentNo}/${e.installmentTotal}`,
+              title: `Parcela ${e.installmentNo} de ${e.installmentTotal}`,
+            }
+          : e.recurring
+            ? { label: 'Recorrente', title: 'Marcada como recorrente' }
+            : null;
+
       return (
-        <div key={`exp-${e.id}`} className="ms-row">
-          <span
-            className="ms-row-avatar"
-            style={{ background: `${cat?.color ?? '#94a3b8'}22`, color: cat?.color ?? '#64748b' }}
-          >
-            {e.description.slice(0, 1).toUpperCase()}
+        <div key={`exp-${e.id}`} className="ms-ledger-row">
+          <BrandIcon description={e.description} fallbackColor={cat?.color} size={32} />
+          <span className="ms-ledger-main">
+            <span className="ms-ledger-title">
+              {e.description}
+              {badge && (
+                <span className="ms-ledger-badge" title={badge.title}>
+                  {badge.label}
+                </span>
+              )}
+            </span>
+            <span className="ms-ledger-meta">
+              <span style={{ color }}>{cat?.name ?? 'Sem categoria'}</span>
+              <span className="ms-ledger-sep">·</span>
+              {acc?.name ?? 'Sem conta'}
+            </span>
           </span>
-          <span className="ms-row-name">
-            {e.description}
-            {e.recurringExpenseId ? (
-              <span className="tag tag-auto" title="Lançada automaticamente pela despesa fixa">
-                fixa
-              </span>
-            ) : e.installmentGroupId ? (
-              <span className="tag tag-installment" title={`Parcela ${e.installmentNo} de ${e.installmentTotal}`}>
-                {e.installmentNo}/{e.installmentTotal}
-              </span>
-            ) : (
-              e.recurring && <span className="tag">recorrente</span>
-            )}
-          </span>
-          <span className="ms-chip">
-            <span className="ms-legend-dot" style={{ margin: 0, background: cat?.color ?? '#94a3b8' }} />
-            {cat?.name ?? 'Sem categoria'}
-          </span>
-          <span className="ms-row-meta ms-row-account">{acc?.name ?? 'Sem conta'}</span>
-          <span className="ms-row-amount">−{formatCurrency(e.amount)}</span>
+          <span className="ms-ledger-amount">−{formatCurrency(e.amount)}</span>
           <span className="ms-row-actions">
             <button className="ms-icon-btn" title="Editar" onClick={() => openModal({ kind: 'edit', expense: e })}>
               <EditIcon />
@@ -153,20 +179,17 @@ export function LancamentosTab() {
     const i = item.data;
     const acc = i.accountId ? accountById.get(i.accountId) : undefined;
     return (
-      <div key={`inc-${i.id}`} className="ms-row">
-        <span
-          className="ms-row-avatar"
-          style={{ background: 'var(--ok-bg)', color: 'var(--ok)' }}
-        >
-          {i.description.slice(0, 1).toUpperCase()}
+      <div key={`inc-${i.id}`} className="ms-ledger-row">
+        <BrandIcon description={i.description} fallbackColor="var(--ok)" size={32} />
+        <span className="ms-ledger-main">
+          <span className="ms-ledger-title">{i.description}</span>
+          <span className="ms-ledger-meta">
+            <span style={{ color: 'var(--ok)' }}>Receita</span>
+            <span className="ms-ledger-sep">·</span>
+            {acc?.name ?? 'Sem conta'}
+          </span>
         </span>
-        <span className="ms-row-name">{i.description}</span>
-        <span className="ms-chip">
-          <span className="ms-legend-dot" style={{ margin: 0, background: 'var(--ok)' }} />
-          Receita
-        </span>
-        <span className="ms-row-meta ms-row-account">{acc?.name ?? 'Sem conta'}</span>
-        <span className="ms-row-amount ms-pos">+{formatCurrency(i.amount)}</span>
+        <span className="ms-ledger-amount ms-pos">+{formatCurrency(i.amount)}</span>
         <span className="ms-row-actions">
           <button
             className="ms-icon-btn"
@@ -192,7 +215,7 @@ export function LancamentosTab() {
           <div className="ms-card-actions">
             <Link
               className="ms-btn"
-              to="/recorrentes"
+              to="/financas/recorrentes"
               title="Despesas fixas (lançadas automaticamente todo mês)"
             >
               <RepeatIcon />
@@ -310,10 +333,13 @@ export function LancamentosTab() {
           </p>
         ) : grouped ? (
           groups.map((g) => (
-            <div key={g.date}>
-              <div className="ms-row-group">
-                <span>{fullDate(g.date)}</span>
-                <span>
+            <div key={g.date} className="ms-ledger-group">
+              <div className="ms-ledger-group-head">
+                <span className="ms-ledger-group-date">{groupDate(g.date)}</span>
+                <span className="ms-ledger-group-count">
+                  {g.items.length} {g.items.length === 1 ? 'lançamento' : 'lançamentos'}
+                </span>
+                <span className={`ms-ledger-group-total${g.total >= 0 ? ' ms-pos' : ''}`}>
                   {g.total >= 0 ? '+' : '−'}
                   {formatCurrency(Math.abs(g.total))}
                 </span>

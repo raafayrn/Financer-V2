@@ -24,7 +24,6 @@ import type {
   RecurringExpense,
   RecurringExpenseInput,
   RecurringImportResult,
-  ReportsOverview,
   StudiesOverview,
   StudyTask,
   Subject,
@@ -214,8 +213,6 @@ export const api = {
     request<Summary>(`/summary?year=${year}&month=${month}`),
   getMonthlyReport: (year: number) =>
     request<MonthlyReport>(`/reports/monthly?year=${year}`),
-  getReportsOverview: (year: number) =>
-    request<ReportsOverview>(`/reports/overview?year=${year}`),
 
   // Chat (linguagem natural / imagem / perguntas)
   chatStatus: () => request<{ enabled: boolean }>('/chat/status'),

@@ -111,7 +111,7 @@ export function AjustesPage() {
             </button>
           </Row>
           <Row title="Despesas fixas" hint="Lançamentos que se repetem todo mês">
-            <Link className="ms-btn" to="/recorrentes">
+            <Link className="ms-btn" to="/financas/recorrentes">
               Abrir
             </Link>
           </Row>

@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useState, type FormEvent } from 'react';
 import { api, ApiError } from '../../api/client';
+import { BrandIcon } from '../../components/BrandIcon';
 import { Dropdown } from '../../components/Dropdown';
 import { EditIcon, TrashIcon } from '../../components/icons';
 import type { Account, RecurringExpense } from '../../api/types';
@@ -209,12 +210,7 @@ export function FixasTab() {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
       >
-        <span
-          className="ms-row-avatar"
-          style={{ background: `${cat?.color ?? '#94a3b8'}22`, color: cat?.color ?? '#64748b' }}
-        >
-          {item.description.slice(0, 1).toUpperCase()}
-        </span>
+        <BrandIcon description={item.description} fallbackColor={cat?.color} size={30} />
         <span className="ms-row-name">
           {item.description}
           <span className="ms-row-sub">

@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, ApiError } from '../api/client';
 import type { Investment, InvestmentInput, InvestmentSummary } from '../api/types';
+import { BrandIcon } from '../components/BrandIcon';
 import { formatCurrency, formatDayMonth, monthShort } from '../utils/format';
 import { INVESTMENT_TYPE_COLOR, INVESTMENT_TYPE_LABEL } from '../utils/investments';
 import { ChevronLeftIcon, ChevronRightIcon, EditIcon, TrashIcon } from '../components/icons';
@@ -73,29 +74,27 @@ export function InvestmentsPage() {
     : 1;
 
   return (
-    <div className="page">
-      <h2 className="page-title">Investimentos</h2>
-
-      <div className="section-head">
-        <span />
+    <div className="ms-stack">
+      {/* Uma faixa só: ano à esquerda, ação à direita. O título saiu porque a
+          aba do header já diz que estamos em Investimentos. */}
+      <div className="ms-toolbar">
+        <div className="year-nav">
+          <button className="month-arrow" onClick={() => setYear((y) => y - 1)} aria-label="Ano anterior">
+            <ChevronLeftIcon />
+          </button>
+          <span className="month-label">{year}</span>
+          <button className="month-arrow" onClick={() => setYear((y) => y + 1)} aria-label="Próximo ano">
+            <ChevronRightIcon />
+          </button>
+        </div>
         <motion.button
-          className="btn-primary btn-sm"
+          className="ms-btn ms-btn-primary"
           onClick={() => setModal({ kind: 'create' })}
           whileTap={{ scale: 0.95 }}
           transition={springTap}
         >
           + Novo
         </motion.button>
-      </div>
-
-      <div className="year-nav">
-        <button className="month-arrow" onClick={() => setYear((y) => y - 1)} aria-label="Ano anterior">
-          <ChevronLeftIcon />
-        </button>
-        <span className="month-label">{year}</span>
-        <button className="month-arrow" onClick={() => setYear((y) => y + 1)} aria-label="Próximo ano">
-          <ChevronRightIcon />
-        </button>
       </div>
 
       {loading && !summary ? (
@@ -105,148 +104,189 @@ export function InvestmentsPage() {
       ) : error ? (
         <div className="alert alert-error">{error}</div>
       ) : summary ? (
-        <motion.div className="overview-grid" variants={overviewContainer} initial="hidden" animate="show">
-          <motion.div className="stat-card overview-item" variants={overviewItem}>
-            <span className="stat-label">Saldo total investido</span>
-            <span className="stat-value">{formatCurrency(summary.totalBalance)}</span>
-          </motion.div>
-          <motion.div className="stat-card overview-item" variants={overviewItem}>
-            <span className="stat-label">Aportes no ano</span>
-            <span className="stat-value">{formatCurrency(summary.totals.contributedYear)}</span>
-          </motion.div>
-          <motion.div className="stat-card overview-item" variants={overviewItem}>
-            <span className="stat-label">Resgates no ano</span>
-            <span className="stat-value">{formatCurrency(summary.totals.withdrawnYear)}</span>
-          </motion.div>
-          <motion.div className="stat-card overview-item" variants={overviewItem}>
-            <span className="stat-label">Aporte líquido no ano</span>
-            <span
-              className="stat-value"
-              style={{ color: summary.totals.netYear >= 0 ? 'var(--ok)' : 'var(--over)' }}
-            >
-              {formatCurrency(summary.totals.netYear)}
-            </span>
+        <motion.div className="ms-stack" variants={overviewContainer} initial="hidden" animate="show">
+          <motion.div className="ms-sources ms-sources-4" variants={overviewItem}>
+            <div className="ms-card ms-source">
+              <span className="ms-label">Saldo investido</span>
+              <span className="ms-source-value">{formatCurrency(summary.totalBalance)}</span>
+              <span className="ms-muted">total acumulado</span>
+            </div>
+            <div className="ms-card ms-source">
+              <span className="ms-label">Aportes</span>
+              <span className="ms-source-value" style={{ color: 'var(--ok)' }}>
+                {formatCurrency(summary.totals.contributedYear)}
+              </span>
+              <span className="ms-muted">em {year}</span>
+            </div>
+            <div className="ms-card ms-source">
+              <span className="ms-label">Resgates</span>
+              <span className="ms-source-value" style={{ color: 'var(--over)' }}>
+                {formatCurrency(summary.totals.withdrawnYear)}
+              </span>
+              <span className="ms-muted">em {year}</span>
+            </div>
+            <div className="ms-card ms-source">
+              <span className="ms-label">Aporte líquido</span>
+              <span
+                className="ms-source-value"
+                style={{ color: summary.totals.netYear >= 0 ? 'var(--ok)' : 'var(--over)' }}
+              >
+                {formatCurrency(summary.totals.netYear)}
+              </span>
+              <span className="ms-muted">aportes − resgates</span>
+            </div>
           </motion.div>
 
-          {/* Aportes x resgates por mês */}
-          <motion.section className="card overview-item overview-span-2" variants={overviewItem}>
-            <div className="section-head">
-              <h3 className="section-title">Aportes e resgates por mês</h3>
-              <span className="hint">{summary.totals.entryCount} lançamentos no total</span>
-            </div>
-            <div className="chart">
-              {summary.months.map((m) => {
-                const contribH = (m.contributed / maxMonthValue) * 100;
-                const withdrawH = (m.withdrawn / maxMonthValue) * 100;
-                return (
-                  <div
-                    key={m.month}
-                    className="chart-col"
-                    title={`${monthShort(m.month)}: aporte ${formatCurrency(m.contributed)}, resgate ${formatCurrency(m.withdrawn)}`}
-                  >
-                    <div className="chart-bars">
-                      <div className="chart-income" style={{ height: `${contribH}%` }} />
-                      {m.withdrawn > 0 && (
-                        <div className="chart-spent over" style={{ height: `${withdrawH}%` }} />
-                      )}
-                    </div>
-                    <span className="chart-label">{monthShort(m.month)}</span>
+          <div className="ms-grid-main-side">
+            <div className="ms-stack">
+              {/* Aportes x resgates por mês */}
+              <motion.section className="ms-card" variants={overviewItem}>
+                <div className="ms-card-head">
+                  <h3 className="ms-card-title">Aportes e resgates por mês</h3>
+                  <div className="ms-card-actions">
+                    <span className="ms-muted">{summary.totals.entryCount} lançamentos</span>
                   </div>
-                );
-              })}
-            </div>
-            <div className="chart-legend">
-              <span>
-                <i className="legend-box income" /> Aporte
-              </span>
-              <span>
-                <i className="legend-box" style={{ background: 'var(--over)' }} /> Resgate
-              </span>
-            </div>
-          </motion.section>
-
-          {/* Saldo por tipo */}
-          {summary.byType.length > 0 && (
-            <motion.section className="card overview-item overview-span-2" variants={overviewItem}>
-              <h3 className="section-title">Saldo por tipo</h3>
-              <ul className="cat-list">
-                {summary.byType.map((t) => {
-                  const pct = summary.totalBalance > 0 ? (t.amount / summary.totalBalance) * 100 : 0;
-                  return (
-                    <li key={t.type} className="cat-row">
-                      <div className="cat-head">
-                        <span className="cat-dot" style={{ background: INVESTMENT_TYPE_COLOR[t.type] }} />
-                        <span className="cat-name">{INVESTMENT_TYPE_LABEL[t.type]}</span>
-                        <span className="cat-value">{formatCurrency(t.amount)}</span>
-                      </div>
-                      <div className="cat-bar">
-                        <div
-                          className="cat-bar-fill"
-                          style={{ width: `${Math.max(0, pct)}%`, background: INVESTMENT_TYPE_COLOR[t.type] }}
-                        />
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </motion.section>
-          )}
-
-          {/* Histórico de lançamentos */}
-          <motion.section className="card overview-item overview-span-2" variants={overviewItem}>
-            <h3 className="section-title">Lançamentos ({investments.length})</h3>
-            {investments.length === 0 ? (
-              <p className="empty">Nenhum investimento lançado ainda.</p>
-            ) : (
-              <ul className="exp-list">
-                <AnimatePresence initial={false}>
-                  {investments.map((inv) => (
-                    <motion.li
-                      key={inv.id}
-                      className="exp-row"
-                      layout
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={springSmooth}
-                      style={{ overflow: 'hidden' }}
-                    >
-                      <span className="exp-dot" style={{ background: INVESTMENT_TYPE_COLOR[inv.type] }} />
-                      <div className="exp-main">
-                        <span className="exp-desc">
-                          {inv.description}
-                          <span className={`tag ${inv.kind === 'APORTE' ? 'tag-income' : ''}`}>
-                            {inv.kind === 'APORTE' ? 'aporte' : 'resgate'}
-                          </span>
-                        </span>
-                        <span className="exp-meta">
-                          {formatDayMonth(inv.date)} · {INVESTMENT_TYPE_LABEL[inv.type]}
-                        </span>
-                      </div>
-                      <span
-                        className={`exp-amount ${inv.kind === 'APORTE' ? 'exp-amount-pos' : 'exp-amount-neg'}`}
+                </div>
+                <div className="ms-card-body">
+                  <div className="ms-bars">
+                    {summary.months.map((m) => (
+                      <div
+                        key={m.month}
+                        className="ms-bar-col"
+                        title={`${monthShort(m.month)}: aporte ${formatCurrency(m.contributed)}, resgate ${formatCurrency(m.withdrawn)}`}
                       >
-                        {inv.kind === 'APORTE' ? '+' : '−'}
-                        {formatCurrency(inv.amount)}
-                      </span>
-                      <div className="exp-actions">
-                        <button
-                          className="icon-btn"
-                          title="Editar"
-                          onClick={() => setModal({ kind: 'edit', investment: inv })}
-                        >
-                          <EditIcon />
-                        </button>
-                        <button className="icon-btn" title="Excluir" onClick={() => handleDelete(inv.id)}>
-                          <TrashIcon />
-                        </button>
+                        <div className="ms-bar-track ms-bar-track-pair">
+                          <div
+                            className="ms-bar-fill ms-bar-in"
+                            style={{ height: `${(m.contributed / maxMonthValue) * 100}%` }}
+                          />
+                          <div
+                            className="ms-bar-fill ms-bar-out"
+                            style={{ height: `${(m.withdrawn / maxMonthValue) * 100}%` }}
+                          />
+                        </div>
+                        <span className="ms-bar-label">{monthShort(m.month)}</span>
                       </div>
-                    </motion.li>
-                  ))}
-                </AnimatePresence>
-              </ul>
+                    ))}
+                  </div>
+                  <div className="ms-invoice-legend" style={{ marginTop: 14 }}>
+                    <span>
+                      <i className="ms-dot" style={{ background: 'var(--ok)' }} />
+                      Aporte
+                    </span>
+                    <span>
+                      <i className="ms-dot" style={{ background: 'var(--over)' }} />
+                      Resgate
+                    </span>
+                  </div>
+                </div>
+              </motion.section>
+
+              {/* Histórico de lançamentos */}
+              <motion.section className="ms-card" variants={overviewItem}>
+                <div className="ms-card-head">
+                  <h3 className="ms-card-title">Lançamentos</h3>
+                  <span className="ms-muted">{investments.length}</span>
+                </div>
+                {investments.length === 0 ? (
+                  <p className="empty">Nenhum investimento lançado ainda.</p>
+                ) : (
+                  <AnimatePresence initial={false}>
+                    {investments.map((inv) => {
+                      const aporte = inv.kind === 'APORTE';
+                      return (
+                        <motion.div
+                          key={inv.id}
+                          className="ms-ledger-row"
+                          layout
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={springSmooth}
+                          style={{ overflow: 'hidden' }}
+                        >
+                          <BrandIcon
+                            description={inv.description}
+                            fallbackColor={INVESTMENT_TYPE_COLOR[inv.type]}
+                            size={32}
+                          />
+                          <span className="ms-ledger-main">
+                            <span className="ms-ledger-title">
+                              {inv.description}
+                              <span className="ms-ledger-badge">{aporte ? 'Aporte' : 'Resgate'}</span>
+                            </span>
+                            <span className="ms-ledger-meta">
+                              <span style={{ color: INVESTMENT_TYPE_COLOR[inv.type] }}>
+                                {INVESTMENT_TYPE_LABEL[inv.type]}
+                              </span>
+                              <span className="ms-ledger-sep">·</span>
+                              {formatDayMonth(inv.date)}
+                            </span>
+                          </span>
+                          <span className={`ms-ledger-amount${aporte ? ' ms-pos' : ''}`}>
+                            {aporte ? '+' : '−'}
+                            {formatCurrency(inv.amount)}
+                          </span>
+                          <span className="ms-row-actions">
+                            <button
+                              className="ms-icon-btn"
+                              title="Editar"
+                              onClick={() => setModal({ kind: 'edit', investment: inv })}
+                            >
+                              <EditIcon />
+                            </button>
+                            <button
+                              className="ms-icon-btn"
+                              title="Excluir"
+                              onClick={() => handleDelete(inv.id)}
+                            >
+                              <TrashIcon />
+                            </button>
+                          </span>
+                        </motion.div>
+                      );
+                    })}
+                  </AnimatePresence>
+                )}
+              </motion.section>
+            </div>
+
+            {/* Saldo por tipo */}
+            {summary.byType.length > 0 && (
+              <motion.section className="ms-card" variants={overviewItem}>
+                <div className="ms-card-head">
+                  <h3 className="ms-card-title">Saldo por tipo</h3>
+                </div>
+                <div className="ms-card-body ms-stack" style={{ gap: 14 }}>
+                  {summary.byType.map((t) => {
+                    const pct = summary.totalBalance > 0 ? (t.amount / summary.totalBalance) * 100 : 0;
+                    return (
+                      <div key={t.type} className="ms-type-row">
+                        <div className="ms-type-head">
+                          <span
+                            className="ms-legend-dot"
+                            style={{ margin: 0, background: INVESTMENT_TYPE_COLOR[t.type] }}
+                          />
+                          <span className="ms-type-name">{INVESTMENT_TYPE_LABEL[t.type]}</span>
+                          <span className="ms-type-pct">{pct.toFixed(0)}%</span>
+                          <span className="ms-type-value">{formatCurrency(t.amount)}</span>
+                        </div>
+                        <div className="ms-type-bar">
+                          <div
+                            className="ms-type-bar-fill"
+                            style={{
+                              width: `${Math.max(0, pct)}%`,
+                              background: INVESTMENT_TYPE_COLOR[t.type],
+                            }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </motion.section>
             )}
-          </motion.section>
+          </div>
         </motion.div>
       ) : null}
 

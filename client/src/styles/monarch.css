@@ -1163,6 +1163,206 @@ body {
 /* Historico curto: linhas mais apertadas que a lista completa */
 .ms-row-tight { padding-top: 7px; padding-bottom: 7px; }
 
+/* Faixa de controles no topo de uma aba: filtro/periodo a esquerda, acao a
+   direita. Substitui o par titulo + section-head do layout antigo. */
+.ms-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+/* Dentro da toolbar o seletor de ano perde o "margin: 0 auto" que o centrava
+   sozinho numa linha inteira. */
+.ms-toolbar .year-nav { margin: 0; }
+
+/* Faixa de quatro indicadores (Investimentos) */
+.ms-sources-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 880px) {
+  .ms-sources-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+/* Barras de duas series lado a lado: aporte e resgate no mesmo mes. */
+.ms-bar-track-pair { gap: 3px; }
+.ms-bar-track-pair .ms-bar-fill { flex: 1; min-width: 0; }
+.ms-bar-in { background: var(--ok); }
+.ms-bar-out { background: var(--over); }
+
+/* Saldo por tipo: nome + percentual + valor, com a barra de participacao. */
+.ms-type-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+.ms-type-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ms-type-pct { font-size: 12px; color: var(--text-faint); font-variant-numeric: tabular-nums; }
+.ms-type-value {
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.ms-type-bar {
+  height: 6px;
+  border-radius: 99px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.ms-type-bar-fill { height: 100%; border-radius: 99px; min-width: 2px; }
+
+/* =========================================================================
+   Assinaturas — logo da marca + valor mensal
+   ========================================================================= */
+.ms-brand {
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+/* Sem marca no catalogo: circulo com a inicial, na cor da categoria. */
+.ms-brand-fallback { font-size: 13px; font-weight: 600; }
+
+.ms-sub-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+}
+.ms-sub-row:hover { background: var(--surface-3); }
+
+.ms-sub-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
+.ms-sub-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ms-sub-meta { font-size: 12px; color: var(--text-muted); }
+.ms-sub-amount {
+  flex-shrink: 0;
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+/* =========================================================================
+   Lista de lancamentos
+   Duas linhas por item: descricao em cima, contexto embaixo. Cinco colunas
+   lado a lado deixavam o olho sem saber onde pousar.
+   ========================================================================= */
+.ms-ledger-group + .ms-ledger-group { margin-top: 4px; }
+
+.ms-ledger-group-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 16px;
+  background: var(--surface-3);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.ms-ledger-group-date { font-size: 13px; font-weight: 600; color: var(--text); }
+.ms-ledger-group-count { font-size: 12px; color: var(--text-faint); }
+.ms-ledger-group-total {
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+.ms-ledger-group-total.ms-pos { color: var(--ok); }
+
+.ms-ledger-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+}
+.ms-ledger-group-head + .ms-ledger-row { border-top: none; }
+.ms-ledger-row:hover { background: var(--surface-3); }
+
+/* Barrinha da cor da categoria: ancora a linha sem pedir atencao. */
+.ms-ledger-dot {
+  width: 3px;
+  align-self: stretch;
+  border-radius: 99px;
+  flex-shrink: 0;
+}
+
+.ms-ledger-main {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.ms-ledger-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+}
+.ms-ledger-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+  min-width: 0;
+}
+.ms-ledger-meta > span { white-space: nowrap; }
+.ms-ledger-sep { color: var(--border-strong); }
+
+/* Fixa / Parcela 2/10 / Recorrente */
+.ms-ledger-badge {
+  flex-shrink: 0;
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0.01em;
+}
+
+.ms-ledger-amount {
+  flex-shrink: 0;
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.ms-ledger-amount.ms-pos { color: var(--ok); }
+
+@media (max-width: 640px) {
+  .ms-ledger-row { padding: 11px 12px; gap: 10px; }
+  .ms-ledger-group-head { padding: 9px 12px; }
+  .ms-ledger-title { font-size: 13.5px; }
+}
+
 /* Marcador de categoria na linha da agenda */
 .ms-row-flag { width: 3px; align-self: stretch; border-radius: 99px; flex-shrink: 0; }
 

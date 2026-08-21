@@ -6,11 +6,9 @@ import { DashboardPage } from './pages/dashboard/DashboardPage';
 import { FinancasPage } from './pages/financas/FinancasPage';
 import { ResumoTab } from './pages/financas/ResumoTab';
 import { LancamentosTab } from './pages/financas/LancamentosTab';
-import { CategoriasTab } from './pages/financas/CategoriasTab';
 import { RecorrentesPage } from './pages/recorrentes/RecorrentesPage';
 import { FixasTab } from './pages/recorrentes/FixasTab';
 import { ParcelamentosTab } from './pages/recorrentes/ParcelamentosTab';
-import { ReportsPage } from './pages/ReportsPage';
 import { InvestmentsPage } from './pages/InvestmentsPage';
 import { SaudePage } from './pages/SaudePage';
 import { StudiesShell } from './pages/estudos/StudiesShell';
@@ -65,14 +63,20 @@ export default function App() {
           <Route path="/financas" element={<FinancasPage />}>
             <Route index element={<ResumoTab />} />
             <Route path="lancamentos" element={<LancamentosTab />} />
-            <Route path="categorias" element={<CategoriasTab />} />
           </Route>
-          <Route path="/recorrentes" element={<RecorrentesPage />}>
+          <Route path="/financas/recorrentes" element={<RecorrentesPage />}>
             <Route index element={<FixasTab />} />
             <Route path="parcelamentos" element={<ParcelamentosTab />} />
           </Route>
-          <Route path="/relatorios" element={<ReportsPage />} />
-          <Route path="/investimentos" element={<InvestmentsPage />} />
+          <Route path="/financas/investimentos" element={<InvestmentsPage />} />
+
+          {/* Recorrentes e Investimentos viraram abas de Finanças; Relatórios saiu. */}
+          <Route path="/recorrentes/*" element={<Navigate to="/financas/recorrentes" replace />} />
+          <Route path="/investimentos" element={<Navigate to="/financas/investimentos" replace />} />
+          <Route path="/relatorios" element={<Navigate to="/financas" replace />} />
+          <Route path="/financas/relatorios" element={<Navigate to="/financas" replace />} />
+          {/* Categorias virou um card dentro do Resumo. */}
+          <Route path="/financas/categorias" element={<Navigate to="/financas" replace />} />
           <Route path="/ajustes" element={<AjustesPage />} />
           <Route path="/saude" element={<SaudePage />} />
           <Route path="/agenda" element={<StudiesShell />}>

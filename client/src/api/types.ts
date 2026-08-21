@@ -143,46 +143,6 @@ export interface MonthlyReport {
   months: { month: number; spent: number; budget: number }[];
 }
 
-export interface ReportsOverviewMonth {
-  month: number;
-  spent: number;
-  budget: number;
-  income: number;
-  fixed: number;
-}
-
-export interface ReportsOverviewCategory {
-  categoryId: string | null;
-  categoryName: string;
-  color: string;
-  spent: number;
-  percent: number;
-}
-
-export interface ReportsTopExpense {
-  id: string;
-  description: string;
-  amount: number;
-  date: string;
-  categoryName: string;
-}
-
-export interface ReportsOverview {
-  year: number;
-  months: ReportsOverviewMonth[];
-  byCategory: ReportsOverviewCategory[];
-  topExpenses: ReportsTopExpense[];
-  totals: {
-    spentYear: number;
-    incomeYear: number;
-    avgMonthlySpent: number;
-    savingsRate: number;
-    recurringMonthlyAvg: number;
-    expenseCount: number;
-    monthsOverBudget: number;
-  };
-}
-
 export interface ChatPreview {
   description: string;
   amount: number;

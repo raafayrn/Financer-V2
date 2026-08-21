@@ -1,6 +1,9 @@
+import { Link } from 'react-router-dom';
+import { BrandIcon } from '../../components/BrandIcon';
 import { ChatBox } from '../../components/ChatBox';
 import { EditIcon } from '../../components/icons';
 import { formatCurrency, monthShort } from '../../utils/format';
+import { GastoPorCategoria } from './GastoPorCategoria';
 import { useFinancas } from './context';
 
 const STATUS_MESSAGE: Record<string, string> = {
@@ -20,7 +23,19 @@ function SummaryRow({ label, value, strong }: { label: string; value: string; st
 }
 
 export function ResumoTab() {
-  const { summary, trend, year, month, openModal, reload, walletAccountId } = useFinancas();
+  const { summary, trend, year, month, expenses, categoryById, openModal, reload, walletAccountId } =
+    useFinancas();
+
+  // Assinaturas = despesas fixas cuja categoria se chama "Assinaturas". Sai do
+  // que já está carregado, sem requisição nova.
+  const subscriptions = expenses
+    .filter((e) => {
+      if (!e.recurringExpenseId && !e.recurring) return false;
+      const cat = e.categoryId ? categoryById.get(e.categoryId) : undefined;
+      return cat ? /assinatura/i.test(cat.name) : false;
+    })
+    .sort((a, b) => b.amount - a.amount);
+  const subscriptionsTotal = subscriptions.reduce((acc, e) => acc + e.amount, 0);
 
   const totalAvailable = summary.income.total + summary.walletBalance;
   // VR e Salário restantes (a Carteira já é sempre líquida). O salário funciona
@@ -84,6 +99,9 @@ export function ResumoTab() {
           </div>
         </section>
 
+        {/* Para onde o dinheiro foi — era a aba Categorias */}
+        <GastoPorCategoria />
+
         {/* Assistente: lançar por texto/foto ou perguntar sobre os gastos */}
         <ChatBox
           onSaved={reload}
@@ -128,6 +146,35 @@ export function ResumoTab() {
             </div>
           </div>
         </section>
+
+        {subscriptions.length > 0 && (
+          <section className="ms-card">
+            <div className="ms-card-head">
+              <div>
+                <h3 className="ms-card-title">Assinaturas</h3>
+                <span className="ms-muted">{formatCurrency(subscriptionsTotal)} por mês</span>
+              </div>
+              <div className="ms-card-actions">
+                <Link className="ms-btn ms-btn-ghost" to="/financas/recorrentes">
+                  Gerenciar
+                </Link>
+              </div>
+            </div>
+            {subscriptions.map((sub) => {
+              const cat = sub.categoryId ? categoryById.get(sub.categoryId) : undefined;
+              return (
+                <div key={sub.id} className="ms-sub-row">
+                  <BrandIcon description={sub.description} fallbackColor={cat?.color} />
+                  <span className="ms-sub-main">
+                    <span className="ms-sub-name">{sub.description}</span>
+                    <span className="ms-sub-meta">Todo mês</span>
+                  </span>
+                  <span className="ms-sub-amount">{formatCurrency(sub.amount)}</span>
+                </div>
+              );
+            })}
+          </section>
+        )}
 
         <section className="ms-card">
           <div className="ms-card-head">

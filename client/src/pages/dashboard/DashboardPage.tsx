@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../../api/client';
+import { BrandIcon } from '../../components/BrandIcon';
 import type {
   Account,
   AgendaEvent,
@@ -318,6 +319,11 @@ export function DashboardPage() {
           ) : (
             recentEntries.map((entry) => (
               <div key={`${entry.kind}-${entry.id}`} className="ms-row ms-row-tight">
+                <BrandIcon
+                  description={entry.description}
+                  fallbackColor={entry.kind === 'income' ? 'var(--ok)' : undefined}
+                  size={26}
+                />
                 <span className="ms-row-name">
                   {entry.description}
                   <span className="ms-row-sub">{formatDayMonth(entry.date)}</span>
