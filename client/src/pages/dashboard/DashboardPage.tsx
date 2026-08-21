@@ -4,7 +4,6 @@ import { api } from '../../api/client';
 import type {
   Account,
   AgendaEvent,
-  BodyMetric,
   Category,
   Expense,
   ExpenseInput,
@@ -13,8 +12,6 @@ import type {
   StudiesOverview,
   Summary,
   WaterDay,
-  WorkoutSummary,
-  WorkoutToday,
 } from '../../api/types';
 import { useMonth } from '../../context/MonthContext';
 import { formatCurrency, formatDayMonth, todayIso } from '../../utils/format';
@@ -28,7 +25,7 @@ import {
 } from '../../lib/studies';
 import { ExpenseFormModal } from '../../components/ExpenseFormModal';
 import { IncomeFormModal } from '../../components/IncomeFormModal';
-import { EyeIcon, EyeOffIcon } from '../../components/icons';
+import { EyeIcon, EyeOffIcon, PlusIcon } from '../../components/icons';
 
 function formatMl(ml: number): string {
   if (ml >= 1000) return `${(ml / 1000).toFixed(1).replace('.', ',')} L`;
@@ -54,33 +51,38 @@ interface DashboardData {
   categories: Category[];
   accounts: Account[];
   waterDay: WaterDay | null;
-  workoutToday: WorkoutToday | null;
-  workoutSummary: WorkoutSummary | null;
-  bodyMetrics: BodyMetric[];
   studies: StudiesOverview | null;
   agendaEvents: AgendaEvent[];
 }
 
-/** Bloco de label + número, repetido nas faixas de resumo. */
-function Tile({
+/** Saldo de uma fonte de dinheiro (salário, VR, carteira). */
+function SourceTile({
   label,
   value,
   hint,
-  color,
+  negative,
 }: {
   label: string;
   value: string;
   hint?: string;
-  color?: string;
+  negative?: boolean;
 }) {
   return (
-    <div className="ms-card ms-tile">
+    <div className="ms-card ms-source">
       <span className="ms-label">{label}</span>
-      <span className="ms-value" style={color ? { color } : undefined}>
+      <span className="ms-source-value" style={negative ? { color: 'var(--over)' } : undefined}>
         {value}
       </span>
       {hint && <span className="ms-muted">{hint}</span>}
     </div>
+  );
+}
+
+function MinusIcon() {
+  return (
+    <svg viewBox="0 0 24 24" strokeWidth="2.4" strokeLinecap="round">
+      <path d="M5 12h14" />
+    </svg>
   );
 }
 
@@ -94,9 +96,6 @@ export function DashboardPage() {
     categories: [],
     accounts: [],
     waterDay: null,
-    workoutToday: null,
-    workoutSummary: null,
-    bodyMetrics: [],
     studies: null,
     agendaEvents: [],
   });
@@ -109,44 +108,18 @@ export function DashboardPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [
-      summary,
-      expenses,
-      incomes,
-      categories,
-      accounts,
-      waterDay,
-      workoutToday,
-      workoutSummary,
-      bodyMetrics,
-      studies,
-      agendaEvents,
-    ] = await Promise.all([
-      api.getSummary(year, month).catch(() => null),
-      api.listExpenses(year, month).catch((): Expense[] => []),
-      api.listIncome(year, month).catch((): Income[] => []),
-      api.listCategories().catch((): Category[] => []),
-      api.listAccounts().catch((): Account[] => []),
-      api.getWaterDay(todayIso()).catch(() => null),
-      api.getWorkoutToday().catch(() => null),
-      api.getWorkoutSummary().catch(() => null),
-      api.listBodyMetrics().catch((): BodyMetric[] => []),
-      api.getStudiesOverview().catch(() => null),
-      api.listAgendaEvents().catch((): AgendaEvent[] => []),
-    ]);
-    setData({
-      summary,
-      expenses,
-      incomes,
-      categories,
-      accounts,
-      waterDay,
-      workoutToday,
-      workoutSummary,
-      bodyMetrics,
-      studies,
-      agendaEvents,
-    });
+    const [summary, expenses, incomes, categories, accounts, waterDay, studies, agendaEvents] =
+      await Promise.all([
+        api.getSummary(year, month).catch(() => null),
+        api.listExpenses(year, month).catch((): Expense[] => []),
+        api.listIncome(year, month).catch((): Income[] => []),
+        api.listCategories().catch((): Category[] => []),
+        api.listAccounts().catch((): Account[] => []),
+        api.getWaterDay(todayIso()).catch(() => null),
+        api.getStudiesOverview().catch(() => null),
+        api.listAgendaEvents().catch((): AgendaEvent[] => []),
+      ]);
+    setData({ summary, expenses, incomes, categories, accounts, waterDay, studies, agendaEvents });
     setLoading(false);
   }, [year, month]);
 
@@ -183,19 +156,8 @@ export function DashboardPage() {
   }
   const mask = (value: string) => (hideValues ? '••••' : value);
 
-  const {
-    summary,
-    expenses,
-    incomes,
-    categories,
-    accounts,
-    waterDay,
-    workoutToday,
-    workoutSummary,
-    bodyMetrics,
-    studies,
-    agendaEvents,
-  } = data;
+  const { summary, expenses, incomes, categories, accounts, waterDay, studies, agendaEvents } =
+    data;
 
   type Entry = {
     id: string;
@@ -209,7 +171,7 @@ export function DashboardPage() {
     ...incomes.map((i) => ({ ...i, kind: 'income' as const })),
   ]
     .sort((a, b) => b.date.localeCompare(a.date))
-    .slice(0, 6)
+    .slice(0, 3)
     .map((e) => ({
       id: e.id,
       description: e.description,
@@ -217,16 +179,6 @@ export function DashboardPage() {
       date: e.date,
       kind: e.kind,
     }));
-
-  const latestWeight =
-    bodyMetrics
-      .filter((m) => m.weightKg !== null)
-      .sort((a, b) => b.date.localeCompare(a.date))[0]?.weightKg ?? null;
-
-  const topPRs = (workoutSummary?.exercises ?? [])
-    .filter((e) => e.pr > 0)
-    .sort((a, b) => b.pr - a.pr)
-    .slice(0, 3);
 
   const subjects = studies?.subjects ?? [];
   const subjectById = (id: string | null) => subjects.find((s) => s.id === id);
@@ -258,10 +210,13 @@ export function DashboardPage() {
   const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
 
   const status = summary?.status ?? 'ok';
-  const salaryLeft =
-    (summary?.income.salary ?? 0) - (summary?.accounts.fixed ?? 0) - (summary?.accounts.variable ?? 0);
+  const fixed = summary?.accounts.fixed ?? 0;
+  const variable = summary?.accounts.variable ?? 0;
+  const invoice = fixed + variable;
+  const fixedPct = invoice > 0 ? (fixed / invoice) * 100 : 0;
+  const salaryLeft = (summary?.income.salary ?? 0) - fixed - variable;
   const voucherLeft = (summary?.income.voucher ?? 0) - (summary?.accounts.foodVoucher ?? 0);
-  const invoice = (summary?.accounts.fixed ?? 0) + (summary?.accounts.variable ?? 0);
+  const wallet = summary?.walletBalance ?? 0;
 
   if (loading) {
     return (
@@ -272,9 +227,9 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="ms-stack">
-      {/* ---------- Faixa financeira ---------- */}
-      <div className="ms-dash-hero">
+    <div className="ms-dash">
+      {/* ================= Coluna do dinheiro ================= */}
+      <div className="ms-stack ms-dash-money">
         <section className={`ms-card ms-hero status-${status}`}>
           <div className="ms-hero-top">
             <span className="ms-label">Ainda posso gastar</span>
@@ -287,217 +242,169 @@ export function DashboardPage() {
             </button>
           </div>
           <span className="ms-hero-value">{mask(formatCurrency(summary?.remaining ?? 0))}</span>
-          <div className="ms-card-footer-actions">
-            <button className="ms-btn" onClick={() => setFinModal('expense')}>
-              − Gasto
+          <span className="ms-hero-status">
+            Renda {mask(formatCurrency(summary?.income.total ?? 0))} · Gastos{' '}
+            {mask(formatCurrency(summary?.totalSpent ?? 0))}
+          </span>
+          <div className="ms-quick-actions">
+            <button className="ms-quick ms-quick-expense" onClick={() => setFinModal('expense')}>
+              <MinusIcon />
+              Gasto
             </button>
-            <button className="ms-btn" onClick={() => setFinModal('income')}>
-              + Receita
+            <button className="ms-quick ms-quick-income" onClick={() => setFinModal('income')}>
+              <PlusIcon />
+              Receita
             </button>
-            <Link className="ms-btn ms-btn-ghost" to="/financas">
-              Ver finanças
-            </Link>
           </div>
         </section>
 
-        <div className="ms-tiles">
-          <Tile
-            label="Renda"
-            value={mask(formatCurrency(summary?.income.total ?? 0))}
-            color="var(--ok)"
-          />
-          <Tile
-            label="Gastos"
-            value={mask(formatCurrency(summary?.totalSpent ?? 0))}
-            color="var(--over)"
-          />
-          <Tile
-            label="Fatura estimada"
-            value={mask(formatCurrency(invoice))}
-            hint={`Fixos ${mask(formatCurrency(summary?.accounts.fixed ?? 0))} · Variáveis ${mask(formatCurrency(summary?.accounts.variable ?? 0))}`}
-          />
-          <Tile
-            label="Salário restante"
+        <div className="ms-sources">
+          <SourceTile
+            label="Salário"
             value={mask(formatCurrency(salaryLeft))}
-            color={salaryLeft < 0 ? 'var(--over)' : undefined}
+            hint="restante"
+            negative={salaryLeft < 0}
           />
-          <Tile label="VR restante" value={mask(formatCurrency(voucherLeft))} />
-          <Tile
+          <SourceTile
+            label="VR"
+            value={mask(formatCurrency(voucherLeft))}
+            hint="restante"
+            negative={voucherLeft < 0}
+          />
+          <SourceTile
             label="Carteira"
-            value={mask(formatCurrency(summary?.walletBalance ?? 0))}
-            color={(summary?.walletBalance ?? 0) < 0 ? 'var(--over)' : undefined}
+            value={mask(formatCurrency(wallet))}
+            hint="saldo"
+            negative={wallet < 0}
           />
         </div>
+
+        <section className="ms-card">
+          <div className="ms-card-head">
+            <h3 className="ms-card-title">Fatura estimada</h3>
+            <div className="ms-card-actions">
+              <span className="ms-invoice-total">{mask(formatCurrency(invoice))}</span>
+            </div>
+          </div>
+          <div className="ms-card-body">
+            <div className="ms-invoice-bar">
+              <span className="ms-invoice-fixed" style={{ width: `${fixedPct}%` }} />
+              <span className="ms-invoice-variable" style={{ width: `${100 - fixedPct}%` }} />
+            </div>
+            <div className="ms-invoice-legend">
+              <span>
+                <i className="ms-dot ms-dot-fixed" />
+                Fixos <b>{mask(formatCurrency(fixed))}</b>
+              </span>
+              <span>
+                <i className="ms-dot ms-dot-variable" />
+                Variáveis <b>{mask(formatCurrency(variable))}</b>
+              </span>
+            </div>
+          </div>
+        </section>
+
+        <section className="ms-card">
+          <div className="ms-card-head">
+            <h3 className="ms-card-title">Últimos lançamentos</h3>
+            <div className="ms-card-actions">
+              <Link className="ms-btn ms-btn-ghost" to="/financas/lancamentos">
+                Ver todos
+              </Link>
+            </div>
+          </div>
+          {recentEntries.length === 0 ? (
+            <p className="empty">Nenhum lançamento este mês.</p>
+          ) : (
+            recentEntries.map((entry) => (
+              <div key={`${entry.kind}-${entry.id}`} className="ms-row ms-row-tight">
+                <span className="ms-row-name">
+                  {entry.description}
+                  <span className="ms-row-sub">{formatDayMonth(entry.date)}</span>
+                </span>
+                <span className={`ms-row-amount${entry.kind === 'income' ? ' ms-pos' : ''}`}>
+                  {hideValues
+                    ? '••••'
+                    : `${entry.kind === 'income' ? '+' : '−'}${formatCurrency(entry.amount)}`}
+                </span>
+              </div>
+            ))
+          )}
+        </section>
+
       </div>
 
-      {/* ---------- Dia a dia: lançamentos e aulas | agenda, provas, tarefas ---------- */}
-      <div className="ms-grid-main-side">
-        <div className="ms-stack">
-          <section className="ms-card">
-            <div className="ms-card-head">
-              <h3 className="ms-card-title">Últimos lançamentos</h3>
-              <div className="ms-card-actions">
-                <Link className="ms-btn" to="/financas/lancamentos">
-                  Ver todos
-                </Link>
-              </div>
+      {/* ================= Trilha do dia ================= */}
+      <div className="ms-stack ms-dash-day">
+        <section className="ms-card">
+          <div className="ms-card-head">
+            <div>
+              <h3 className="ms-card-title">Hoje</h3>
+              <span className="ms-muted">{WEEKDAYS_SHORT[new Date().getDay()]}</span>
             </div>
-            {recentEntries.length === 0 ? (
-              <p className="empty">Nenhum lançamento este mês.</p>
-            ) : (
-              recentEntries.map((entry) => (
-                <div key={`${entry.kind}-${entry.id}`} className="ms-row">
+            <div className="ms-card-actions">
+              <Link className="ms-btn ms-btn-ghost" to="/agenda">
+                Agenda
+              </Link>
+            </div>
+          </div>
+          {todayClasses.length === 0 ? (
+            <p className="empty">Sem aulas hoje.</p>
+          ) : (
+            todayClasses.map((c) => {
+              const [startStr, endStr] = c.time.split('–');
+              const [sh, sm] = startStr.split(':').map(Number);
+              const [eh, em] = endStr.split(':').map(Number);
+              const startMin = sh * 60 + sm;
+              const endMin = eh * 60 + em;
+              const ongoing = nowMinutes >= startMin && nowMinutes < endMin;
+              const done = nowMinutes >= endMin;
+              const subj = subjects.find((s) => s.name === c.name);
+              return (
+                <div key={c.time} className={`ms-row${done ? ' ms-row-muted' : ''}`}>
+                  <span className="ms-row-time">{c.time}</span>
                   <span className="ms-row-name">
-                    {entry.description}
-                    <span className="ms-row-sub">{formatDayMonth(entry.date)}</span>
+                    {c.name}
+                    {subj && <span className="ms-row-sub">{subj.progress}% concluído</span>}
                   </span>
-                  <span
-                    className={`ms-row-amount${entry.kind === 'income' ? ' ms-pos' : ''}`}
-                  >
-                    {hideValues
-                      ? '••••'
-                      : `${entry.kind === 'income' ? '+' : '−'}${formatCurrency(entry.amount)}`}
-                  </span>
+                  {ongoing && <span className="ms-chip ms-chip-ok">Agora</span>}
+                  {done && <span className="ms-chip">Concluída</span>}
                 </div>
-              ))
-            )}
-          </section>
+              );
+            })
+          )}
+        </section>
 
-          <section className="ms-card">
-            <div className="ms-card-head">
-              <div>
-                <h3 className="ms-card-title">Aulas de hoje</h3>
-                <span className="ms-muted">{WEEKDAYS_SHORT[new Date().getDay()]}</span>
-              </div>
-              <div className="ms-card-actions">
-                <Link className="ms-btn" to="/agenda">
-                  Ver agenda
-                </Link>
-              </div>
+        <section className="ms-card">
+          <div className="ms-card-head">
+            <h3 className="ms-card-title">Agenda</h3>
+            <div className="ms-card-actions">
+              <Link className="ms-btn ms-btn-ghost" to="/agenda">
+                Abrir
+              </Link>
             </div>
-            {todayClasses.length === 0 ? (
-              <p className="empty">Sem aulas hoje.</p>
-            ) : (
-              todayClasses.map((c) => {
-                const [startStr, endStr] = c.time.split('–');
-                const [sh, sm] = startStr.split(':').map(Number);
-                const [eh, em] = endStr.split(':').map(Number);
-                const startMin = sh * 60 + sm;
-                const endMin = eh * 60 + em;
-                const ongoing = nowMinutes >= startMin && nowMinutes < endMin;
-                const done = nowMinutes >= endMin;
-                const subj = subjects.find((s) => s.name === c.name);
-                return (
-                  <div key={c.time} className={`ms-row${done ? ' ms-row-muted' : ''}`}>
-                    <span className="ms-row-time">{c.time}</span>
-                    <span className="ms-row-name">
-                      {c.name}
-                      {subj && <span className="ms-row-sub">{subj.progress}% concluído</span>}
-                    </span>
-                    {ongoing && <span className="ms-chip ms-chip-ok">Agora</span>}
-                    {done && <span className="ms-chip">Concluída</span>}
-                  </div>
-                );
-              })
-            )}
-          </section>
-        </div>
-
-        <div className="ms-stack">
-          <section className="ms-card">
-            <div className="ms-card-head">
-              <h3 className="ms-card-title">Agenda</h3>
-              <div className="ms-card-actions">
-                <Link className="ms-btn ms-btn-ghost" to="/agenda">
-                  Abrir
-                </Link>
-              </div>
-            </div>
-            {upcomingEvents.length === 0 ? (
-              <p className="empty">Nenhum evento nos próximos 30 dias.</p>
-            ) : (
-              upcomingEvents.map((ev) => (
-                <div key={ev.id} className="ms-row">
-                  <span
-                    className="ms-row-flag"
-                    style={{ background: CATEGORY_COLORS[ev.category] }}
-                  />
-                  <span className="ms-row-name">
-                    {ev.title}
-                    <span className="ms-row-sub">
-                      {CATEGORY_LABELS[ev.category]}
-                      {ev.time ? ` · ${ev.time}` : ''}
-                    </span>
+          </div>
+          {upcomingEvents.length === 0 ? (
+            <p className="empty">Nenhum evento nos próximos 30 dias.</p>
+          ) : (
+            upcomingEvents.map((ev) => (
+              <div key={ev.id} className="ms-row">
+                <span className="ms-row-flag" style={{ background: CATEGORY_COLORS[ev.category] }} />
+                <span className="ms-row-name">
+                  {ev.title}
+                  <span className="ms-row-sub">
+                    {CATEGORY_LABELS[ev.category]}
+                    {ev.time ? ` · ${ev.time}` : ''}
                   </span>
-                  <span className={`ms-chip${ev.daysLeft <= 1 ? ' ms-chip-danger' : ''}`}>
-                    {shortCountdown(ev.daysLeft)}
-                  </span>
-                </div>
-              ))
-            )}
-          </section>
-
-          <section className="ms-card">
-            <div className="ms-card-head">
-              <h3 className="ms-card-title">Próximas provas</h3>
-            </div>
-            {upcomingExams.length === 0 ? (
-              <p className="empty">Nenhuma prova agendada.</p>
-            ) : (
-              upcomingExams.map((exam) => {
-                const subj = subjectById(exam.subjectId);
-                return (
-                  <div key={exam.id} className="ms-row" onClick={() => navigate('/estudos/provas')}>
-                    <span className="ms-row-name">
-                      {exam.title}
-                      <span className="ms-row-sub">{subj?.name ?? 'Sem matéria'}</span>
-                    </span>
-                    <span className={`ms-chip${exam.daysLeft <= 3 ? ' ms-chip-danger' : ''}`}>
-                      {shortCountdown(exam.daysLeft)}
-                    </span>
-                  </div>
-                );
-              })
-            )}
-          </section>
-
-          <section className="ms-card">
-            <div className="ms-card-head">
-              <h3 className="ms-card-title">Tarefas pendentes</h3>
-              <span className="ms-muted">{studies?.totals.pendingTaskCount ?? 0}</span>
-              <div className="ms-card-actions">
-                <Link className="ms-btn ms-btn-ghost" to="/estudos/tarefas">
-                  Abrir
-                </Link>
+                </span>
+                <span className={`ms-chip${ev.daysLeft <= 1 ? ' ms-chip-danger' : ''}`}>
+                  {shortCountdown(ev.daysLeft)}
+                </span>
               </div>
-            </div>
-            {pendingTasks.length === 0 ? (
-              <p className="empty">Nenhuma tarefa pendente.</p>
-            ) : (
-              pendingTasks.map((task) => {
-                const days = task.dueDate ? daysUntil(task.dueDate) : null;
-                const subj = subjectById(task.subjectId);
-                return (
-                  <div key={task.id} className="ms-row">
-                    <span className="ms-row-name">
-                      {task.title}
-                      <span className="ms-row-sub">{subj?.name ?? 'Sem matéria'}</span>
-                    </span>
-                    {days !== null && (
-                      <span className={`ms-chip${days <= 0 ? ' ms-chip-danger' : ''}`}>
-                        {shortCountdown(days)}
-                      </span>
-                    )}
-                  </div>
-                );
-              })
-            )}
-          </section>
-        </div>
-      </div>
+            ))
+          )}
+        </section>
 
-      {/* ---------- Faixa de saúde ---------- */}
-      <div className="ms-dash-health">
         <section className="ms-card">
           <div className="ms-card-head">
             <h3 className="ms-card-title">Água hoje</h3>
@@ -536,68 +443,71 @@ export function DashboardPage() {
             </div>
           </div>
         </section>
+      </div>
 
+      {/* ================= Estudos ================= */}
+      <div className="ms-stack ms-dash-studies">
         <section className="ms-card">
           <div className="ms-card-head">
-            <div>
-              <h3 className="ms-card-title">Treino de hoje</h3>
-              <span className="ms-muted">
-                {workoutToday?.day
-                  ? `${WEEKDAYS_SHORT[workoutToday.weekday]} — ${workoutToday.day.name}`
-                  : 'Dia de descanso'}
-              </span>
-            </div>
+            <h3 className="ms-card-title">Próximas provas</h3>
             <div className="ms-card-actions">
-              {workoutToday?.session && <span className="ms-chip ms-chip-ok">Feito</span>}
-              <Link className="ms-btn ms-btn-ghost" to="/saude">
+              <Link className="ms-btn ms-btn-ghost" to="/estudos/provas">
                 Abrir
               </Link>
             </div>
           </div>
-          {workoutToday?.day && !workoutToday.session ? (
-            workoutToday.day.exercises.map((ex) => (
-              <div key={ex.id} className="ms-row">
-                <span className="ms-row-name">{ex.name}</span>
-                <span className="ms-row-amount">
-                  {ex.targetSets && ex.targetReps ? `${ex.targetSets}×${ex.targetReps}` : '—'}
-                </span>
-              </div>
-            ))
+          {upcomingExams.length === 0 ? (
+            <p className="empty">Nenhuma prova agendada.</p>
           ) : (
-            <p className="empty">
-              {workoutToday?.session ? 'Treino do dia concluído.' : 'Nada programado para hoje.'}
-            </p>
+            upcomingExams.map((exam) => {
+              const subj = subjectById(exam.subjectId);
+              return (
+                <div key={exam.id} className="ms-row" onClick={() => navigate('/estudos/provas')}>
+                  <span className="ms-row-name">
+                    {exam.title}
+                    <span className="ms-row-sub">{subj?.name ?? 'Sem matéria'}</span>
+                  </span>
+                  <span className={`ms-chip${exam.daysLeft <= 3 ? ' ms-chip-danger' : ''}`}>
+                    {shortCountdown(exam.daysLeft)}
+                  </span>
+                </div>
+              );
+            })
           )}
         </section>
 
-        <div className="ms-stack">
-          <div className="ms-tiles">
-            <Tile
-              label="Semana"
-              value={String(workoutSummary?.thisWeekCount ?? 0)}
-              hint="treinos feitos"
-              color="var(--ok)"
-            />
-            <Tile
-              label="Peso"
-              value={latestWeight != null ? `${String(latestWeight).replace('.', ',')} kg` : '—'}
-              hint="último registro"
-            />
+        <section className="ms-card">
+          <div className="ms-card-head">
+            <h3 className="ms-card-title">Tarefas pendentes</h3>
+            <span className="ms-muted">{studies?.totals.pendingTaskCount ?? 0}</span>
+            <div className="ms-card-actions">
+              <Link className="ms-btn ms-btn-ghost" to="/estudos/tarefas">
+                Abrir
+              </Link>
+            </div>
           </div>
-          {topPRs.length > 0 && (
-            <section className="ms-card">
-              <div className="ms-card-head">
-                <h3 className="ms-card-title">PRs</h3>
-              </div>
-              {topPRs.map((ex) => (
-                <div key={ex.name} className="ms-row">
-                  <span className="ms-row-name">{ex.name}</span>
-                  <span className="ms-row-amount ms-pos">{ex.pr} kg</span>
+          {pendingTasks.length === 0 ? (
+            <p className="empty">Nenhuma tarefa pendente.</p>
+          ) : (
+            pendingTasks.map((task) => {
+              const days = task.dueDate ? daysUntil(task.dueDate) : null;
+              const subj = subjectById(task.subjectId);
+              return (
+                <div key={task.id} className="ms-row">
+                  <span className="ms-row-name">
+                    {task.title}
+                    <span className="ms-row-sub">{subj?.name ?? 'Sem matéria'}</span>
+                  </span>
+                  {days !== null && (
+                    <span className={`ms-chip${days <= 0 ? ' ms-chip-danger' : ''}`}>
+                      {shortCountdown(days)}
+                    </span>
+                  )}
                 </div>
-              ))}
-            </section>
+              );
+            })
           )}
-        </div>
+        </section>
       </div>
 
       {finModal === 'expense' && (
