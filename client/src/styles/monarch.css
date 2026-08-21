@@ -258,7 +258,6 @@ body {
   color: var(--text-muted);
   text-align: left;
   text-decoration: none;
-  transition: background 0.12s, color 0.12s;
 }
 .ms-nav-item svg {
   width: 18px;
@@ -375,7 +374,6 @@ body {
   font-size: 13px;
   font-weight: 500;
   white-space: nowrap;
-  transition: background 0.12s, border-color 0.12s;
 }
 .ms-btn svg {
   width: 15px;
@@ -1055,4 +1053,37 @@ body {
   .ms-cal-pill { font-size: 9px; padding: 1px 3px; }
   .ms-row-time { min-width: 60px; }
   .ms-tile .ms-value { font-size: 19px; }
+}
+
+/* =========================================================================
+   Dashboard — Fase 5
+   ========================================================================= */
+
+/* Faixa financeira: destaque a esquerda, numeros do mes ao lado. */
+.ms-dash-hero { display: grid; grid-template-columns: 1fr; gap: 12px; }
+.ms-hero-top { display: flex; align-items: center; justify-content: space-between; }
+
+/* Faixa de saude: agua, treino e indicadores lado a lado. */
+.ms-dash-health { display: grid; grid-template-columns: 1fr; gap: 16px; align-items: start; }
+
+/* Marcador de categoria na linha da agenda */
+.ms-row-flag { width: 3px; align-self: stretch; border-radius: 99px; flex-shrink: 0; }
+
+.ms-chip-ok { background: var(--ok-bg); color: var(--ok); }
+
+/* Anel de agua */
+.ms-water { display: flex; align-items: center; gap: 14px; }
+.ms-water-ring { position: relative; width: 56px; height: 56px; flex-shrink: 0; }
+.ms-water-pct {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+@media (min-width: 880px) {
+  .ms-dash-hero { grid-template-columns: 320px minmax(0, 1fr); gap: 16px; }
+  .ms-dash-health { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }

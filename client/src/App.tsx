@@ -2,7 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { MonthProvider } from './context/MonthContext';
 import { Layout } from './components/Layout';
-import { HomePage } from './pages/HomePage';
+import { DashboardPage } from './pages/dashboard/DashboardPage';
 import { FinancasPage } from './pages/financas/FinancasPage';
 import { ResumoTab } from './pages/financas/ResumoTab';
 import { LancamentosTab } from './pages/financas/LancamentosTab';
@@ -60,7 +60,7 @@ export default function App() {
     <MonthProvider>
       <Routes>
         <Route element={<Layout />}>
-          <Route path="/" element={<HomePage />} />
+          <Route path="/" element={<DashboardPage />} />
           <Route path="/financas" element={<FinancasPage />}>
             <Route index element={<ResumoTab />} />
             <Route path="lancamentos" element={<LancamentosTab />} />
