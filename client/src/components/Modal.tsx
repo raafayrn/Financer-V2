@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { springSheet } from '../lib/motion';
 
 interface Props {
@@ -15,10 +15,24 @@ interface Props {
  */
 export function Modal({ onCancel, children }: Props) {
   const [show, setShow] = useState(true);
-  const close = () => setShow(false);
+  const fallback = useRef<number | undefined>(undefined);
+
+  // `onExitComplete` do AnimatePresence não é confiável nesta versão do
+  // framer-motion: quando não dispara, o modal fica no DOM com opacidade 0 e o
+  // backdrop continua engolindo cliques. O timer garante o desmonte.
+  const close = () => {
+    setShow(false);
+    fallback.current = window.setTimeout(onCancel, 260);
+  };
+  useEffect(() => () => window.clearTimeout(fallback.current), []);
+
+  function handleExitComplete() {
+    window.clearTimeout(fallback.current);
+    onCancel();
+  }
 
   return (
-    <AnimatePresence onExitComplete={onCancel}>
+    <AnimatePresence onExitComplete={handleExitComplete}>
       {show && (
         <motion.div
           className="modal-backdrop"

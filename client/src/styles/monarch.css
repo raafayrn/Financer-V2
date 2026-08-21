@@ -780,3 +780,200 @@ body {
 
 /* Formulario dentro de card (reaproveita .field do CSS antigo) */
 .ms-card-body .modal-form { display: flex; flex-direction: column; gap: 12px; }
+
+/* =========================================================================
+   Estudos e Agenda — Fase 4
+   ========================================================================= */
+
+/* Faixa de numeros no topo da aba */
+.ms-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+.ms-tile { padding: 14px 16px; display: flex; flex-direction: column; gap: 3px; }
+.ms-tile .ms-value { font-size: 22px; }
+
+/* Horario a esquerda da linha (aulas, eventos) */
+.ms-row-time {
+  flex: 0 0 auto;
+  min-width: 76px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.ms-chip-danger { background: var(--over-bg); color: var(--over); }
+.ms-chip-btn { border: 1px solid transparent; cursor: pointer; }
+.ms-chip-btn.active { border-color: var(--primary); color: var(--primary); background: var(--accent-soft); }
+.ms-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-3);
+}
+
+.ms-progress-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  margin-bottom: 5px;
+}
+
+/* Formulario curto em linha (nova materia, novo assunto) */
+.ms-inline-form { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.ms-inline-form input {
+  flex: 1;
+  min-width: 120px;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--text);
+  font-size: 13px;
+}
+.ms-inline-form input:focus { outline: 2px solid var(--accent-soft); border-color: var(--primary); }
+
+/* ---------- Provas ---------- */
+.ms-exam-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 12px;
+}
+.ms-exam-card {
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  background: var(--surface-3);
+}
+.ms-exam-head { display: flex; align-items: center; width: 100%; }
+.ms-exam-countdown { font-size: 12px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.04em; }
+.ms-exam-countdown.urgent { color: var(--over); }
+.ms-exam-actions { margin-left: auto; display: flex; gap: 2px; opacity: 0; transition: opacity 0.12s; }
+.ms-exam-card:hover .ms-exam-actions { opacity: 1; }
+.ms-exam-title { margin: 0; font-size: 15px; font-weight: 600; }
+.ms-exam-date { font-size: 12px; }
+.ms-exam-notes { margin: 0; font-size: 12px; color: var(--text-muted); }
+
+/* ---------- Materias ---------- */
+.ms-subject-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+.ms-subject-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  background: var(--surface-3);
+}
+.ms-subject-card.open { background: #fff; box-shadow: var(--shadow); }
+.ms-subject-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  border: none;
+  background: none;
+  padding: 0 0 8px;
+  text-align: left;
+}
+.ms-subject-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+.ms-subject-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.ms-subject-name { font-size: 14px; font-weight: 600; }
+.ms-subject-chevron { color: var(--text-faint); display: flex; transition: transform 0.15s; }
+.ms-subject-chevron svg { width: 16px; height: 16px; fill: none; stroke: currentColor; }
+.ms-subject-chevron.open { transform: rotate(180deg); }
+.ms-topic-list { list-style: none; margin: 12px 0 8px; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.ms-topic-row { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.ms-topic-name { flex: 1; }
+.ms-topic-name.done { text-decoration: line-through; color: var(--text-faint); }
+.ms-subject-foot { margin-top: 8px; display: flex; justify-content: flex-end; }
+
+/* ---------- Agenda ---------- */
+.ms-agenda-layout { display: grid; grid-template-columns: 1fr; gap: 16px; align-items: start; }
+
+.ms-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  border-top: 1px solid var(--border);
+}
+.ms-cal-weekday {
+  padding: 8px 4px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  border-bottom: 1px solid var(--border);
+}
+.ms-cal-cell {
+  min-height: 108px;
+  padding: 5px;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  cursor: pointer;
+  background: #fff;
+}
+.ms-cal-cell:nth-child(7n) { border-right: none; }
+.ms-cal-cell:hover { background: var(--surface-3); }
+.ms-cal-cell.empty { background: var(--surface-3); cursor: default; }
+.ms-cal-cell.selected { background: var(--accent-soft); }
+.ms-cal-daynum {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+}
+.ms-cal-cell.today .ms-cal-daynum { background: var(--primary); color: #fff; }
+.ms-cal-pills { display: flex; flex-direction: column; gap: 2px; overflow: hidden; }
+.ms-cal-pill {
+  display: block;
+  width: 100%;
+  border: none;
+  border-radius: 4px;
+  padding: 2px 5px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #fff;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ms-cal-pill.muted {
+  background: transparent;
+  border: 1px solid;
+  font-weight: 500;
+  opacity: 0.75;
+}
+.ms-cal-more { font-size: 10px; font-weight: 600; color: var(--text-faint); padding-left: 5px; }
+
+@media (min-width: 880px) {
+  .ms-agenda-layout { grid-template-columns: minmax(0, 1fr) 320px; }
+}
+
+@media (max-width: 879px) {
+  .ms-cal-cell { min-height: 74px; padding: 3px; }
+  .ms-cal-pill { font-size: 9px; padding: 1px 3px; }
+  .ms-row-time { min-width: 60px; }
+  .ms-tile .ms-value { font-size: 19px; }
+}

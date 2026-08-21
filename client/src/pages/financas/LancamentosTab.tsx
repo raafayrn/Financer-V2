@@ -111,14 +111,7 @@ export function LancamentosTab() {
       const cat = e.categoryId ? categoryById.get(e.categoryId) : undefined;
       const acc = e.accountId ? accountById.get(e.accountId) : undefined;
       return (
-        <motion.div
-          key={`exp-${e.id}`}
-          className="ms-row"
-          layout
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-        >
+        <div key={`exp-${e.id}`} className="ms-row">
           <span
             className="ms-row-avatar"
             style={{ background: `${cat?.color ?? '#94a3b8'}22`, color: cat?.color ?? '#64748b' }}
@@ -153,21 +146,14 @@ export function LancamentosTab() {
               <TrashIcon />
             </button>
           </span>
-        </motion.div>
+        </div>
       );
     }
 
     const i = item.data;
     const acc = i.accountId ? accountById.get(i.accountId) : undefined;
     return (
-      <motion.div
-        key={`inc-${i.id}`}
-        className="ms-row"
-        layout
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-      >
+      <div key={`inc-${i.id}`} className="ms-row">
         <span
           className="ms-row-avatar"
           style={{ background: 'var(--ok-bg)', color: 'var(--ok)' }}
@@ -193,7 +179,7 @@ export function LancamentosTab() {
             <TrashIcon />
           </button>
         </span>
-      </motion.div>
+      </div>
     );
   }
 
@@ -332,11 +318,11 @@ export function LancamentosTab() {
                   {formatCurrency(Math.abs(g.total))}
                 </span>
               </div>
-              <AnimatePresence initial={false}>{g.items.map(renderRow)}</AnimatePresence>
+              {g.items.map(renderRow)}
             </div>
           ))
         ) : (
-          <AnimatePresence initial={false}>{filtered.map(renderRow)}</AnimatePresence>
+          <>{filtered.map(renderRow)}</>
         )}
       </section>
 

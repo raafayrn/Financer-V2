@@ -8,6 +8,7 @@ import {
   BellIcon,
   BookIcon,
   RepeatIcon,
+  CalendarIcon,
   GearIcon,
   GridIcon,
   HeartPulseIcon,
@@ -74,10 +75,22 @@ const NAV: Entry[] = [
       { to: '/recorrentes/parcelamentos', label: 'Parcelamentos' },
     ],
   },
-  { to: '/relatorios', label: 'Relatórios', icon: ChartIcon, mobile: true },
+  { to: '/relatorios', label: 'Relatórios', icon: ChartIcon },
   { to: '/investimentos', label: 'Investimentos', icon: PiggyBankIcon },
+  { to: '/agenda', label: 'Agenda', icon: CalendarIcon, mobile: true },
   { to: '/saude', label: 'Saúde', icon: HeartPulseIcon, mobile: true },
-  { to: '/estudos', label: 'Estudos', icon: BookIcon, mobile: true },
+  {
+    to: '/estudos',
+    label: 'Estudos',
+    icon: BookIcon,
+    mobile: true,
+    tabs: [
+      { to: '/estudos', label: 'Visão geral', end: true },
+      { to: '/estudos/provas', label: 'Provas' },
+      { to: '/estudos/tarefas', label: 'Tarefas' },
+      { to: '/estudos/materias', label: 'Matérias' },
+    ],
+  },
 ];
 
 function entryForPath(pathname: string): Entry {
@@ -194,39 +207,37 @@ export function Layout() {
         </main>
       </div>
 
-      {/* Mobile: drawer com a sidebar inteira + barra inferior com os atalhos */}
-      <AnimatePresence>
-        {drawerOpen && (
-          <>
-            <motion.div
-              className="ms-drawer-backdrop"
-              onClick={() => setDrawerOpen(false)}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            />
-            <motion.aside
-              className="ms-drawer"
-              initial={{ x: '-100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '-100%' }}
-              transition={springSheet}
-            >
-              <div className="ms-sidebar-top">
-                <span className="ms-logo">O</span>
-                {utilities}
-              </div>
-              <NavList activeTo={entry.to} onNavigate={() => setDrawerOpen(false)} />
-              <div className="ms-sidebar-foot">
-                <button className="ms-nav-item">
-                  <HelpIcon />
-                  Ajuda e suporte
-                </button>
-              </div>
-            </motion.aside>
-          </>
-        )}
-      </AnimatePresence>
+      {/* Mobile: drawer com a sidebar inteira + barra inferior com os atalhos.
+          Sem AnimatePresence de propósito: o exit não desmonta de forma
+          confiável aqui, e um backdrop invisível preso bloquearia a tela. */}
+      {drawerOpen && (
+        <>
+          <motion.div
+            className="ms-drawer-backdrop"
+            onClick={() => setDrawerOpen(false)}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          />
+          <motion.aside
+            className="ms-drawer"
+            initial={{ x: '-100%' }}
+            animate={{ x: 0 }}
+            transition={springSheet}
+          >
+            <div className="ms-sidebar-top">
+              <span className="ms-logo">O</span>
+              {utilities}
+            </div>
+            <NavList activeTo={entry.to} onNavigate={() => setDrawerOpen(false)} />
+            <div className="ms-sidebar-foot">
+              <button className="ms-nav-item">
+                <HelpIcon />
+                Ajuda e suporte
+              </button>
+            </div>
+          </motion.aside>
+        </>
+      )}
 
       <nav className="ms-mobile-nav">
         {NAV.filter((e) => e.mobile).map((e) => (

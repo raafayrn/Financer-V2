@@ -13,7 +13,12 @@ import { ParcelamentosTab } from './pages/recorrentes/ParcelamentosTab';
 import { ReportsPage } from './pages/ReportsPage';
 import { InvestmentsPage } from './pages/InvestmentsPage';
 import { SaudePage } from './pages/SaudePage';
-import { EstudosPage } from './pages/EstudosPage';
+import { StudiesShell } from './pages/estudos/StudiesShell';
+import { VisaoGeralTab } from './pages/estudos/VisaoGeralTab';
+import { ProvasTab } from './pages/estudos/ProvasTab';
+import { TarefasTab } from './pages/estudos/TarefasTab';
+import { MateriasTab } from './pages/estudos/MateriasTab';
+import { AgendaPage } from './pages/agenda/AgendaPage';
 
 /**
  * Única tela fora do app: aparece quando a API não respondeu. Não existe tela
@@ -68,7 +73,15 @@ export default function App() {
           <Route path="/relatorios" element={<ReportsPage />} />
           <Route path="/investimentos" element={<InvestmentsPage />} />
           <Route path="/saude" element={<SaudePage />} />
-          <Route path="/estudos" element={<EstudosPage />} />
+          <Route path="/agenda" element={<StudiesShell />}>
+            <Route index element={<AgendaPage />} />
+          </Route>
+          <Route path="/estudos" element={<StudiesShell />}>
+            <Route index element={<VisaoGeralTab />} />
+            <Route path="provas" element={<ProvasTab />} />
+            <Route path="tarefas" element={<TarefasTab />} />
+            <Route path="materias" element={<MateriasTab />} />
+          </Route>
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
