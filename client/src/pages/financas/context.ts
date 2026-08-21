@@ -16,8 +16,7 @@ export type ModalState =
   | { kind: 'income'; defaultAccountId?: string }
   | { kind: 'edit-income'; income: Income }
   | { kind: 'income-sources' }
-  | { kind: 'manage' }
-  | { kind: 'recurring' };
+  | { kind: 'manage' };
 
 /**
  * Estado compartilhado pelas abas (Resumo / Lançamentos / Categorias). Fica no

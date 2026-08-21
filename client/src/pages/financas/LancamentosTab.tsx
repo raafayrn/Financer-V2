@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import type { AccountKind } from '../../api/types';
 import { Dropdown } from '../../components/Dropdown';
 import { EditIcon, FilterIcon, RepeatIcon, TrashIcon } from '../../components/icons';
@@ -203,14 +204,14 @@ export function LancamentosTab() {
           <h3 className="ms-card-title">Lançamentos</h3>
           <span className="ms-muted">{filtered.length}</span>
           <div className="ms-card-actions">
-            <button
+            <Link
               className="ms-btn"
+              to="/recorrentes"
               title="Despesas fixas (lançadas automaticamente todo mês)"
-              onClick={() => openModal({ kind: 'recurring' })}
             >
               <RepeatIcon />
               Fixas
-            </button>
+            </Link>
             <button
               className={`ms-btn${filtersActive ? ' ms-btn-on' : ''}`}
               onClick={() => setFiltersOpen((o) => !o)}

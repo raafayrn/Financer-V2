@@ -7,6 +7,9 @@ import { FinancasPage } from './pages/financas/FinancasPage';
 import { ResumoTab } from './pages/financas/ResumoTab';
 import { LancamentosTab } from './pages/financas/LancamentosTab';
 import { CategoriasTab } from './pages/financas/CategoriasTab';
+import { RecorrentesPage } from './pages/recorrentes/RecorrentesPage';
+import { FixasTab } from './pages/recorrentes/FixasTab';
+import { ParcelamentosTab } from './pages/recorrentes/ParcelamentosTab';
 import { ReportsPage } from './pages/ReportsPage';
 import { InvestmentsPage } from './pages/InvestmentsPage';
 import { SaudePage } from './pages/SaudePage';
@@ -57,6 +60,10 @@ export default function App() {
             <Route index element={<ResumoTab />} />
             <Route path="lancamentos" element={<LancamentosTab />} />
             <Route path="categorias" element={<CategoriasTab />} />
+          </Route>
+          <Route path="/recorrentes" element={<RecorrentesPage />}>
+            <Route index element={<FixasTab />} />
+            <Route path="parcelamentos" element={<ParcelamentosTab />} />
           </Route>
           <Route path="/relatorios" element={<ReportsPage />} />
           <Route path="/investimentos" element={<InvestmentsPage />} />

@@ -7,6 +7,7 @@ import { MonthNavigator } from './MonthNavigator';
 import {
   BellIcon,
   BookIcon,
+  RepeatIcon,
   GearIcon,
   GridIcon,
   HeartPulseIcon,
@@ -61,6 +62,16 @@ const NAV: Entry[] = [
       { to: '/financas', label: 'Resumo', end: true },
       { to: '/financas/lancamentos', label: 'Lançamentos' },
       { to: '/financas/categorias', label: 'Categorias' },
+    ],
+  },
+  {
+    to: '/recorrentes',
+    label: 'Recorrentes',
+    icon: RepeatIcon,
+    month: true,
+    tabs: [
+      { to: '/recorrentes', label: 'Fixas', end: true },
+      { to: '/recorrentes/parcelamentos', label: 'Parcelamentos' },
     ],
   },
   { to: '/relatorios', label: 'Relatórios', icon: ChartIcon, mobile: true },

@@ -741,3 +741,42 @@ body {
   .ms-card-body { padding: 12px; }
   .ms-body { padding-left: 12px; padding-right: 12px; }
 }
+
+/* =========================================================================
+   Recorrentes — Fase 3
+   ========================================================================= */
+
+/* Linha com subtitulo (Todo mes / Parcela 2 de 10) */
+.ms-row-name { display: flex; flex-direction: column; gap: 2px; }
+.ms-row-sub {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ms-row-sub-right { display: block; text-align: right; }
+.ms-row-amount { display: flex; flex-direction: column; gap: 2px; align-items: flex-end; }
+
+/* Fixa pausada continua legivel, mas recuada */
+.ms-row-muted .ms-row-name,
+.ms-row-muted .ms-row-amount { opacity: 0.5; }
+
+/* Barra de progresso do parcelamento */
+.ms-progress {
+  display: block;
+  height: 4px;
+  width: 100%;
+  max-width: 220px;
+  margin-top: 4px;
+  background: var(--surface-2);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.ms-progress-fill { display: block; height: 100%; background: var(--primary); border-radius: 999px; }
+
+/* Titulo do card com subtitulo embaixo */
+.ms-card-head > div > .ms-card-title + .ms-muted { display: block; margin-top: 2px; }
+
+/* Formulario dentro de card (reaproveita .field do CSS antigo) */
+.ms-card-body .modal-form { display: flex; flex-direction: column; gap: 12px; }

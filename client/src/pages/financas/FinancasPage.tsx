@@ -17,7 +17,6 @@ import { ExpenseFormModal } from '../../components/ExpenseFormModal';
 import { IncomeFormModal } from '../../components/IncomeFormModal';
 import { IncomeSourcesModal } from '../../components/IncomeSourcesModal';
 import { ManageModal } from '../../components/ManageModal';
-import { RecurringModal } from '../../components/RecurringModal';
 import type { FinancasCtx, ModalState, TrendPoint } from './context';
 
 /** Últimos `n` meses (mais antigo → mais novo) terminando em (year, month). */
@@ -282,16 +281,6 @@ export function FinancasPage() {
           month={month}
           onCancel={() => setModal({ kind: 'closed' })}
           onCategoriesChanged={() => void load()}
-        />
-      )}
-      {modal.kind === 'recurring' && (
-        <RecurringModal
-          year={year}
-          month={month}
-          categories={categories}
-          accounts={accounts}
-          onCancel={() => setModal({ kind: 'closed' })}
-          onChanged={() => void load()}
         />
       )}
     </>
