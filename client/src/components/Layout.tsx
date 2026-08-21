@@ -96,9 +96,12 @@ const NAV: Entry[] = [
   },
 ];
 
+/** Telas fora da navegação principal, alcançadas pelos ícones do topo. */
+const EXTRA: Entry[] = [{ to: '/ajustes', label: 'Ajustes', icon: GearIcon }];
+
 function entryForPath(pathname: string): Entry {
   if (pathname === '/') return NAV[0];
-  const match = NAV.find((e) => e.to !== '/' && pathname.startsWith(e.to));
+  const match = [...NAV, ...EXTRA].find((e) => e.to !== '/' && pathname.startsWith(e.to));
   return match ?? NAV[0];
 }
 
@@ -172,7 +175,12 @@ export function Layout() {
       >
         {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
       </button>
-      <button className="ms-icon-btn" title="Configurações" aria-label="Configurações">
+      <button
+        className="ms-icon-btn"
+        title="Ajustes"
+        aria-label="Ajustes"
+        onClick={() => navigate('/ajustes')}
+      >
         <GearIcon />
       </button>
     </>

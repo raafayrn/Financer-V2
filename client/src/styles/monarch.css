@@ -1087,3 +1087,8 @@ body {
   .ms-dash-hero { grid-template-columns: 320px minmax(0, 1fr); gap: 16px; }
   .ms-dash-health { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
+
+/* Linhas de configuracao: a acao fica sempre visivel (nao sao alvo de hover) */
+.ms-row-actions-fixed { opacity: 1; }
+.ms-schedule-class { display: flex; flex-direction: column; gap: 1px; margin-bottom: 6px; }
+.ms-schedule-class:last-child { margin-bottom: 0; }

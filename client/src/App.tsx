@@ -19,6 +19,7 @@ import { ProvasTab } from './pages/estudos/ProvasTab';
 import { TarefasTab } from './pages/estudos/TarefasTab';
 import { MateriasTab } from './pages/estudos/MateriasTab';
 import { AgendaPage } from './pages/agenda/AgendaPage';
+import { AjustesPage } from './pages/ajustes/AjustesPage';
 
 /**
  * Única tela fora do app: aparece quando a API não respondeu. Não existe tela
@@ -72,6 +73,7 @@ export default function App() {
           </Route>
           <Route path="/relatorios" element={<ReportsPage />} />
           <Route path="/investimentos" element={<InvestmentsPage />} />
+          <Route path="/ajustes" element={<AjustesPage />} />
           <Route path="/saude" element={<SaudePage />} />
           <Route path="/agenda" element={<StudiesShell />}>
             <Route index element={<AgendaPage />} />
