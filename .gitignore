@@ -40,3 +40,10 @@ coverage/
 
 # TypeScript build cache
 *.tsbuildinfo
+
+# Config do Vite compilado por engano — o fonte é o vite.config.ts. O Vite
+# carrega vite.config.js ANTES do .ts, então um arquivo gerado passa a mandar
+# no lugar do fonte, silenciosamente. A emissão do tsc -b está redirecionada
+# em client/tsconfig.node.json; isto aqui é a segunda barreira.
+client/vite.config.js
+client/vite.config.d.ts

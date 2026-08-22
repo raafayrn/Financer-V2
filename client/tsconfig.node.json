@@ -2,6 +2,13 @@
   "compilerOptions": {
     "composite": true,
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
+    // "composite" obriga a emitir declarações, e um projeto referenciado não
+    // pode usar "noEmit" (TS6310). Sem outDir, o `tsc -b` do build largava
+    // vite.config.js e vite.config.d.ts na raiz — e o Vite carrega
+    // vite.config.js ANTES do .ts, então o gerado passava a mandar no lugar
+    // do fonte. Mandando a emissão para um diretório descartável, o problema
+    // some na origem.
+    "outDir": "./node_modules/.tmp/vite-config",
     "target": "ES2022",
     "lib": ["ES2023"],
     "module": "ESNext",
