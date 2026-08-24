@@ -6,6 +6,7 @@ import type {
   Account,
   AgendaEvent,
   Category,
+  ChatPreview,
   Expense,
   ExpenseInput,
   Income,
@@ -24,6 +25,7 @@ import {
   daysUntil,
   todayIsoStr,
 } from '../../lib/studies';
+import { ChatBox } from '../../components/ChatBox';
 import { ExpenseFormModal } from '../../components/ExpenseFormModal';
 import { IncomeFormModal } from '../../components/IncomeFormModal';
 import { EyeIcon, EyeOffIcon, PlusIcon } from '../../components/icons';
@@ -44,6 +46,12 @@ function shortCountdown(days: number): string {
 const WATER_QUICK_ADD = { label: 'Garrafa', ml: 600 };
 
 type FinModal = 'closed' | 'expense' | 'income';
+
+/** Lote de lançamentos extraídos de uma foto/PDF pelo assistente. */
+interface BatchState {
+  previews: ChatPreview[];
+  index: number;
+}
 
 interface DashboardData {
   summary: Summary | null;
@@ -102,6 +110,7 @@ export function DashboardPage() {
   });
   const [loading, setLoading] = useState(true);
   const [finModal, setFinModal] = useState<FinModal>('closed');
+  const [batch, setBatch] = useState<BatchState | null>(null);
   const [addingWater, setAddingWater] = useState(false);
   const [hideValues, setHideValues] = useState(
     () => localStorage.getItem('hideFinValues') === '1',
@@ -136,6 +145,40 @@ export function DashboardPage() {
   async function handleCreateIncome(input: IncomeInput) {
     await api.createIncome(input);
     setFinModal('closed');
+    await load();
+  }
+
+  // Confirmação em lote (vários lançamentos extraídos de um arquivo no chat),
+  // mesmo fluxo da aba Finanças: revisa um a um ou aceita todos de uma vez.
+  async function handleBatchSubmit(input: ExpenseInput) {
+    await api.createExpense(input);
+    advanceBatch();
+  }
+  function advanceBatch() {
+    setBatch((prev) => {
+      if (!prev) return null;
+      const nextIndex = prev.index + 1;
+      if (nextIndex >= prev.previews.length) {
+        void load();
+        return null;
+      }
+      return { previews: prev.previews, index: nextIndex };
+    });
+  }
+  async function handleAcceptAllBatch() {
+    if (!batch) return;
+    const defaultAccountId = accounts.find((a) => a.kind === 'CREDIT_CARD')?.id ?? null;
+    for (const preview of batch.previews.slice(batch.index)) {
+      await api.createExpense({
+        description: preview.description,
+        amount: preview.amount,
+        date: preview.date,
+        categoryId: preview.categoryId,
+        accountId: defaultAccountId,
+        recurring: preview.recurring,
+      });
+    }
+    setBatch(null);
     await load();
   }
   async function handleAddWater(ml: number) {
@@ -533,6 +576,26 @@ export function DashboardPage() {
           onSubmit={handleCreateIncome}
         />
       )}
+      {batch && (
+        <ExpenseFormModal
+          key={batch.index}
+          title="Confirmar lançamento"
+          progress={`${batch.index + 1} de ${batch.previews.length}`}
+          categories={categories}
+          accounts={accounts}
+          initial={batch.previews[batch.index]}
+          onCancel={() => setBatch(null)}
+          onSubmit={handleBatchSubmit}
+          onSkip={advanceBatch}
+          onAcceptAll={handleAcceptAllBatch}
+        />
+      )}
+
+      {/* Assistente: lançar por texto/foto ou perguntar sobre os gastos */}
+      <ChatBox
+        onSaved={() => void load()}
+        onPreviews={(previews) => setBatch({ previews, index: 0 })}
+      />
     </div>
   );
 }
