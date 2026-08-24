@@ -96,11 +96,29 @@ Acesse **http://localhost:5173**. O Vite faz proxy de `/api` para o backend auto
 Requer apenas Docker. Na raiz do projeto:
 
 ```bash
-# (opcional) exporte a chave da Anthropic para habilitar o chat
-export ANTHROPIC_API_KEY="sk-ant-..."
-export JWT_SECRET="um-segredo-longo-e-aleatorio"
+# 1. Configurar as variáveis lidas pelo compose (arquivo .env na RAIZ,
+#    não confundir com server/.env, que vale só no modo desenvolvimento)
+cp .env.example .env
+#   Edite .env e defina JWT_SECRET (obrigatório — o compose recusa subir sem).
+#   Preencha ANTHROPIC_API_KEY para habilitar o chat.
 
-docker compose up --build
+# 2. Subir
+docker compose up -d --build
+```
+
+O `.env` da raiz é ignorado pelo git, então **cada máquina tem o seu**. Ao dar
+`git pull` numa máquina nova, o chat vem desligado até você preencher
+`ANTHROPIC_API_KEY` lá. Depois de editar o `.env`, recrie os containers para
+que a variável chegue no server:
+
+```bash
+docker compose up -d
+```
+
+Para conferir se o chat subiu habilitado:
+
+```bash
+docker compose logs server | grep "Lançamento por chat"
 ```
 
 - Frontend: **http://localhost:8080**
