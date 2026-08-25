@@ -7,7 +7,7 @@ import { serializeExpense } from '../lib/serialize';
 import { reaisToCents } from '../lib/money';
 import { currentYearMonth, monthRange } from '../lib/month';
 import { readYearMonth } from '../lib/query';
-import { materializeRecurringExpenses, monthIndex } from '../lib/recurring';
+import { markRecurringCleared, materializeRecurringExpenses, monthIndex } from '../lib/recurring';
 import { buildInstallmentPlan } from '../lib/installments';
 import { expenseCreateSchema, expenseUpdateSchema } from '../validation/schemas';
 
@@ -184,6 +184,11 @@ expensesRouter.delete(
     }
 
     await prisma.expense.delete({ where: { id: expense.id } });
+    // Gasto fixo apagado: marca o mês, senão a materialização o recria na
+    // próxima leitura e a exclusão parece não ter funcionado.
+    if (expense.recurringExpenseId) {
+      await markRecurringCleared(prisma, userId, expense.date.getUTCFullYear(), expense.date.getUTCMonth() + 1);
+    }
     res.status(204).end();
   }),
 );

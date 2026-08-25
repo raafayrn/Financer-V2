@@ -395,6 +395,16 @@ export interface Exam {
   subjectId: string | null;
   title: string;
   date: string;
+  /** Bimestre: 1 ou 2 (o curso só tem dois). */
+  term: number | null;
+  notes: string | null;
+}
+
+export interface ExamInput {
+  title: string;
+  date: string;
+  subjectId: string | null;
+  term: number | null;
   notes: string | null;
 }
 

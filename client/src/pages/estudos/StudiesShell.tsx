@@ -55,6 +55,7 @@ export function StudiesShell() {
     title: string;
     date: string;
     subjectId: string | null;
+    term: number | null;
     notes: string | null;
   }) {
     if (examModal?.exam) await api.updateExam(examModal.exam.id, d);

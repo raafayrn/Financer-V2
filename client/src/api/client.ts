@@ -11,6 +11,7 @@ import type {
   ChatMessageResult,
   ChatParseResult,
   Exam,
+  ExamInput,
   ExerciseHistory,
   Expense,
   ExpenseInput,
@@ -176,6 +177,16 @@ export const api = {
   deleteExpense: (id: string, group = false) =>
     request<void>(`/expenses/${id}${group ? '?group=1' : ''}`, { method: 'DELETE' }),
 
+  /**
+   * Limpa de uma vez os lançamentos marcados de um mês (gastos e/ou receitas).
+   * Os ids vão explícitos para apagar exatamente o que a tela mostrou.
+   */
+  clearMonth: (year: number, month: number, expenseIds: string[], incomeIds: string[]) =>
+    request<{ expensesDeleted: number; incomesDeleted: number }>('/cleanup/month', {
+      method: 'POST',
+      body: JSON.stringify({ year, month, expenseIds, incomeIds }),
+    }),
+
   // Despesas fixas (templates que geram uma despesa por mês sozinhos)
   listRecurring: () => request<RecurringExpense[]>('/recurring'),
   createRecurring: (data: RecurringExpenseInput) =>
@@ -331,12 +342,10 @@ export const api = {
   deleteTopic: (id: string) => request<void>(`/studies/topics/${id}`, { method: 'DELETE' }),
 
   listExams: () => request<Exam[]>('/studies/exams'),
-  createExam: (data: { title: string; date: string; subjectId?: string | null; notes?: string | null }) =>
+  createExam: (data: ExamInput) =>
     request<Exam>('/studies/exams', { method: 'POST', body: JSON.stringify(data) }),
-  updateExam: (
-    id: string,
-    data: Partial<{ title: string; date: string; subjectId: string | null; notes: string | null }>,
-  ) => request<Exam>(`/studies/exams/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  updateExam: (id: string, data: Partial<ExamInput>) =>
+    request<Exam>(`/studies/exams/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteExam: (id: string) => request<void>(`/studies/exams/${id}`, { method: 'DELETE' }),
 
   listStudyTasks: () => request<StudyTask[]>('/studies/tasks'),

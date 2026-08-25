@@ -100,7 +100,18 @@ export async function materializeRecurringExpenses(
   month: number,
 ): Promise<number> {
   const templates = await prisma.recurringExpense.findMany({ where: { userId, active: true } });
-  const applicable = templates.filter((t) => appliesToMonth(t, year, month));
+  let applicable = templates.filter((t) => appliesToMonth(t, year, month));
+
+  // Mês com os fixos limpos: só voltam a valer os templates mexidos DEPOIS da
+  // limpeza. Sem esse filtro, apagar um fixo não teria efeito nenhum — ele
+  // renasceria aqui no próximo carregamento do mês.
+  const cleared = await prisma.monthlyRecurringClear.findUnique({
+    where: { userId_year_month: { userId, year, month } },
+  });
+  if (cleared) {
+    applicable = applicable.filter((t) => t.updatedAt > cleared.clearedAt);
+  }
+
   if (applicable.length === 0) return 0;
 
   // Quais templates já têm despesa neste mês? Uma consulta só, sem N+1.
@@ -160,4 +171,26 @@ export async function catchUpRecurringExpenses(
     created += await materializeRecurringExpenses(prisma, userId, m.year, m.month);
   }
   return created;
+}
+
+/**
+ * Marca o mês como "fixos limpos", para que a materialização não recrie o que
+ * o usuário acabou de apagar. Chamada sempre que uma despesa vinda de template
+ * é excluída — no avulso e na limpeza em lote.
+ *
+ * Regrava `clearedAt` a cada chamada: o instante que importa é o da última
+ * exclusão, senão um template editado no meio do caminho voltaria sozinho.
+ */
+export async function markRecurringCleared(
+  prisma: PrismaClient,
+  userId: string,
+  year: number,
+  month: number,
+): Promise<void> {
+  const clearedAt = new Date();
+  await prisma.monthlyRecurringClear.upsert({
+    where: { userId_year_month: { userId, year, month } },
+    create: { userId, year, month, clearedAt },
+    update: { clearedAt },
+  });
 }

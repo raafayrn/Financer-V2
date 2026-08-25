@@ -17,6 +17,7 @@ import { ExpenseFormModal } from '../../components/ExpenseFormModal';
 import { IncomeFormModal } from '../../components/IncomeFormModal';
 import { IncomeSourcesModal } from '../../components/IncomeSourcesModal';
 import { ManageModal } from '../../components/ManageModal';
+import { ClearMonthModal } from '../../components/ClearMonthModal';
 import type { FinancasCtx, ModalState, TrendPoint } from './context';
 
 /** Últimos `n` meses (mais antigo → mais novo) terminando em (year, month). */
@@ -149,6 +150,11 @@ export function FinancasPage() {
     await load();
   }
 
+  async function handleClearMonth(expenseIds: string[], incomeIds: string[]) {
+    await api.clearMonth(year, month, expenseIds, incomeIds);
+    await load();
+  }
+
   async function handleCreateIncome(data: IncomeInput) {
     await api.createIncome(data);
     setModal({ kind: 'closed' });
@@ -273,6 +279,17 @@ export function FinancasPage() {
           initialWalletBase={summary.walletBase}
           onCancel={() => setModal({ kind: 'closed' })}
           onSubmit={handleSaveIncomeSources}
+        />
+      )}
+      {modal.kind === 'clear-month' && (
+        <ClearMonthModal
+          year={year}
+          month={month}
+          expenses={expenses}
+          incomes={incomes}
+          categoryById={new Map(categories.map((c) => [c.id, c]))}
+          onCancel={() => setModal({ kind: 'closed' })}
+          onConfirm={handleClearMonth}
         />
       )}
       {modal.kind === 'manage' && (

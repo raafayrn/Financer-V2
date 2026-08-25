@@ -40,6 +40,7 @@ model User {
   salaries       MonthlySalary[]
   vouchers       MonthlyVoucher[]
   walletBases    MonthlyWalletBase[]
+  recurringClears MonthlyRecurringClear[]
   expenses       Expense[]
   incomes        Income[]
   accounts       Account[]
@@ -167,6 +168,26 @@ model MonthlyWalletBase {
   amount    Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, year, month])
+  @@index([userId])
+}
+
+// Marca que o usuário limpou os gastos fixos de um mês específico.
+//
+// Sem isso, apagar um fixo seria inútil: a materialização automática o
+// recriaria no próximo carregamento do mês (ver materializeRecurringExpenses).
+// Guardar o INSTANTE da limpeza — e não um simples booleano — deixa a porta
+// aberta: um template criado ou editado depois da limpeza volta a valer para
+// o mês, porque a limpeza só apaga o que existia até ali.
+model MonthlyRecurringClear {
+  id        String   @id @default(cuid())
+  userId    String
+  year      Int
+  month     Int
+  clearedAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -538,6 +559,9 @@ model Exam {
   subjectId String?
   title     String
   date      DateTime
+  // Bimestre (1 ou 2). Era texto solto dentro de `notes`, o que impedia
+  // filtrar ou agrupar por bimestre; virou campo pra poder ser dado.
+  term      Int?
   notes     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

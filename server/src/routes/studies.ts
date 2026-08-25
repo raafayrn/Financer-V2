@@ -214,6 +214,7 @@ studiesRouter.post(
         title: data.title,
         date: parseApiDate(data.date),
         subjectId: data.subjectId ?? null,
+        term: data.term ?? null,
         notes: data.notes ?? null,
       },
     });
@@ -235,6 +236,7 @@ studiesRouter.put(
         title: data.title,
         date: data.date !== undefined ? parseApiDate(data.date) : undefined,
         subjectId: data.subjectId,
+        term: data.term,
         notes: data.notes,
       },
     });

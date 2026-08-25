@@ -4,7 +4,8 @@ import { Link } from 'react-router-dom';
 import type { AccountKind } from '../../api/types';
 import { BrandIcon } from '../../components/BrandIcon';
 import { Dropdown } from '../../components/Dropdown';
-import { EditIcon, FilterIcon, RepeatIcon, TrashIcon } from '../../components/icons';
+import { FilterIcon, RepeatIcon, TrashIcon } from '../../components/icons';
+import { RowMenu } from '../../components/RowMenu';
 import { springSheet } from '../../lib/motion';
 import { formatCurrency, monthName } from '../../utils/format';
 import { useFinancas } from './context';
@@ -150,7 +151,10 @@ export function LancamentosTab() {
           <BrandIcon description={e.description} fallbackColor={cat?.color} size={32} />
           <span className="ms-ledger-main">
             <span className="ms-ledger-title">
-              {e.description}
+              <span className="ms-ledger-name">{e.description}</span>
+              {/* O valor anda junto do nome: ler "o quê" e "quanto" numa
+                  varredura só, sem o olho atravessar a linha inteira. */}
+              <span className="ms-ledger-amount ms-neg">−{formatCurrency(e.amount)}</span>
               {badge && (
                 <span className="ms-ledger-badge" title={badge.title}>
                   {badge.label}
@@ -163,15 +167,13 @@ export function LancamentosTab() {
               {acc?.name ?? 'Sem conta'}
             </span>
           </span>
-          <span className="ms-ledger-amount">−{formatCurrency(e.amount)}</span>
-          <span className="ms-row-actions">
-            <button className="ms-icon-btn" title="Editar" onClick={() => openModal({ kind: 'edit', expense: e })}>
-              <EditIcon />
-            </button>
-            <button className="ms-icon-btn" title="Excluir" onClick={() => void deleteExpense(e.id)}>
-              <TrashIcon />
-            </button>
-          </span>
+          <RowMenu
+            ariaLabel={`Ações de ${e.description}`}
+            items={[
+              { label: 'Editar', onSelect: () => openModal({ kind: 'edit', expense: e }) },
+              { label: 'Excluir', danger: true, onSelect: () => void deleteExpense(e.id) },
+            ]}
+          />
         </div>
       );
     }
@@ -182,26 +184,23 @@ export function LancamentosTab() {
       <div key={`inc-${i.id}`} className="ms-ledger-row">
         <BrandIcon description={i.description} fallbackColor="var(--ok)" size={32} />
         <span className="ms-ledger-main">
-          <span className="ms-ledger-title">{i.description}</span>
+          <span className="ms-ledger-title">
+            <span className="ms-ledger-name">{i.description}</span>
+            <span className="ms-ledger-amount ms-pos">+{formatCurrency(i.amount)}</span>
+          </span>
           <span className="ms-ledger-meta">
             <span style={{ color: 'var(--ok)' }}>Receita</span>
             <span className="ms-ledger-sep">·</span>
             {acc?.name ?? 'Sem conta'}
           </span>
         </span>
-        <span className="ms-ledger-amount ms-pos">+{formatCurrency(i.amount)}</span>
-        <span className="ms-row-actions">
-          <button
-            className="ms-icon-btn"
-            title="Editar"
-            onClick={() => openModal({ kind: 'edit-income', income: i })}
-          >
-            <EditIcon />
-          </button>
-          <button className="ms-icon-btn" title="Excluir" onClick={() => void deleteIncome(i.id)}>
-            <TrashIcon />
-          </button>
-        </span>
+        <RowMenu
+          ariaLabel={`Ações de ${i.description}`}
+          items={[
+            { label: 'Editar', onSelect: () => openModal({ kind: 'edit-income', income: i }) },
+            { label: 'Excluir', danger: true, onSelect: () => void deleteIncome(i.id) },
+          ]}
+        />
       </div>
     );
   }
@@ -227,6 +226,15 @@ export function LancamentosTab() {
             >
               <FilterIcon />
               Filtros
+            </button>
+            <button
+              className="ms-btn"
+              title="Limpar lançamentos deste mês"
+              disabled={ledger.length === 0}
+              onClick={() => openModal({ kind: 'clear-month' })}
+            >
+              <TrashIcon />
+              Limpar
             </button>
             <button className="ms-btn ms-btn-primary" onClick={() => openModal({ kind: 'create' })}>
               + Novo
@@ -339,7 +347,7 @@ export function LancamentosTab() {
                 <span className="ms-ledger-group-count">
                   {g.items.length} {g.items.length === 1 ? 'lançamento' : 'lançamentos'}
                 </span>
-                <span className={`ms-ledger-group-total${g.total >= 0 ? ' ms-pos' : ''}`}>
+                <span className={`ms-ledger-group-total ${g.total >= 0 ? 'ms-pos' : 'ms-neg'}`}>
                   {g.total >= 0 ? '+' : '−'}
                   {formatCurrency(Math.abs(g.total))}
                 </span>

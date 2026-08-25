@@ -21,6 +21,7 @@ import { waterRouter } from './routes/water';
 import { studiesRouter } from './routes/studies';
 import { agendaRouter } from './routes/agenda';
 import { recurringRouter } from './routes/recurring';
+import { cleanupRouter } from './routes/cleanup';
 
 export function createApp() {
   const app = express();
@@ -55,6 +56,7 @@ export function createApp() {
   app.use('/api/water', waterRouter);
   app.use('/api/studies', studiesRouter);
   app.use('/api/agenda', agendaRouter);
+  app.use('/api/cleanup', cleanupRouter);
 
   app.use((_req, res) => {
     res.status(404).json({ error: 'Rota não encontrada.' });

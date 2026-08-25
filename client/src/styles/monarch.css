@@ -1280,14 +1280,14 @@ body {
 }
 .ms-ledger-group-date { font-size: 13px; font-weight: 600; color: var(--text); }
 .ms-ledger-group-count { font-size: 12px; color: var(--text-faint); }
+/* Fica junto da data, nao na outra ponta da linha. */
 .ms-ledger-group-total {
-  margin-left: auto;
   font-size: 13px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  color: var(--text-muted);
 }
 .ms-ledger-group-total.ms-pos { color: var(--ok); }
+.ms-ledger-group-total.ms-neg { color: var(--over); }
 
 .ms-ledger-row {
   display: flex;
@@ -1348,6 +1348,8 @@ body {
   letter-spacing: 0.01em;
 }
 
+/* Mora dentro do titulo, colado no nome. A descricao e quem cede espaco
+   quando falta largura — o valor nunca quebra nem vira reticencias. */
 .ms-ledger-amount {
   flex-shrink: 0;
   font-size: 14px;
@@ -1356,6 +1358,31 @@ body {
   color: var(--text);
 }
 .ms-ledger-amount.ms-pos { color: var(--ok); }
+.ms-ledger-amount.ms-neg { color: var(--over); }
+
+/* O nome e o unico elastico da linha do titulo. */
+.ms-ledger-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Menu de "..." da linha: alvo fixo, sempre visivel (inclusive no toque). */
+.row-menu { flex-shrink: 0; margin-left: auto; }
+.ms-icon-btn-on { background: var(--surface-3); color: var(--text); }
+/* Menu curto e justo, do tamanho dos rotulos — nao e um select. */
+.row-menu-list {
+  min-width: 128px;
+  padding: 4px;
+  border-radius: 12px;
+}
+.row-menu-list .dropdown-item {
+  padding: 7px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+.dropdown-item-danger { color: var(--over); }
 
 @media (max-width: 640px) {
   .ms-ledger-row { padding: 11px 12px; gap: 10px; }
@@ -1397,3 +1424,98 @@ body {
 .ms-row-actions-fixed { opacity: 1; }
 .ms-schedule-class { display: flex; flex-direction: column; gap: 1px; margin-bottom: 6px; }
 .ms-schedule-class:last-child { margin-bottom: 0; }
+
+/* =========================================================================
+   PROVAS — lista por proximidade, mateira vira filtro
+   O card por prova repetia a materia em cada bloco e comia ~150px de altura
+   por item; com 4 avaliacoes x 5 materias virava parede. Aqui a prova e uma
+   linha, o corte principal e o tempo e a materia filtra por cima.
+   ========================================================================= */
+.ms-card-body-flush { padding: 0; }
+
+.ms-exam-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 16px 14px;
+}
+.ms-chip-count {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.65;
+  font-weight: 600;
+}
+
+.ms-exam-band-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 9px 16px;
+  background: var(--surface-3);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.ms-exam-band-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.ms-exam-band-count { font-size: 12px; color: var(--text-faint); }
+
+.ms-exam-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 16px;
+  border-top: 1px solid var(--border);
+}
+.ms-exam-band-head + .ms-exam-row { border-top: none; }
+.ms-exam-row:hover { background: var(--surface-3); }
+.ms-exam-row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.ms-exam-row-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  min-width: 0;
+}
+.ms-exam-row-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+  min-width: 0;
+}
+.ms-exam-row-notes {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* A contagem e o motivo da tela existir: fica alinhada, tabular, sem competir
+   com o titulo — e so grita (vermelho) quando falta 3 dias ou menos. */
+.ms-exam-row-countdown {
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.ms-exam-row-countdown.urgent { color: var(--over); }
+
+@media (max-width: 640px) {
+  .ms-exam-row { padding: 10px 12px; gap: 10px; }
+  .ms-exam-band-head, .ms-exam-filters { padding-left: 12px; padding-right: 12px; }
+  .ms-exam-row-notes { display: none; }
+}
+.ms-card-body-flush .empty { padding: 20px 16px; margin: 0; }

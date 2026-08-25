@@ -319,6 +319,7 @@ interface ExamRow {
   subjectId: string | null;
   title: string;
   date: Date;
+  term: number | null;
   notes: string | null;
 }
 
@@ -328,6 +329,7 @@ export function serializeExam(e: ExamRow) {
     subjectId: e.subjectId,
     title: e.title,
     date: dateToIso(e.date),
+    term: e.term,
     notes: e.notes,
   };
 }

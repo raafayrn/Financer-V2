@@ -317,10 +317,18 @@ export const topicUpdateSchema = z
   .partial()
   .refine((d) => Object.keys(d).length > 0, { message: 'Envie ao menos um campo.' });
 
+// O curso tem 2 bimestres — por isso o teto é 2, e não 4.
+const examTerm = z
+  .number({ invalid_type_error: 'Bimestre deve ser um número.' })
+  .int()
+  .min(1, 'Bimestre deve ser 1 ou 2.')
+  .max(2, 'Bimestre deve ser 1 ou 2.');
+
 export const examCreateSchema = z.object({
   title: z.string().trim().min(1, 'Informe o título da prova.').max(120),
   date: isoDate,
   subjectId: z.string().trim().min(1).nullable().optional(),
+  term: examTerm.nullable().optional(),
   notes: z.string().trim().max(500).nullable().optional(),
 });
 
@@ -329,6 +337,7 @@ export const examUpdateSchema = z
     title: z.string().trim().min(1).max(120),
     date: isoDate,
     subjectId: z.string().trim().min(1).nullable(),
+    term: examTerm.nullable(),
     notes: z.string().trim().max(500).nullable(),
   })
   .partial()
@@ -417,3 +426,20 @@ export const recurringExpenseUpdateSchema = z
   })
   .partial()
   .refine((d) => Object.keys(d).length > 0, { message: 'Envie ao menos um campo.' });
+
+/**
+ * Limpeza de lançamentos de um mês. Os ids vêm explícitos (e não um "apague
+ * tudo do mês") para que a tela possa limpar tudo ou só o que foi marcado,
+ * usando o mesmo caminho — e para que nada que apareceu depois da tela abrir
+ * seja apagado sem o usuário ter visto.
+ */
+export const monthCleanupSchema = z
+  .object({
+    year: z.number().int().min(1970).max(9999),
+    month: z.number().int().min(1).max(12),
+    expenseIds: z.array(z.string().trim().min(1)).max(1000),
+    incomeIds: z.array(z.string().trim().min(1)).max(1000),
+  })
+  .refine((d) => d.expenseIds.length > 0 || d.incomeIds.length > 0, {
+    message: 'Selecione ao menos um lançamento para limpar.',
+  });

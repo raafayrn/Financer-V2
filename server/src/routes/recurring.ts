@@ -167,6 +167,10 @@ recurringRouter.post(
       throw new HttpError(400, 'Parâmetros year (1970-9999) e month (1-12) inválidos.');
     }
 
+    // Pedido explícito de lançar as fixas vence a limpeza do mês: se o usuário
+    // apagou os fixos e agora clica em "lançar", ele quer os fixos de volta.
+    await prisma.monthlyRecurringClear.deleteMany({ where: { userId, year, month } });
+
     const created = await materializeRecurringExpenses(prisma, userId, year, month);
 
     const { start, end } = monthRange(year, month);

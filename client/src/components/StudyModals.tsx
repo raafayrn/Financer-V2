@@ -114,13 +114,20 @@ interface ExamProps {
   subjects: Subject[];
   initial?: Exam | null;
   onCancel: () => void;
-  onSubmit: (data: { title: string; date: string; subjectId: string | null; notes: string | null }) => Promise<void>;
+  onSubmit: (data: {
+    title: string;
+    date: string;
+    subjectId: string | null;
+    term: number | null;
+    notes: string | null;
+  }) => Promise<void>;
 }
 
 export function ExamModal({ subjects, initial, onCancel, onSubmit }: ExamProps) {
   const [title, setTitle] = useState(initial?.title ?? '');
   const [date, setDate] = useState(initial?.date ?? todayIso());
   const [subjectId, setSubjectId] = useState(initial?.subjectId ?? '');
+  const [term, setTerm] = useState<number | null>(initial?.term ?? null);
   const [notes, setNotes] = useState(initial?.notes ?? '');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -131,7 +138,7 @@ export function ExamModal({ subjects, initial, onCancel, onSubmit }: ExamProps) 
     if (!subjectId) { setError('Selecione a matéria.'); return; }
     setSubmitting(true);
     try {
-      await onSubmit({ title: title.trim(), date, subjectId, notes: notes.trim() || null });
+      await onSubmit({ title: title.trim(), date, subjectId, term, notes: notes.trim() || null });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Erro ao salvar.');
       setSubmitting(false);
@@ -156,6 +163,21 @@ export function ExamModal({ subjects, initial, onCancel, onSubmit }: ExamProps) 
               <div className="field">
                 <span>Matéria</span>
                 <Dropdown value={subjectId} onChange={setSubjectId} ariaLabel="Matéria" options={subjectOptionsRequired(subjects)} />
+              </div>
+            </div>
+            <div className="field">
+              <span>Bimestre (opcional)</span>
+              <div className="ms-segment">
+                {([null, 1, 2] as (number | null)[]).map((t) => (
+                  <button
+                    key={t ?? 'none'}
+                    type="button"
+                    className={`ms-segment-item${term === t ? ' active' : ''}`}
+                    onClick={() => setTerm(t)}
+                  >
+                    <span>{t === null ? 'Nenhum' : `${t}º`}</span>
+                  </button>
+                ))}
               </div>
             </div>
             <label className="field">
