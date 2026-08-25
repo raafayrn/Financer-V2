@@ -8,48 +8,56 @@
    escreva cor fixa fora do bloco :root, senao um dos temas quebra.
    ========================================================================= */
 
-/* ---------- Tema claro (Monarch) ---------- */
+/* ---------- Tema claro "areia": bege quente, cartao creme, roxo ----------
+   Sem cinza frio e sem branco puro: o fundo e uma areia quente, os cartoes
+   sao creme e o texto e marrom escuro. O par acento e roxo (acao) + verde
+   (dinheiro que entra), que e o que separa "clicavel" de "resultado".
+   Fica coerente com o tema escuro, que ja era marrom/bege. */
 :root,
 :root[data-theme='light'] {
-  --bg: #f7f7f8;
+  --bg: #ece3d1;
   --bg-blob-1: transparent;
   --bg-blob-2: transparent;
   --bg-blob-3: transparent;
 
-  --surface: #ffffff;
-  --surface-solid: #ffffff;
-  --surface-2: #f1f1f2;
-  --surface-3: #fafafa;
-  --menu-bg: #ffffff;
-  --nav-active: #ececee;
-  --bar-idle: #d9d9dd;
+  --surface: #fdfbf6;
+  --surface-solid: #fdfbf6;
+  --surface-2: #f1e9d9;
+  --surface-3: #f7f1e5;
+  --menu-bg: #fdfbf6;
+  /* Sidebar: creme, um degrau acima do canvas de areia. Usando --bg ela
+     sumia no fundo e o app parecia nao ter estrutura. */
+  --chrome: #fbf7ee;
+  --nav-active: #e7dcc4;
+  --bar-idle: #d5c9ae;
 
-  --text: #1a1a1a;
-  --text-muted: #6b6b70;
-  --text-faint: #71717a;
-  --border: #e6e6e8;
-  --border-strong: #d4d4d8;
+  --text: #33291f;
+  --text-muted: #6d6152;
+  --text-faint: #7c6e5b;
+  --border: #ded3bd;
+  --border-strong: #c9bda3;
 
-  --primary: #c9501d;
-  --primary-hover: #ad4315;
+  --primary: #5a45ad;
+  --primary-hover: #4b3894;
   --primary-contrast: #ffffff;
-  --accent-soft: #fdf0ea;
+  --accent-soft: #e6dff8;
 
-  --ok: #1a9d5c;
-  --ok-bg: #e8f6ee;
-  --warning: #b8860b;
-  --warning-bg: #fdf5e2;
-  --over: #c4291c;
-  --over-bg: #fdecea;
-  --info-bg: #eef4fd;
+  --ok: #2f7d52;
+  --ok-bg: #dfeddb;
+  --warning: #8d6509;
+  --warning-bg: #f6e9cd;
+  --over: #b23a2b;
+  --over-bg: #f7e1da;
+  --info-bg: #e6dff8;
 
-  --invoice-fixed: #c9501d;
-  --invoice-variable: #3a6ea5;
+  --invoice-fixed: #5a45ad;
+  --invoice-variable: #2f7d7d;
 
-  --shadow: 0 1px 2px rgba(16, 16, 20, 0.04);
-  --shadow-float: 0 8px 24px rgba(16, 16, 20, 0.12);
+  /* Sombra na cor do fundo (marrom), nao cinza: sobre bege, sombra cinza
+     acinzenta o cartao inteiro. */
+  --shadow: 0 1px 2px rgba(74, 58, 36, 0.06);
+  --shadow-float: 0 8px 24px rgba(74, 58, 36, 0.16);
 }
-
 /* ---------- Tema escuro "cozy": marrom e bege, pouco contraste duro ----------
    Nada de preto puro nem branco puro: o fundo é um marrom bem escuro e o texto
    é bege, o que reduz o brilho na leitura noturna. As superfícies sobem de
@@ -65,6 +73,9 @@
   --surface-2: #322820;
   --surface-3: #201a15;
   --menu-bg: #2a221c;
+  /* No escuro o degrau e pra cima tambem: a sidebar clareia em relacao ao
+     fundo, mantendo a mesma hierarquia do tema claro. */
+  --chrome: #221b16;
   --nav-active: #382c23;
   --bar-idle: #453629;
 
@@ -200,7 +211,7 @@ body {
   flex-shrink: 0;
   flex-direction: column;
   padding: 14px 12px 12px;
-  background: var(--bg);
+  background: var(--chrome);
   border-right: 1px solid var(--border);
   position: sticky;
   top: 0;
@@ -302,7 +313,7 @@ body {
   position: sticky;
   top: 0;
   z-index: 20;
-  background: var(--bg);
+  background: var(--chrome);
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;

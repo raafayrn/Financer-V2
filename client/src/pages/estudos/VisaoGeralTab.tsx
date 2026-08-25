@@ -181,8 +181,8 @@ export function VisaoGeralTab() {
                     <span
                       className="ms-row-avatar"
                       style={{
-                        background: `${subj?.color ?? '#94a3b8'}22`,
-                        color: subj?.color ?? '#64748b',
+                        background: `${subj?.color ?? '#a3927b'}22`,
+                        color: subj?.color ?? '#7c6e5b',
                       }}
                     >
                       {formatDayMonth(ex.date).slice(0, 2)}

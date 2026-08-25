@@ -40,7 +40,7 @@ export function ProvasTab() {
     const id = subj?.id ?? 'none';
     const found = chips.find((c) => c.id === id);
     if (found) found.count += 1;
-    else chips.push({ id, name: subj?.name ?? 'Sem matéria', color: subj?.color ?? '#94a3b8', count: 1 });
+    else chips.push({ id, name: subj?.name ?? 'Sem matéria', color: subj?.color ?? '#a3927b', count: 1 });
   }
 
   const matchesFilter = (ex: Exam) =>
