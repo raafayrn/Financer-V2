@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { formatCurrency } from '../../utils/format';
 import { useFinancas } from './context';
 
@@ -6,7 +6,26 @@ const R = 62; // raio do donut
 const STROKE = 26;
 const C = 2 * Math.PI * R;
 
-export function GastoPorCategoria() {
+// Legenda embutida no hero: altura de uma linha, largura minima de coluna e
+// piso de altura (pra lista curta nao encolher o card).
+const ROW_H = 32;
+const MIN_COL_W = 190;
+const COL_GAP = 24;
+const MIN_LEGEND_H = 186;
+
+/**
+ * `compact` = versao de coluna estreita: donut menor e legenda embaixo, em vez
+ * de anel grande com a legenda ao lado. Mesmo componente, sem duplicar a
+ * matematica dos arcos.
+ */
+interface Props {
+  /** Coluna estreita: anel menor com a legenda embaixo. */
+  compact?: boolean;
+  /** Sem moldura de card nem titulo — pra viver dentro de outro card. */
+  inline?: boolean;
+}
+
+export function GastoPorCategoria({ compact = false, inline = false }: Props = {}) {
   const { summary } = useFinancas();
   const [hovered, setHovered] = useState<string | null>(null);
 
@@ -22,6 +41,7 @@ export function GastoPorCategoria() {
     }));
 
   if (slices.length === 0) {
+    if (inline) return null;
     return (
       <section className="ms-card">
         <div className="ms-card-body">
@@ -42,16 +62,48 @@ export function GastoPorCategoria() {
     return arc;
   });
 
-  return (
-    <section className="ms-card">
-      <div className="ms-card-head">
-        <h3 className="ms-card-title">Gasto por categoria</h3>
-        <div className="ms-card-actions">
-          <span className="ms-muted">{formatCurrency(total)} no total</span>
-        </div>
-      </div>
+  // Quantas colunas cabem de fato na largura disponivel. Nao da pra deixar no
+  // CSS: `column-width` e tratado como MINIMO — o navegador prefere vazar pra
+  // fora do card a encolher a coluna. Entao a gente mede e decide.
+  const legendRef = useRef<HTMLDivElement>(null);
+  const [legendCols, setLegendCols] = useState(1);
+  useEffect(() => {
+    const el = legendRef.current;
+    if (!inline || !el) return;
+    const measure = () => {
+      const w = el.clientWidth;
+      setLegendCols(w >= 2 * MIN_COL_W + COL_GAP ? 2 : 1);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    // O resize da janela entra junto: mudar o numero de colunas nao altera a
+    // largura do proprio elemento, entao o observer sozinho as vezes nao
+    // reavalia quando a janela encolhe.
+    window.addEventListener('resize', measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, [inline]);
 
-      <div className="ms-card-body ms-donut-layout">
+  // A altura manda no multicol: com `column-fill: auto` a coluna so quebra
+  // quando enche. Dividir a lista pelas colunas que cabem faz a segunda coluna
+  // comecar na hora certa, sem inventar uma terceira pra fora do card.
+  const legendStyle =
+    inline && slices.length > 0
+      ? {
+          height: Math.max(MIN_LEGEND_H, Math.ceil(slices.length / legendCols) * ROW_H),
+          columnCount: legendCols,
+        }
+      : undefined;
+
+  const body = (
+    <div
+      className={`ms-donut-layout${compact ? ' ms-donut-compact' : ''}${
+        inline ? ' ms-donut-inline' : ' ms-card-body'
+      }`}
+    >
         <div className="ms-donut-wrap">
           <svg viewBox="0 0 160 160" className="ms-donut" role="img" aria-label="Gasto por categoria">
             <g transform="rotate(-90 80 80)">
@@ -83,7 +135,7 @@ export function GastoPorCategoria() {
           </div>
         </div>
 
-        <div className="ms-legend">
+        <div className="ms-legend" ref={legendRef} style={legendStyle}>
           {slices.map((s) => (
             <button
               key={s.id}
@@ -101,8 +153,21 @@ export function GastoPorCategoria() {
               </span>
             </button>
           ))}
+      </div>
+    </div>
+  );
+
+  if (inline) return body;
+
+  return (
+    <section className="ms-card">
+      <div className="ms-card-head">
+        <h3 className="ms-card-title">Gasto por categoria</h3>
+        <div className="ms-card-actions">
+          <span className="ms-muted">{formatCurrency(total)} no total</span>
         </div>
       </div>
+      {body}
     </section>
   );
 }

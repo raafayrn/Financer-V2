@@ -548,14 +548,15 @@ body {
 /* Legenda do donut em grid */
 .ms-legend {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 4px 12px;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 2px 16px;
+  align-content: center;
 }
 .ms-legend-item {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  padding: 8px;
+  padding: 6px 8px;
   border-radius: var(--radius-sm);
   background: none;
   border: none;
@@ -761,8 +762,10 @@ body {
   gap: 20px;
   align-items: center;
 }
-.ms-donut-wrap { position: relative; width: 200px; justify-self: center; }
-.ms-donut { width: 200px; height: 200px; display: block; }
+/* 160px em vez de 200: o anel era o item mais alto do card e definia sozinho
+   os 283px de altura, pra mostrar quatro fatias. */
+.ms-donut-wrap { position: relative; width: 160px; justify-self: center; }
+.ms-donut { width: 160px; height: 160px; display: block; }
 .ms-donut circle { cursor: pointer; }
 .ms-donut-center {
   position: absolute;
@@ -779,7 +782,7 @@ body {
 .ms-donut-center-value { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
 
 @media (min-width: 880px) {
-  .ms-donut-layout { grid-template-columns: 240px 1fr; }
+  .ms-donut-layout { grid-template-columns: 190px 1fr; }
 }
 
 /* No celular a lista fica mais enxuta: some a conta e as acoes ficam sempre visiveis */
@@ -1519,3 +1522,276 @@ body {
   .ms-exam-row-notes { display: none; }
 }
 .ms-card-body-flush .empty { padding: 20px 16px; margin: 0; }
+
+/* Tira de tendencia: barras de contexto, nao um grafico. Vive dentro do hero
+   e cabe em ~46px — o card de barras antigo comia 230px no meio da coluna
+   principal pra dizer "gastei mais/menos que o mes passado". */
+.ms-spark-delta {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ok);
+  font-variant-numeric: tabular-nums;
+}
+.ms-spark-delta.up { color: var(--over); }
+.ms-spark { display: flex; align-items: flex-end; gap: 6px; height: 46px; }
+.ms-spark-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+}
+.ms-spark-track { flex: 1; width: 100%; display: flex; align-items: flex-end; }
+.ms-spark-fill {
+  width: 100%;
+  min-height: 2px;
+  background: var(--bar-idle);
+  border-radius: 3px 3px 0 0;
+}
+.ms-spark-fill.current { background: var(--primary); }
+
+/* =========================================================================
+   RESUMO — grade de 12 colunas
+   A grade antiga era fixa (1fr 300px): a coluna larga ficava com os cards
+   mais vazios (hero, donut) e a estreita carregava os mais densos — "Gasto
+   ate agora" (342px) espremido em 300px de largura. Aqui cada card declara
+   quantas colunas quer, e a altura vem do conteudo.
+   ========================================================================= */
+.ms-resumo {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  align-items: start;
+}
+.ms-col-12 { grid-column: span 12; }
+.ms-col-8 { grid-column: span 12; }
+.ms-col-4 { grid-column: span 12; }
+
+@media (min-width: 880px) {
+  .ms-col-8 { grid-column: span 7; }
+  .ms-col-4 { grid-column: span 5; }
+}
+@media (min-width: 1120px) {
+  .ms-col-8 { grid-column: span 8; }
+  .ms-col-4 { grid-column: span 4; }
+}
+
+/* Hero em faixa: numero + o que sobrou de cada fonte + tendencia, tudo na
+   mesma linha. Empilhado, isso ocupava 203px pra mostrar quatro numeros. */
+/* Card partido ao meio: a esquerda o dinheiro do mes (numero em cima,
+   comparacao com o mes passado embaixo), a direita o donut. */
+.ms-hero-band { flex-direction: row; align-items: stretch; gap: 0; }
+.ms-hero-left {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding-right: 24px;
+}
+.ms-hero-row {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  flex-wrap: wrap;
+}
+.ms-hero-main { display: flex; flex-direction: column; gap: 2px; flex: 0 0 auto; }
+/* Colados a esquerda: com `flex: 1` cada metrica virava uma coluna de 1fr e
+   os tres numeros ficavam espalhados por 700px de faixa. */
+.ms-hero-band .ms-hero-stats {
+  flex: 0 0 auto;
+  grid-template-columns: none;
+  grid-auto-flow: column;
+  gap: 22px;
+  margin-top: 0;
+  padding-top: 0;
+  padding-left: 22px;
+  border-top: none;
+  border-left: 1px solid var(--border);
+}
+/* Ocupa a largura inteira da metade esquerda, ate a divisoria. */
+.ms-hero-trend {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.ms-hero-trend .ms-spark { width: 100%; height: 30px; gap: 6px; }
+.ms-hero-trend-label { font-size: 12px; color: var(--text-muted); }
+
+@media (max-width: 879px) {
+  .ms-hero-band { flex-direction: column; }
+  .ms-hero-left { padding-right: 0; }
+  .ms-hero-row { flex-direction: column; align-items: stretch; gap: 0; }
+  .ms-hero-donut {
+    padding-left: 0;
+    border-left: none;
+    border-top: 1px solid var(--border);
+    margin-top: 16px;
+    padding-top: 16px;
+  }
+
+  .ms-hero-band .ms-hero-stats {
+    /* Empilhado, o flex-basis passa a valer como ALTURA e esticava o bloco
+       pra 260px. Aqui a altura volta a ser a do conteudo. */
+    flex: 0 0 auto;
+    /* Sem largura sobrando, as tres metricas voltam a dividir a linha em vez
+       de correrem pra fora da tela. */
+    grid-auto-flow: row;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 16px;
+    padding-top: 16px;
+    padding-left: 0;
+    border-top: 1px solid var(--border);
+    border-left: none;
+  }
+  .ms-hero-trend {
+    align-items: stretch;
+    padding-left: 0;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-left: none;
+    border-top: 1px solid var(--border);
+  }
+  .ms-hero-trend .ms-spark { width: 100%; }
+}
+
+/* Entra x sai: duas colunas dentro do mesmo card, pra comparacao acontecer
+   num olhar so. */
+.ms-money-split {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px 28px;
+}
+@media (min-width: 620px) {
+  .ms-money-split { grid-template-columns: 1fr 1fr; }
+  .ms-money-split .ms-money-col + .ms-money-col {
+    padding-left: 28px;
+    border-left: 1px solid var(--border);
+  }
+}
+.ms-money-col-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-strong);
+  margin-bottom: 2px;
+}
+.ms-money-col-total {
+  font-size: 16px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ok);
+}
+.ms-money-col-total.ms-neg { color: var(--over); }
+
+/* Card alto de lista (assinaturas): acompanha a altura do vizinho e rola por
+   dentro em vez de esticar a linha da grade. */
+.ms-card-tall {
+  display: flex;
+  flex-direction: column;
+  max-height: 460px;
+}
+.ms-card-scroll { overflow-y: auto; min-height: 0; }
+.ms-card-scroll .empty { padding: 20px 16px; margin: 0; }
+
+/* Donut na coluna estreita: anel menor em cima, legenda em lista embaixo —
+   lado a lado so funciona quando sobra largura. */
+.ms-donut-compact { grid-template-columns: 1fr !important; gap: 12px; }
+.ms-donut-compact .ms-donut-wrap { width: 140px; }
+.ms-donut-compact .ms-donut { width: 140px; height: 140px; }
+.ms-donut-compact .ms-legend { grid-template-columns: 1fr; }
+
+/* Donut dentro do hero: encostado na direita, ocupando a sobra da faixa. */
+.ms-hero-donut {
+  flex: 1 1 0;
+  min-width: 0;
+  padding-left: 24px;
+  border-left: 1px solid var(--border);
+  display: flex;
+  align-items: stretch;
+}
+.ms-donut-inline {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 20px;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+.ms-donut-inline .ms-donut-wrap { width: 150px; }
+.ms-donut-inline .ms-donut { width: 150px; height: 150px; }
+.ms-donut-inline .ms-donut-center-value { font-size: 16px; }
+/* Legenda em uma coluna, nome e valor na mesma linha: em duas colunas o bloco
+   passava de 400px e quebrava a faixa do hero pra baixo. */
+/* Lista que desce e, no fim da coluna, continua na coluna ao lado. Colunas de
+   CSS (e nao grid) porque grid distribui por linha, e porque `columns` cria
+   quantas colunas couberem — a legenda passa a ocupar a largura toda do card
+   em vez de deixar um vazio a direita. */
+.ms-donut-inline .ms-legend {
+  display: block;
+  /* Quantas colunas cabem vem do componente (column-count inline): aqui so o
+     espacamento. `column-width` nao serve — o navegador o trata como minimo e
+     estoura o card em vez de estreitar a coluna. */
+  column-gap: 24px;
+  /* `auto` (em vez do balance padrao) preenche a coluna ate o fim da altura
+     antes de passar pra proxima: a lista usa o espaco vertical do card e so
+     entao vai pra direita. Com `balance`, quatro categorias viravam 2+2 e
+     sobrava metade do card em branco em cima e embaixo. */
+  column-fill: auto;
+  align-self: center;
+  /* A altura vem inline, calculada a partir do numero de categorias (ver
+     GastoPorCategoria): com altura automatica o multicol nunca chega ao fim
+     da coluna e a segunda nunca comeca; com altura fixa demais, sobra uma
+     terceira coluna pra fora do card. */
+  min-width: 0;
+}
+/* `width: auto`: dentro do multicol, 100% media a largura do CONTAINER, nao a
+   da coluna — cada item ficava com a largura inteira e a segunda coluna saia
+   pra fora do card. */
+.ms-donut-inline .ms-legend-item { break-inside: avoid; width: auto; }
+.ms-donut-inline .ms-legend-item + .ms-legend-item { border-top: 1px solid var(--border); }
+.ms-donut-inline .ms-legend-item { padding: 7px 6px; align-items: center; }
+/* Com a largura do meio-card sobrando, nome e valor cabem na mesma linha:
+   nome a esquerda, valor a direita. `flex: 1 1 auto` em vez de `width: 100%`
+   — dentro do item flex, o width percentual colapsava o span pra zero. */
+/* `:not(.ms-legend-dot)` porque a bolinha tambem e um <span> filho do item —
+   sem isso ela herdava o flex-grow e virava uma elipse de 81px. */
+.ms-donut-inline .ms-legend-item > span:not(.ms-legend-dot) {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ms-donut-inline .ms-legend-label {
+  font-size: 12.5px;
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ms-donut-inline .ms-legend-value { font-size: 13px; white-space: nowrap; flex: 0 0 auto; }
+.ms-donut-inline .ms-legend-value .ms-muted { display: none; }
+/* Dentro do item flex a bolinha herdava flex-grow e esticava pra 81px de
+   largura, virando uma elipse. */
+.ms-donut-inline .ms-legend-dot { margin-top: 0; flex: 0 0 8px; }
+
+
+
+/* Sem largura pra uma segunda coluna, a legenda vira lista unica. Precisa vir
+   depois da regra base — mesma especificidade, ganha a ultima. */
+@media (max-width: 879px) {
+  .ms-donut-inline .ms-legend { columns: 1; }
+  /* Em 375px, um anel de 150 deixava so ~110px pros nomes das categorias. */
+  .ms-donut-inline { gap: 14px; }
+  .ms-donut-inline .ms-donut-wrap { width: 110px; }
+  .ms-donut-inline .ms-donut { width: 110px; height: 110px; }
+}
