@@ -605,7 +605,12 @@ body {
   display: flex;
   background: var(--surface-solid);
   border-top: 1px solid var(--border);
-  padding-bottom: env(safe-area-inset-bottom);
+  /* Um respiro minimo mesmo sem entalhe, e o inset inteiro em telas com
+     indicador de home (iPhone X pra frente). */
+  padding-bottom: max(6px, env(safe-area-inset-bottom));
+  /* Nas quinas arredondadas, os itens das pontas encostavam no arco. */
+  padding-left: max(4px, env(safe-area-inset-left));
+  padding-right: max(4px, env(safe-area-inset-right));
 }
 .ms-mobile-nav-item {
   flex: 1;
@@ -613,7 +618,8 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 3px;
-  padding: 8px 0 7px;
+  /* Alvo de toque mais alto: 54px era o minimo do minimo pra ícone + rotulo. */
+  padding: 11px 0 10px;
   border: none;
   background: none;
   font-size: 10px;
@@ -658,7 +664,8 @@ body {
 }
 
 @media (max-width: 879px) {
-  .ms-body { padding-bottom: 84px; }
+  /* Espaco pra barra fixa: altura dela mais o inset do aparelho. */
+  .ms-body { padding-bottom: calc(92px + env(safe-area-inset-bottom)); }
   .ms-header { padding: 0 14px; gap: 12px; }
 }
 
@@ -815,6 +822,27 @@ body {
     flex-wrap: wrap;
     row-gap: 0;
     padding-bottom: 0;
+    /* 12px de respiro entre os tres blocos estourava a linha por 1px em
+       "Dashboard" + navegador de mes, e o mes caia sozinho numa terceira
+       linha. Com 8 sobra folga, e o titulo trunca antes de quebrar. */
+    gap: 8px;
+  }
+  .ms-header-title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .ms-header-right { min-width: 0; }
+  /* A primeira linha vale sempre --header-h, tenha a tela abas ou nao. Sem
+     isso ela encolhia (28px em Estudos, 35 em Financas) quando as abas
+     entravam na segunda linha, e cada aba do app abria com um topo de altura
+     diferente. */
+  .ms-header > .ms-icon-btn,
+  .ms-header-title,
+  .ms-header-right {
+    min-height: var(--header-h);
+    display: flex;
+    align-items: center;
   }
   .ms-header-title { order: 1; }
   .ms-header-right { order: 2; }

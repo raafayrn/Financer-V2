@@ -871,7 +871,7 @@ select option {
 .chat-fab {
   position: fixed;
   right: 20px;
-  bottom: calc(76px + env(safe-area-inset-bottom));
+  bottom: calc(84px + env(safe-area-inset-bottom));
   z-index: 20;
   width: 56px;
   height: 56px;
@@ -898,7 +898,7 @@ select option {
 .chat-panel {
   position: fixed;
   right: 16px;
-  bottom: calc(140px + env(safe-area-inset-bottom));
+  bottom: calc(148px + env(safe-area-inset-bottom));
   z-index: 19;
   width: min(380px, calc(100vw - 32px));
   max-height: 60vh;
@@ -1575,22 +1575,27 @@ select option {
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   display: flex;
-  align-items: flex-end;
+  /* Centralizado tambem no celular. Como bottom sheet ele nascia colado no
+     rodape, atras da bottom-nav (z-index 60) — dai o modal aparecer cortado. */
+  align-items: center;
   justify-content: center;
-  z-index: 50;
-  padding: 0;
+  z-index: 80;
+  padding: 16px;
 }
 .modal {
   background: var(--surface);
   backdrop-filter: var(--blur);
   -webkit-backdrop-filter: var(--blur);
   border: 0.5px solid var(--border);
-  border-radius: 26px 26px 0 0;
+  border-radius: 24px;
   box-shadow: var(--shadow-float);
-  padding: 22px 20px max(22px, env(safe-area-inset-bottom));
+  padding: 22px 20px;
   width: 100%;
   max-width: var(--maxw);
-  max-height: 90vh;
+  max-height: 88vh;
+  /* `dvh` desconta a barra de endereco do navegador no celular, que `vh`
+     ignora — com vh o rodape do modal ficava fora da area visivel. */
+  max-height: 88dvh;
   overflow-y: auto;
 }
 .modal-title {
@@ -1699,14 +1704,7 @@ select option {
   flex: 1;
 }
 
-@media (min-width: 640px) {
-  .modal-backdrop {
-    align-items: center;
-  }
-  .modal {
-    border-radius: 26px;
-  }
-}
+
 
 /* ---------- Chart (relatórios) ---------- */
 .chart {

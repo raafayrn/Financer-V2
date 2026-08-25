@@ -26,6 +26,16 @@ export function Modal({ onCancel, children }: Props) {
   };
   useEffect(() => () => window.clearTimeout(fallback.current), []);
 
+  // Trava a rolagem do fundo enquanto o modal esta aberto: sem isso, rolar
+  // dentro do modal "vazava" pra pagina atras e o conteudo saia do lugar.
+  useEffect(() => {
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, []);
+
   function handleExitComplete() {
     window.clearTimeout(fallback.current);
     onCancel();
