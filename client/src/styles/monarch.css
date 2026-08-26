@@ -2031,3 +2031,52 @@ body {
     padding-left: 52px;
   }
 }
+
+/* =========================================================================
+   TOKENS DOS CANAIS AUTOMÁTICOS
+   ========================================================================= */
+.ms-token-new { display: flex; gap: 8px; margin-top: 12px; }
+.ms-token-new input { flex: 1 1 auto; min-width: 0; }
+
+/* O valor recém-criado. Fundo de alerta porque é a única vez que ele
+   aparece: fechar sem copiar significa criar outro. */
+.ms-token-reveal {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--warning);
+  border-radius: var(--radius-sm);
+  background: var(--warning-bg);
+}
+.ms-token-value {
+  display: block;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  color: var(--text);
+  /* Token longo não pode estourar a largura do card nem virar uma linha só
+     de scroll horizontal. */
+  word-break: break-all;
+}
+.ms-token-reveal-actions { display: flex; gap: 8px; }
+.ms-token-warn { font-size: 12px; color: var(--text-muted); }
+
+.ms-token-list { display: flex; flex-direction: column; margin-top: 14px; }
+.ms-token-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+.ms-token-main { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; min-width: 0; }
+.ms-token-label { font-size: 14px; font-weight: 600; color: var(--text); }
+.ms-token-meta { font-size: 12px; color: var(--text-muted); }
+.ms-token-meta code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+/* Revogado continua na lista: é ele que responde "esse canal ainda roda?". */
+.ms-token-revoked .ms-token-label { color: var(--text-muted); text-decoration: line-through; }

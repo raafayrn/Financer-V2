@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useMonth } from '../../context/MonthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { ManageModal } from '../../components/ManageModal';
+import { IngestTokensCard } from '../../components/IngestTokensCard';
 import { MoonIcon, SunIcon } from '../../components/icons';
 import { CLASS_SCHEDULE } from '../../lib/studies';
 import { DATA_COLORS } from '../../utils/palette';
@@ -166,6 +167,8 @@ export function AjustesPage() {
             </div>
           ))}
         </section>
+
+        <IngestTokensCard />
 
         <section className="ms-card">
           <div className="ms-card-body">

@@ -480,3 +480,19 @@ export interface IngestionConfirmInput {
   accountId?: string | null;
   date?: string;
 }
+
+/** Token de longa duração usado pelos canais automáticos. */
+export interface IngestTokenRow {
+  id: string;
+  label: string;
+  /** Começo do token, para reconhecer a linha — o valor inteiro nunca volta. */
+  prefix: string;
+  lastUsedAt: string | null;
+  revokedAt: string | null;
+  createdAt: string;
+}
+
+/** Só na criação o valor em claro existe; depois nem o servidor o conhece. */
+export interface IngestTokenCreated extends IngestTokenRow {
+  token: string;
+}

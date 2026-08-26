@@ -20,6 +20,8 @@ import type {
   IncomeInput,
   Ingestion,
   IngestionConfirmInput,
+  IngestTokenCreated,
+  IngestTokenRow,
   Investment,
   InvestmentInput,
   InvestmentSummary,
@@ -135,6 +137,17 @@ export const api = {
     request<{ ingestion: Ingestion; restored: number }>(`/ingestions/${id}/unmerge`, {
       method: 'POST',
     }),
+
+  // Tokens dos canais automáticos
+  listIngestTokens: () =>
+    request<{ tokens: IngestTokenRow[] }>('/ingest-tokens').then((r) => r.tokens),
+  createIngestToken: (label: string) =>
+    request<IngestTokenCreated>('/ingest-tokens', {
+      method: 'POST',
+      body: JSON.stringify({ label }),
+    }),
+  revokeIngestToken: (id: string) =>
+    request<IngestTokenRow>(`/ingest-tokens/${id}/revoke`, { method: 'POST' }),
 
   // Contas fixas (Cartão de crédito / Vale-alimentação / Carteira)
   listAccounts: () => request<Account[]>('/accounts'),
