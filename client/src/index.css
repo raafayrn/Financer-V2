@@ -517,8 +517,10 @@ select option {
   flex-direction: column;
   gap: 2px;
 }
+/* Acima do .modal-backdrop (z-index 80): o menu vai pro body via portal, entao
+   precisa vencer o backdrop do modal, senao abre atras dele. */
 .dropdown-menu-portal {
-  z-index: 60;
+  z-index: 90;
 }
 .dropdown-item {
   text-align: left;

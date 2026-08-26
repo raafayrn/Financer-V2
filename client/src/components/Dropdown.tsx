@@ -25,6 +25,7 @@ export function Dropdown({ value, options, onChange, ariaLabel }: Props) {
   const [open, setOpen] = useState(false);
   const [menuRect, setMenuRect] = useState<MenuRect | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const selected = options.find((o) => o.value === value);
 
   useEffect(() => {
@@ -39,7 +40,12 @@ export function Dropdown({ value, options, onChange, ariaLabel }: Props) {
     updateRect();
 
     function handleClick(e: MouseEvent) {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      // O menu vive num portal no body, entao nao esta dentro de rootRef — sem
+      // checar menuRef, o mousedown no item fecharia antes do click chegar.
+      if (menuRef.current?.contains(target)) return;
+      if (rootRef.current && !rootRef.current.contains(target)) {
+        if (menuRef.current) menuRef.current.style.pointerEvents = 'none';
         setOpen(false);
       }
     }
@@ -60,7 +66,16 @@ export function Dropdown({ value, options, onChange, ariaLabel }: Props) {
         className={`dropdown-trigger ${open ? 'dropdown-trigger-open' : ''}`}
         aria-label={ariaLabel}
         aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
+        onClick={() =>
+          setOpen((o) => {
+            // Se o AnimatePresence nao desmontar o menu (acontece nesta versao
+            // do framer-motion, ver Modal), o no fica no DOM acima do backdrop
+            // e engole os cliques do modal — cortar o ponteiro ao fechar
+            // resolve sem depender do desmonte.
+            if (menuRef.current) menuRef.current.style.pointerEvents = o ? 'none' : '';
+            return !o;
+          })
+        }
         whileTap={{ scale: 0.98 }}
         transition={springTap}
       >
@@ -81,6 +96,7 @@ export function Dropdown({ value, options, onChange, ariaLabel }: Props) {
         <AnimatePresence>
           {open && menuRect && (
             <motion.div
+              ref={menuRef}
               className="dropdown-menu dropdown-menu-portal"
               role="listbox"
               style={{
@@ -106,6 +122,7 @@ export function Dropdown({ value, options, onChange, ariaLabel }: Props) {
                   transition={springTap}
                   onClick={() => {
                     onChange(o.value);
+                    if (menuRef.current) menuRef.current.style.pointerEvents = 'none';
                     setOpen(false);
                   }}
                 >
