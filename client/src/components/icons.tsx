@@ -122,6 +122,14 @@ export function PlusIcon() {
   );
 }
 
+export function MinusIcon() {
+  return (
+    <svg viewBox="0 0 24 24" strokeWidth="2.4" strokeLinecap="round">
+      <path d="M5 12h14" />
+    </svg>
+  );
+}
+
 export function CheckIcon() {
   return (
     <svg viewBox="0 0 24 24" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">

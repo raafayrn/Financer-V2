@@ -1,7 +1,8 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { BrandIcon } from '../../components/BrandIcon';
 import { ChatBox } from '../../components/ChatBox';
-import { EditIcon } from '../../components/icons';
+import { EditIcon, MinusIcon, PlusIcon } from '../../components/icons';
 import { formatCurrency, formatDayMonth, monthName, monthShort } from '../../utils/format';
 import { GastoPorCategoria } from './GastoPorCategoria';
 import { useFinancas } from './context';
@@ -29,6 +30,9 @@ function SummaryRow({ label, value, strong }: { label: string; value: string; st
  * mês?" —, só que olhando pra trás.
  */
 function TrendStrip({ trend, year, month }: { trend: TrendPoint[]; year: number; month: number }) {
+  // O hook vem antes da guarda: com menos de dois meses nao ha tendencia,
+  // mas a ordem dos hooks nao pode depender disso.
+  const [hovered, setHovered] = useState<number | null>(null);
   if (trend.length < 2) return null;
 
   const max = Math.max(1, ...trend.map((t) => t.spent));
@@ -57,20 +61,47 @@ function TrendStrip({ trend, year, month }: { trend: TrendPoint[]; year: number;
           'Gasto nos últimos meses'
         )}
       </span>
-      <div className="ms-spark">
-        {trend.map((t) => {
+      <div className="ms-spark" onMouseLeave={() => setHovered(null)}>
+        {trend.map((t, i) => {
           const isCurrent = t.year === year && t.month === month;
+          const before = i > 0 ? trend[i - 1] : undefined;
+          // Mesma regra do delta do cabecalho: mes anterior zerado nao compara.
+          const heightPct = (t.spent / max) * 100;
+          const change =
+            before && before.spent > 0
+              ? Math.round(((t.spent - before.spent) / before.spent) * 100)
+              : null;
           return (
             <div
               key={`${t.year}-${t.month}`}
-              className="ms-spark-col"
-              title={`${monthShort(t.month)}/${t.year}: ${formatCurrency(t.spent)}`}
+              className={`ms-spark-col${hovered === i ? ' hovered' : ''}`}
+              onMouseEnter={() => setHovered(i)}
             >
+              {hovered === i && (
+                <div className="ms-spark-tip" role="tooltip">
+                  <span className="ms-spark-tip-month">
+                    {monthName(t.month)} de {t.year}
+                  </span>
+                  <span className="ms-spark-tip-value">{formatCurrency(t.spent)}</span>
+                  {change !== null && before && (
+                    <span className={`ms-spark-tip-delta${change > 0 ? ' up' : ''}`}>
+                      {change > 0 ? '↑' : '↓'} {Math.abs(change)}% vs {monthShort(before.month)}
+                    </span>
+                  )}
+                </div>
+              )}
               <div className="ms-spark-track">
                 <div
                   className={`ms-spark-fill${isCurrent ? ' current' : ''}`}
-                  style={{ height: `${(t.spent / max) * 100}%` }}
+                  style={{ height: `${heightPct}%` }}
                 />
+                {/* O mes fica dentro da coluna: fora dela, seis rotulos
+                    empurravam a faixa pra baixo so pra dizer o obvio. */}
+                {/* Barra alta cobre o rotulo; barra baixa deixa ele no fundo
+                    do card. A cor segue quem esta atras. */}
+                <span className={`ms-spark-month${heightPct >= 32 ? ' on-fill' : ''}`}>
+                  {monthShort(t.month)}
+                </span>
               </div>
             </div>
           );
@@ -91,19 +122,23 @@ export function ResumoTab() {
     categoryById,
     openModal,
     reload,
-    walletAccountId,
   } = useFinancas();
 
-  // Assinaturas = despesas fixas cuja categoria se chama "Assinaturas". Sai do
-  // que já está carregado, sem requisição nova.
-  const subscriptions = expenses
-    .filter((e) => {
-      if (!e.recurringExpenseId && !e.recurring) return false;
-      const cat = e.categoryId ? categoryById.get(e.categoryId) : undefined;
-      return cat ? /assinatura/i.test(cat.name) : false;
-    })
+  // Todas as contas que se repetem todo mes — nao so as assinaturas, que eram
+  // uma categoria entre varias (aluguel, internet, academia ficavam de fora).
+  // Sai do que ja esta carregado, sem requisicao nova.
+  const recurring = expenses
+    .filter((e) => e.recurringExpenseId || e.recurring)
     .sort((a, b) => b.amount - a.amount);
-  const subscriptionsTotal = subscriptions.reduce((acc, e) => acc + e.amount, 0);
+  const recurringTotal = recurring.reduce((acc, e) => acc + e.amount, 0);
+
+  // Parcelamentos ficam num card proprio: tem fim marcado e progresso, coisas
+  // que a lista de recorrentes nao mostra. Cada parcela e uma despesa com
+  // installmentGroupId — o plano e a parcela que caiu no mes exibido.
+  const installments = expenses
+    .filter((e) => e.installmentGroupId && (e.installmentTotal ?? 0) > 1)
+    .sort((a, b) => b.amount - a.amount);
+  const installmentsTotal = installments.reduce((acc, e) => acc + e.amount, 0);
 
   // Os 6 mais recentes do mes, gastos e receitas juntos — mesma ordem da aba
   // Lancamentos, so que cortada.
@@ -129,6 +164,18 @@ export function ResumoTab() {
         {/* Metade esquerda: o numero do mes em cima, a comparacao com o mes
             passado embaixo — as duas leituras de "como estou indo". */}
         <div className="ms-hero-left">
+        {/* A renda de cada fonte se define aqui, no canto da faixa onde os tres
+            numeros aparecem — antes so dava pra editar pelo icone do card
+            "Dinheiro do mes", bem mais abaixo. */}
+        <button
+          type="button"
+          className="ms-hero-edit"
+          title="Definir salário, VR e carteira do mês"
+          onClick={() => openModal({ kind: 'income-sources' })}
+        >
+          <EditIcon />
+          <span>Definir renda</span>
+        </button>
         <div className="ms-hero-row">
         <div className="ms-hero-main">
           <span className="ms-label">Ainda posso gastar</span>
@@ -226,15 +273,17 @@ export function ResumoTab() {
             </div>
           </div>
 
-          <div className="ms-card-footer-actions">
-            <button
-              className="ms-btn"
-              onClick={() => openModal({ kind: 'income', defaultAccountId: walletAccountId })}
-            >
-              + Receita Pix
+          {/* Os mesmos dois botoes do Dashboard: lancar gasto e receita e o que
+              se faz aqui o tempo todo, e a conta (Pix ou outra) ja se escolhe
+              dentro do proprio formulario. */}
+          <div className="ms-quick-actions">
+            <button className="ms-quick ms-quick-expense" onClick={() => openModal({ kind: 'create' })}>
+              <MinusIcon />
+              Gasto
             </button>
-            <button className="ms-btn" onClick={() => openModal({ kind: 'income' })}>
-              + Renda avulsa
+            <button className="ms-quick ms-quick-income" onClick={() => openModal({ kind: 'income' })}>
+              <PlusIcon />
+              Receita
             </button>
           </div>
         </div>
@@ -296,8 +345,8 @@ export function ResumoTab() {
       <section className="ms-card ms-card-tall">
         <div className="ms-card-head">
           <div>
-            <h3 className="ms-card-title">Assinaturas</h3>
-            <span className="ms-muted">{formatCurrency(subscriptionsTotal)} por mês</span>
+            <h3 className="ms-card-title">Recorrentes</h3>
+            <span className="ms-muted">{formatCurrency(recurringTotal)} por mês</span>
           </div>
           <div className="ms-card-actions">
             <Link className="ms-btn ms-btn-ghost" to="/financas/recorrentes">
@@ -306,19 +355,67 @@ export function ResumoTab() {
           </div>
         </div>
         <div className="ms-card-scroll">
-          {subscriptions.length === 0 ? (
-            <p className="empty">Nenhuma assinatura marcada como fixa.</p>
+          {recurring.length === 0 ? (
+            <p className="empty">Nenhuma conta fixa neste mês.</p>
           ) : (
-            subscriptions.map((sub) => {
-              const cat = sub.categoryId ? categoryById.get(sub.categoryId) : undefined;
+            recurring.map((item) => {
+              const cat = item.categoryId ? categoryById.get(item.categoryId) : undefined;
               return (
-                <div key={sub.id} className="ms-sub-row">
-                  <BrandIcon description={sub.description} fallbackColor={cat?.color} />
+                <div key={item.id} className="ms-sub-row">
+                  <BrandIcon description={item.description} fallbackColor={cat?.color} />
                   <span className="ms-sub-main">
-                    <span className="ms-sub-name">{sub.description}</span>
-                    <span className="ms-sub-meta">Todo mês</span>
+                    <span className="ms-sub-name">{item.description}</span>
+                    {/* A categoria diz mais que "Todo mes": numa lista que agora
+                        mistura aluguel, streaming e academia, ela separa. */}
+                    <span className="ms-sub-meta">{cat?.name ?? 'Todo mês'}</span>
                   </span>
-                  <span className="ms-sub-amount">{formatCurrency(sub.amount)}</span>
+                  <span className="ms-sub-amount">{formatCurrency(item.amount)}</span>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </section>
+
+      <section className="ms-card">
+        <div className="ms-card-head">
+          <div>
+            <h3 className="ms-card-title">Parcelamentos</h3>
+            <span className="ms-muted">{formatCurrency(installmentsTotal)} neste mês</span>
+          </div>
+          <div className="ms-card-actions">
+            <Link className="ms-btn ms-btn-ghost" to="/financas/recorrentes/parcelamentos">
+              Gerenciar
+            </Link>
+          </div>
+        </div>
+        <div className="ms-card-scroll">
+          {installments.length === 0 ? (
+            <p className="empty">Nenhuma compra parcelada neste mês.</p>
+          ) : (
+            installments.map((item) => {
+              const cat = item.categoryId ? categoryById.get(item.categoryId) : undefined;
+              const no = item.installmentNo ?? 1;
+              const total = item.installmentTotal ?? 1;
+              const left = total - no;
+              return (
+                <div key={item.installmentGroupId} className="ms-sub-row">
+                  <BrandIcon description={item.description} fallbackColor={cat?.color} />
+                  <span className="ms-sub-main">
+                    {/* A descricao ja termina em "(2/10)" e a linha de baixo
+                        repete a mesma contagem — fica so uma. */}
+                    <span className="ms-sub-name">
+                      {item.description.replace(/\s*\(\d+\/\d+\)\s*$/, '')}
+                    </span>
+                    <span className="ms-sub-meta">
+                      Parcela {no} de {total}
+                      {left > 0 ? ` · faltam ${left}` : ' · última'}
+                    </span>
+                    <span className="ms-progress">
+                      <span className="ms-progress-fill" style={{ width: `${(no / total) * 100}%` }} />
+                    </span>
+                  </span>
+                  <span className="ms-sub-amount">{formatCurrency(item.amount)}</span>
                 </div>
               );
             })

@@ -28,7 +28,7 @@ import {
 import { ChatBox } from '../../components/ChatBox';
 import { ExpenseFormModal } from '../../components/ExpenseFormModal';
 import { IncomeFormModal } from '../../components/IncomeFormModal';
-import { EyeIcon, EyeOffIcon, PlusIcon } from '../../components/icons';
+import { EyeIcon, EyeOffIcon, MinusIcon, PlusIcon } from '../../components/icons';
 
 function formatMl(ml: number): string {
   if (ml >= 1000) return `${(ml / 1000).toFixed(1).replace('.', ',')} L`;
@@ -84,14 +84,6 @@ function SourceTile({
       </span>
       {hint && <span className="ms-muted">{hint}</span>}
     </div>
-  );
-}
-
-function MinusIcon() {
-  return (
-    <svg viewBox="0 0 24 24" strokeWidth="2.4" strokeLinecap="round">
-      <path d="M5 12h14" />
-    </svg>
   );
 }
 
