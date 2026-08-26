@@ -254,3 +254,115 @@ export async function answerFinancialQuestion(
 
   return ask(system, question);
 }
+
+/**
+ * Ingestão automática — resultado comum aos dois canais.
+ *
+ * `occurredAt` só vem preenchido pelo canal e-mail (a hora está no corpo da
+ * notificação). No atalho, quem manda a hora é o payload do iPhone.
+ */
+export interface ParsedIngestion {
+  valor: number | null;
+  estabelecimento: string;
+  categoria: string | null;
+  occurredAt: string | null;
+  transactionType:
+    | 'credit_purchase'
+    | 'pix_out'
+    | 'pix_in'
+    | 'transfer'
+    | 'payment'
+    | 'unknown';
+  confianca: 'high' | 'medium' | 'low';
+}
+
+const TRANSACTION_TYPES = [
+  'credit_purchase',
+  'pix_out',
+  'pix_in',
+  'transfer',
+  'payment',
+  'unknown',
+] as const;
+
+function toParsedIngestion(
+  raw: unknown,
+  fallbackType: ParsedIngestion['transactionType'],
+): ParsedIngestion {
+  const p = (raw ?? {}) as Record<string, unknown>;
+  const tipo = TRANSACTION_TYPES.includes(p.transactionType as (typeof TRANSACTION_TYPES)[number])
+    ? (p.transactionType as ParsedIngestion['transactionType'])
+    : fallbackType;
+  const confianca = ['high', 'medium', 'low'].includes(p.confianca as string)
+    ? (p.confianca as ParsedIngestion['confianca'])
+    : 'low';
+
+  return {
+    valor: typeof p.valor === 'number' && Number.isFinite(p.valor) ? p.valor : null,
+    estabelecimento: typeof p.estabelecimento === 'string' ? p.estabelecimento.trim() : '',
+    categoria: typeof p.categoria === 'string' && p.categoria.trim() ? p.categoria.trim() : null,
+    occurredAt:
+      typeof p.occurredAt === 'string' && !Number.isNaN(Date.parse(p.occurredAt))
+        ? p.occurredAt
+        : null,
+    transactionType: tipo,
+    confianca,
+  };
+}
+
+/**
+ * Canal e-mail: corpo de uma notificação do Nubank.
+ *
+ * A regra que mais importa é a da data — a hora tem que sair do CORPO do
+ * e-mail. Se o parser devolvesse a hora atual, a notificação que chega horas
+ * depois da compra nunca casaria com o registro do atalho na deduplicação, e
+ * o gasto entraria duas vezes.
+ */
+export async function parseIngestedEmail(
+  bodyText: string,
+  subject: string,
+  categories: string[],
+): Promise<ParsedIngestion> {
+  const system = [
+    'Você recebe o corpo de um e-mail de notificação de banco (Nubank) e extrai os dados da transação.',
+    'Responda SOMENTE com JSON, sem markdown e sem preâmbulo.',
+    'Formato: {"valor": number|null, "estabelecimento": string, "occurredAt": string|null, "transactionType": "credit_purchase"|"pix_out"|"pix_in"|"transfer"|"payment"|"unknown", "categoria": string|null, "confianca": "high"|"medium"|"low"}',
+    'Regras:',
+    '- occurredAt é a data/hora informada NO CORPO do e-mail, em ISO 8601 com fuso -03:00. NUNCA use a hora atual. Se o corpo não informar, devolva null.',
+    '- valor sempre positivo. O sinal é dado por transactionType.',
+    '- Pix recebido é entrada, não despesa: transactionType = "pix_in".',
+    '- Se o e-mail não descrever uma transação (marketing, aviso de segurança, fechamento de fatura), devolva transactionType "unknown" e confianca "low".',
+    '- categoria deve ser uma das listadas abaixo; se nenhuma servir, use null.',
+    'Categorias:',
+    categoryContext(categories),
+  ].join('\n');
+
+  const raw = await ask(system, `Assunto: ${subject}\n\n${bodyText}`);
+  return toParsedIngestion(parseJson(raw), 'unknown');
+}
+
+/**
+ * Canal atalho: frase curta digitada logo depois de pagar por aproximação.
+ * A hora não sai do texto — quem manda é o payload do iPhone.
+ */
+export async function parseIngestedShortcut(
+  text: string,
+  categories: string[],
+): Promise<ParsedIngestion> {
+  const system = [
+    'Você recebe uma frase curta que o usuário digitou logo após pagar por aproximação com o cartão.',
+    'Extraia o valor e o estabelecimento. Responda SOMENTE com JSON, sem markdown.',
+    'Formato: {"valor": number|null, "estabelecimento": string, "categoria": string|null, "confianca": "high"|"medium"|"low"}',
+    'Regras:',
+    '- Interprete valores em reais: "150", "150 reais", "R$ 150,00", "cento e cinquenta" = 150.0.',
+    '- CALCULE multiplicações: "2 cafés de 5 reais" = 10.0.',
+    '- Se não houver número identificável, devolva valor null e confianca "low".',
+    '- categoria deve ser uma das listadas abaixo; se nenhuma servir, use null.',
+    'Categorias:',
+    categoryContext(categories),
+  ].join('\n');
+
+  const raw = await ask(system, text);
+  // Neste canal o tipo é sempre compra no crédito: o gatilho é a Apple Wallet.
+  return { ...toParsedIngestion(parseJson(raw), 'credit_purchase'), transactionType: 'credit_purchase' };
+}

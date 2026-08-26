@@ -6,6 +6,7 @@ import { DashboardPage } from './pages/dashboard/DashboardPage';
 import { FinancasPage } from './pages/financas/FinancasPage';
 import { ResumoTab } from './pages/financas/ResumoTab';
 import { LancamentosTab } from './pages/financas/LancamentosTab';
+import { PendentesTab } from './pages/financas/PendentesTab';
 import { RecorrentesPage } from './pages/recorrentes/RecorrentesPage';
 import { FixasTab } from './pages/recorrentes/FixasTab';
 import { ParcelamentosTab } from './pages/recorrentes/ParcelamentosTab';
@@ -63,6 +64,7 @@ export default function App() {
           <Route path="/financas" element={<FinancasPage />}>
             <Route index element={<ResumoTab />} />
             <Route path="lancamentos" element={<LancamentosTab />} />
+            <Route path="pendentes" element={<PendentesTab />} />
           </Route>
           <Route path="/financas/recorrentes" element={<RecorrentesPage />}>
             <Route index element={<FixasTab />} />

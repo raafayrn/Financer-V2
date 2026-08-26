@@ -35,16 +35,16 @@ model User {
   telegramChatId String?  @unique
   createdAt      DateTime @default(now())
 
-  categories     Category[]
-  budgets        MonthlyBudget[]
-  salaries       MonthlySalary[]
-  vouchers       MonthlyVoucher[]
-  walletBases    MonthlyWalletBase[]
+  categories      Category[]
+  budgets         MonthlyBudget[]
+  salaries        MonthlySalary[]
+  vouchers        MonthlyVoucher[]
+  walletBases     MonthlyWalletBase[]
   recurringClears MonthlyRecurringClear[]
-  expenses       Expense[]
-  incomes        Income[]
-  accounts       Account[]
-  investments    Investment[]
+  expenses        Expense[]
+  incomes         Income[]
+  accounts        Account[]
+  investments     Investment[]
 
   // Saúde — Treinos
   workoutDays      WorkoutDay[]
@@ -65,6 +65,10 @@ model User {
 
   recurringExpenses RecurringExpense[]
   notifications     NotificationLog[]
+
+  // Ingestão automática (e-mail do Nubank, atalho do iPhone)
+  ingestions   ExpenseIngestion[]
+  ingestTokens IngestToken[]
 }
 
 // Registro de qual aviso proativo já foi enviado em qual dia. A unicidade
@@ -93,9 +97,10 @@ model Category {
   color     String   @default("#6366f1")
   createdAt DateTime @default(now())
 
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expenses Expense[]
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expenses          Expense[]
   recurringExpenses RecurringExpense[]
+  ingestions        ExpenseIngestion[]
 
   @@unique([userId, name])
   @@index([userId])
@@ -208,9 +213,9 @@ model Account {
   kind      AccountKind
   createdAt DateTime    @default(now())
 
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expenses Expense[]
-  incomes  Income[]
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expenses          Expense[]
+  incomes           Income[]
   recurringExpenses RecurringExpense[]
 
   @@unique([userId, kind])
@@ -349,9 +354,9 @@ model Investment {
 
 enum WorkoutKind {
   STRENGTH // musculação
-  CARDIO   // corrida/cardio
-  MIXED    // misto (musculação + cardio no mesmo dia)
-  REST     // descanso
+  CARDIO // corrida/cardio
+  MIXED // misto (musculação + cardio no mesmo dia)
+  REST // descanso
 }
 
 // Template semanal: o que treinar em cada dia da semana
@@ -585,6 +590,96 @@ model StudyTask {
 
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   subject Subject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+}
+
+// =========================================================================
+// Ingestão automática de despesas
+//
+// Duas entradas externas (e-mail do Nubank, atalho do iPhone na Apple Wallet)
+// caem aqui como PENDENTE. Nada vira Expense/Income sem você confirmar na
+// tela de pendentes — por isso a tabela é separada: o resto do app calcula
+// em cima de Expense sem saber que isto existe, e um gasto que talvez tenha
+// acontecido nunca entra sozinho no "ainda posso gastar".
+//
+// Confirmar copia os dados para uma Expense (ou Income, se for Pix
+// recebido) pelo mesmo caminho do lançamento manual, e a ingestão fica como
+// histórico de COMO o dado chegou.
+// =========================================================================
+model ExpenseIngestion {
+  id     String @id @default(cuid())
+  userId String
+
+  // Valor em centavos, como no resto do schema. O parser devolve reais; a
+  // conversão acontece na borda da rota.
+  amount            Int?
+  merchant          String
+  categoryId        String?
+  // Nome da categoria que o parser sugeriu, mesmo quando não casou com
+  // nenhuma cadastrada — a tela mostra como sugestão (igual ao chat).
+  suggestedCategory String?
+
+  // Momento da COMPRA, com hora cheia. É sobre este campo que a janela de
+  // 15 minutos da deduplicação é medida: o e-mail do Nubank pode chegar
+  // horas depois, e comparar por hora de chegada nunca casaria com o atalho.
+  occurredAt DateTime?
+  // Quando o registro chegou no backend.
+  receivedAt DateTime  @default(now())
+
+  // 'email' | 'wallet_shortcut' | 'email+shortcut'
+  source          String
+  // 'pending' | 'confirmed' | 'discarded'
+  status          String @default("pending")
+  // 'credit_purchase' | 'pix_out' | 'pix_in' | 'transfer' | 'payment' | 'unknown'
+  transactionType String @default("unknown")
+  // 'high' | 'medium' | 'low' — do parser. Confiança baixa não descarta
+  // nada, só sinaliza na tela.
+  parseConfidence String @default("medium")
+
+  // Payload original íntegro (JSON serializado — SQLite não tem jsonb).
+  // Obrigatório: se o parser errar, o original permite reprocessar.
+  rawPayload String
+  // IDs de ingestões fundidas nesta (JSON array de string).
+  mergedFrom String @default("[]")
+
+  // Preenchido na confirmação, para a tela saber o que virou o quê e para
+  // dar "desfazer" sem adivinhação.
+  expenseId String?
+  incomeId  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  // A tela de pendentes lista por (status, occurredAt DESC).
+  @@index([userId, status, occurredAt])
+  // A busca da deduplicação varre a janela de tempo.
+  @@index([userId, occurredAt])
+}
+
+// Token de longa duração para os canais automáticos. O JWT da sessão expira
+// em 7 dias e o Atalhos do iOS não sabe renovar nada, então cada canal ganha
+// o seu — revogável sozinho, sem derrubar os outros.
+//
+// Guardamos só o hash: se o banco vazar, os tokens não são reutilizáveis. O
+// valor em claro aparece uma única vez, na hora de criar.
+model IngestToken {
+  id         String    @id @default(cuid())
+  userId     String
+  // Como você reconhece este token na lista ("iPhone", "e-mail Nubank").
+  label      String
+  tokenHash  String    @unique
+  // Primeiros caracteres do token, para casar a linha da tela com o valor
+  // que você guardou no Atalho.
+  prefix     String
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }

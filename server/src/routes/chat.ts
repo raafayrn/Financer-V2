@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import { prisma } from '../prisma';
+import { matchCategoryByName as matchCategory } from '../lib/categoryMatch';
 import { requireAuth } from '../auth/middleware';
 import { asyncHandler, HttpError, parseBody } from '../lib/http';
 import {
@@ -49,15 +50,6 @@ const chatCallLimiter = rateLimit({
 chatRouter.use(chatCallLimiter);
 
 /** Casa a categoria sugerida pela IA com uma categoria real do usuário (case-insensitive). */
-function matchCategory(
-  suggested: string | null,
-  categories: { id: string; name: string }[],
-): string | null {
-  const normalized = suggested?.trim().toLowerCase() ?? null;
-  if (!normalized) return null;
-  return categories.find((c) => c.name.toLowerCase() === normalized)?.id ?? null;
-}
-
 function toPreview(parsed: ParsedExpense, categories: { id: string; name: string }[], fallbackText: string) {
   return {
     description: parsed.descricao || fallbackText,

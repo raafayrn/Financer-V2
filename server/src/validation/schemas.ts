@@ -443,3 +443,52 @@ export const monthCleanupSchema = z
   .refine((d) => d.expenseIds.length > 0 || d.incomeIds.length > 0, {
     message: 'Selecione ao menos um lançamento para limpar.',
   });
+
+/**
+ * Ingestão automática. Um endpoint, dois canais: o atalho do iPhone manda uma
+ * frase curta digitada na hora do pagamento; o webhook de e-mail manda o
+ * corpo da notificação do Nubank. O que os separa é `source`, então a união
+ * discriminada é o que garante que cada canal só aceite os campos dele.
+ */
+const isoDateTime = z
+  .string()
+  .trim()
+  .min(1, 'Informe a data/hora.')
+  .refine((s) => !Number.isNaN(Date.parse(s)), 'Data/hora inválida (use ISO 8601).');
+
+const walletShortcutIngestSchema = z.object({
+  source: z.literal('wallet_shortcut'),
+  text: z.string().trim().min(1, 'Informe o que foi gasto.').max(500),
+  // Vem do Atalho, que preenche com a hora do pagamento. Sem isso não há
+  // como deduplicar contra o e-mail que chega horas depois.
+  occurred_at: isoDateTime,
+});
+
+const emailIngestSchema = z.object({
+  source: z.literal('email'),
+  subject: z.string().trim().max(500).optional(),
+  from: z.string().trim().max(320).optional(),
+  body_text: z.string().min(1, 'Corpo do e-mail vazio.').max(100_000),
+  received_at: isoDateTime.optional(),
+});
+
+export const ingestSchema = z.discriminatedUnion('source', [
+  walletShortcutIngestSchema,
+  emailIngestSchema,
+]);
+
+export const ingestTokenCreateSchema = z.object({
+  label: z.string().trim().min(1, 'Dê um nome para reconhecer este token.').max(60),
+});
+
+/**
+ * Correções feitas na hora de confirmar um pendente. Tudo opcional: o corpo
+ * vazio confirma exatamente o que o parser leu.
+ */
+export const ingestionConfirmSchema = z.object({
+  amount: reais.optional(),
+  description: z.string().trim().min(1).max(200).optional(),
+  categoryId: z.string().trim().min(1).nullable().optional(),
+  accountId: z.string().trim().min(1).nullable().optional(),
+  date: isoDate.optional(),
+});

@@ -4,6 +4,7 @@ import { useEffect, useState, type ComponentType } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { springSheet } from '../lib/motion';
+import { usePendingIngestions } from '../hooks/usePendingIngestions';
 import { MonthNavigator } from './MonthNavigator';
 import {
   BellIcon,
@@ -20,7 +21,13 @@ import {
   WalletIcon,
 } from './icons';
 
-type Tab = { to: string; label: string; end?: boolean };
+type Tab = {
+  to: string;
+  label: string;
+  end?: boolean;
+  /** Contador ao lado do label — hoje só a fila de pendentes usa. */
+  badge?: 'ingestions';
+};
 
 type Entry = {
   /** Rota-raiz da seção; também é o que a sidebar destaca. */
@@ -54,6 +61,7 @@ const NAV: Entry[] = [
     tabs: [
       { to: '/financas', label: 'Resumo', end: true },
       { to: '/financas/lancamentos', label: 'Lançamentos' },
+      { to: '/financas/pendentes', label: 'Pendentes', badge: 'ingestions' },
       { to: '/financas/recorrentes', label: 'Fixas', end: true },
       { to: '/financas/recorrentes/parcelamentos', label: 'Parcelamentos' },
       { to: '/financas/investimentos', label: 'Investimentos' },
@@ -87,13 +95,16 @@ function entryForPath(pathname: string): Entry {
 /** Abas sublinhadas do header (padrão Cash Flow / Spending / Income). */
 function HeaderTabs({ tabs }: { tabs: Tab[] }) {
   const { pathname } = useLocation();
+  const pendingIngestions = usePendingIngestions();
   return (
     <nav className="ms-tabs">
       {tabs.map((tab) => {
         const active = tab.end ? pathname === tab.to : pathname.startsWith(tab.to);
+        const badge = tab.badge === 'ingestions' ? pendingIngestions : 0;
         return (
           <NavLink key={tab.to} to={tab.to} end={tab.end} className={`ms-tab${active ? ' active' : ''}`}>
             {tab.label}
+            {badge > 0 && <span className="ms-tab-badge">{badge}</span>}
             {active && (
               <motion.span layoutId="ms-tab-underline" className="ms-tab-underline" transition={springSheet} />
             )}

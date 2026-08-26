@@ -18,6 +18,8 @@ import type {
   ExpenseWithPlan,
   Income,
   IncomeInput,
+  Ingestion,
+  IngestionConfirmInput,
   Investment,
   InvestmentInput,
   InvestmentSummary,
@@ -117,6 +119,22 @@ export const api = {
     request<Category>(`/categories/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteCategory: (id: string) =>
     request<void>(`/categories/${id}`, { method: 'DELETE' }),
+
+  // Ingestão automática (e-mail do Nubank, atalho do iPhone)
+  listIngestions: (status: 'pending' | 'all' = 'pending') =>
+    request<{ ingestions: Ingestion[] }>(`/ingestions?status=${status}`).then((r) => r.ingestions),
+  countPendingIngestions: () => request<{ pending: number }>('/ingestions/count'),
+  confirmIngestion: (id: string, data: IngestionConfirmInput = {}) =>
+    request<{ ingestion: Ingestion; expenseId: string | null; incomeId: string | null }>(
+      `/ingestions/${id}/confirm`,
+      { method: 'POST', body: JSON.stringify(data) },
+    ),
+  discardIngestion: (id: string) =>
+    request<{ ingestion: Ingestion }>(`/ingestions/${id}/discard`, { method: 'POST' }),
+  unmergeIngestion: (id: string) =>
+    request<{ ingestion: Ingestion; restored: number }>(`/ingestions/${id}/unmerge`, {
+      method: 'POST',
+    }),
 
   // Contas fixas (Cartão de crédito / Vale-alimentação / Carteira)
   listAccounts: () => request<Account[]>('/accounts'),

@@ -1940,3 +1940,94 @@ body {
   .ms-donut-inline .ms-donut-wrap { width: 110px; }
   .ms-donut-inline .ms-donut { width: 110px; height: 110px; }
 }
+
+/* =========================================================================
+   PENDENTES — fila da ingestão automática
+   Cada linha é uma decisão a tomar (confirmar / editar / descartar), então
+   as ações moram na própria linha: mandar o usuário abrir um modal só para
+   dizer "sim, foi isso" transformaria a fila num trabalho.
+   ========================================================================= */
+.ms-tab-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--primary);
+  color: var(--primary-contrast);
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  vertical-align: middle;
+}
+
+.ms-pending-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-top: 1px solid var(--border);
+}
+.ms-pending-row:hover { background: var(--surface-3); }
+.ms-pending-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1 1 auto; }
+.ms-pending-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ms-pending-meta { font-size: 12px; color: var(--text-muted); }
+.ms-pending-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 3px; }
+
+.ms-pending-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+.ms-pending-amount { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ms-pending-actions { display: flex; gap: 6px; }
+
+.ms-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+/* E-mail + atalho: o valor veio do banco E a hora bateu com a do pagamento.
+   É o único caso em que dá para confirmar sem olhar duas vezes. */
+.ms-badge-strong {
+  background: var(--ok-bg);
+  border-color: var(--ok);
+  color: var(--ok);
+}
+.ms-badge-warn {
+  background: var(--warning-bg);
+  border-color: var(--warning);
+  color: var(--warning);
+}
+.ms-badge-link { cursor: pointer; }
+.ms-badge-link:hover { background: var(--surface); color: var(--text); }
+
+@media (max-width: 620px) {
+  /* No celular a linha vira duas: o valor e as ações não cabem ao lado do
+     nome sem espremer os dois. */
+  .ms-pending-row { flex-wrap: wrap; }
+  .ms-pending-right {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding-left: 52px;
+  }
+}

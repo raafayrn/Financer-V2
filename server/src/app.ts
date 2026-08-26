@@ -22,6 +22,9 @@ import { studiesRouter } from './routes/studies';
 import { agendaRouter } from './routes/agenda';
 import { recurringRouter } from './routes/recurring';
 import { cleanupRouter } from './routes/cleanup';
+import { ingestRouter } from './routes/ingest';
+import { ingestTokensRouter } from './routes/ingestTokens';
+import { ingestionsRouter } from './routes/ingestions';
 
 export function createApp() {
   const app = express();
@@ -43,6 +46,9 @@ export function createApp() {
   app.use('/api/salary', salaryRouter);
   app.use('/api/voucher', voucherRouter);
   app.use('/api/wallet-base', walletBaseRouter);
+  // Antes do expensesRouter: /api/expenses/ingest autentica por token de
+  // ingestão, não pelo JWT da sessão que o expensesRouter exige de tudo.
+  app.use('/api/expenses', ingestRouter);
   app.use('/api/expenses', expensesRouter);
   app.use('/api/recurring', recurringRouter);
   app.use('/api/income', incomeRouter);
@@ -57,6 +63,8 @@ export function createApp() {
   app.use('/api/studies', studiesRouter);
   app.use('/api/agenda', agendaRouter);
   app.use('/api/cleanup', cleanupRouter);
+  app.use('/api/ingest-tokens', ingestTokensRouter);
+  app.use('/api/ingestions', ingestionsRouter);
 
   app.use((_req, res) => {
     res.status(404).json({ error: 'Rota não encontrada.' });

@@ -446,3 +446,37 @@ export interface IncomeInput {
   date: string;
   accountId: string | null;
 }
+
+/** Lançamento que chegou por um canal automático e espera confirmação. */
+export interface Ingestion {
+  id: string;
+  amount: number | null;
+  merchant: string;
+  categoryId: string | null;
+  suggestedCategory: string | null;
+  /** Hora da COMPRA — é o que a tela mostra, não a hora em que o aviso chegou. */
+  occurredAt: string | null;
+  receivedAt: string;
+  source: 'email' | 'wallet_shortcut' | 'email+shortcut';
+  status: 'pending' | 'confirmed' | 'discarded';
+  transactionType:
+    | 'credit_purchase'
+    | 'pix_out'
+    | 'pix_in'
+    | 'transfer'
+    | 'payment'
+    | 'unknown';
+  parseConfidence: 'high' | 'medium' | 'low';
+  /** Não vazio = absorveu outra ingestão da mesma compra. */
+  mergedFrom: string[];
+  expenseId: string | null;
+  incomeId: string | null;
+}
+
+export interface IngestionConfirmInput {
+  amount?: number;
+  description?: string;
+  categoryId?: string | null;
+  accountId?: string | null;
+  date?: string;
+}
