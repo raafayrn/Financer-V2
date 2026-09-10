@@ -530,3 +530,18 @@ export interface SearchResponse {
   limitPerKind?: number;
   results: SearchHit[];
 }
+
+export interface AppNotification {
+  id: string;
+  title: string;
+  body: string | null;
+  /** AAAA-MM-DD, no fuso do app. */
+  date: string;
+  read: boolean;
+  createdAt: string;
+}
+
+export interface NotificationsResponse {
+  unread: number;
+  notifications: AppNotification[];
+}

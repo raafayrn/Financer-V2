@@ -226,6 +226,12 @@ async function deliver(
 ): Promise<void> {
   try {
     await sendMessage(chatId, text);
+    // Guarda o texto na reserva que o claim() já criou: é o que faz a mesma
+    // mensagem aparecer no sino do app, para quem não usa o bot ou não viu a
+    // notificação no celular (ver routes/notifications.ts).
+    await prisma.notificationLog
+      .updateMany({ where: { userId, jobKey, sentDate }, data: { body: text } })
+      .catch(() => undefined);
     console.log(`Telegram: "${jobKey}" enviado para ${userId}.`);
   } catch (err) {
     console.error(`Telegram: falha ao enviar "${jobKey}":`, err);

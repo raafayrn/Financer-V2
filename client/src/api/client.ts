@@ -32,6 +32,8 @@ import type {
   StudiesOverview,
   StudyTask,
   Subject,
+  NotificationsResponse,
+  AppNotification,
   SearchResponse,
   Summary,
   TelegramPairResult,
@@ -258,6 +260,13 @@ export const api = {
    */
   search: (q: string, signal?: AbortSignal) =>
     request<SearchResponse>(`/search?q=${encodeURIComponent(q)}`, { signal }),
+
+  // Notificações (o mesmo que o bot do Telegram manda)
+  listNotifications: () => request<NotificationsResponse>('/notifications'),
+  markNotificationRead: (id: string) =>
+    request<AppNotification>(`/notifications/${id}/read`, { method: 'POST' }),
+  markAllNotificationsRead: () =>
+    request<{ marked: number }>('/notifications/read-all', { method: 'POST' }),
 
   // Resumo e relatórios
   getSummary: (year: number, month: number) =>

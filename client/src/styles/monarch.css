@@ -2355,3 +2355,59 @@ body {
   padding: 1px 5px;
   margin-right: 3px;
 }
+
+/* ---------- Sino de notificações ---------- */
+.ms-bell { position: relative; }
+.ms-bell-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 4px;
+  border-radius: var(--radius-pill);
+  background: var(--over);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 15px;
+  text-align: center;
+}
+.ms-notif-panel { width: min(360px, calc(100vw - 32px)); max-height: 70dvh; overflow-y: auto; }
+.ms-notif-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px 10px;
+  border-bottom: 0.5px solid var(--border);
+}
+.ms-notif-list { list-style: none; margin: 0; padding: 0; }
+.ms-notif-item { border-bottom: 0.5px solid var(--border); }
+.ms-notif-item:last-child { border-bottom: none; }
+.ms-notif-button {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 8px;
+  width: 100%;
+  text-align: left;
+  padding: 10px 8px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  border-radius: 10px;
+}
+.ms-notif-button:disabled { cursor: default; }
+.ms-notif-title { font-size: 0.88rem; font-weight: 600; }
+.ms-notif-date { font-size: 0.75rem; color: var(--text-faint); }
+.ms-notif-body {
+  grid-column: 1 / -1;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  white-space: pre-line;
+  line-height: 1.4;
+}
+/* Não lida ganha um marcador na borda, não um fundo colorido: o texto precisa
+   continuar legível e a lista, calma. */
+.ms-notif-unread { border-left: 3px solid var(--primary); }
+.ms-notif-unread .ms-notif-title { color: var(--text); }

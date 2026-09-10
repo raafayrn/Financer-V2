@@ -82,12 +82,19 @@ model NotificationLog {
   jobKey    String
   // Data no fuso do app (AAAA-MM-DD), não UTC.
   sentDate  String
+  // O texto que foi enviado. Nasceu como registro de "já mandei hoje" só para
+  // não duplicar no Telegram; guardar a mensagem é o que permite o app mostrar
+  // a mesma coisa no sino, para quem não usa o bot ou não viu a notificação.
+  body      String?
+  // Nulo = não lida. Data = quando o usuário marcou como lida no app.
+  readAt    DateTime?
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, jobKey, sentDate])
   @@index([userId])
+  @@index([userId, readAt])
 }
 
 model Category {

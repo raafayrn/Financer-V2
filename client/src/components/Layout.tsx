@@ -6,9 +6,9 @@ import { useTheme } from '../context/ThemeContext';
 import { springSheet } from '../lib/motion';
 import { usePendingIngestions } from '../hooks/usePendingIngestions';
 import { CommandPalette, useAtalhoPalette } from './CommandPalette';
+import { NotificationsBell } from './NotificationsBell';
 import { MonthNavigator } from './MonthNavigator';
 import {
-  BellIcon,
   BookIcon,
   CalendarIcon,
   GearIcon,
@@ -162,9 +162,7 @@ export function Layout() {
       >
         <SearchIcon />
       </button>
-      <button className="ms-icon-btn" title="Notificações" aria-label="Notificações">
-        <BellIcon />
-      </button>
+      <NotificationsBell />
       <button
         className="ms-icon-btn"
         title={theme === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'}
