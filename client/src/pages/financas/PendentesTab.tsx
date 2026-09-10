@@ -10,6 +10,8 @@ import type { Ingestion } from '../../api/types';
 import { BrandIcon } from '../../components/BrandIcon';
 import { ExpenseFormModal } from '../../components/ExpenseFormModal';
 import { formatCurrency } from '../../utils/format';
+import { EmptyState } from '../../components/EmptyState';
+import { CheckIcon } from '../../components/icons';
 import { useFinancas } from './context';
 
 /**
@@ -169,10 +171,11 @@ export function PendentesTab() {
         )}
 
         {items.length === 0 ? (
-          <p className="empty">
-            Nada esperando. O que o banco avisar ou você registrar pelo atalho do iPhone aparece
-            aqui antes de entrar na conta do mês.
-          </p>
+          <EmptyState
+            icon={<CheckIcon />}
+            title="Nada esperando"
+            description="O que o banco avisar, ou o que você registrar pelo atalho do iPhone, aparece aqui antes de entrar na conta do mês."
+          />
         ) : (
           items.map((item) => {
             const cat = item.categoryId ? categoryById.get(item.categoryId) : undefined;

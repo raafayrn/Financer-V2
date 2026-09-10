@@ -12,9 +12,10 @@ import type { Investment, InvestmentInput } from '../api/types';
 import { BrandIcon } from '../components/BrandIcon';
 import { formatCurrency, formatDayMonth, monthShort } from '../utils/format';
 import { INVESTMENT_TYPE_COLOR, INVESTMENT_TYPE_LABEL } from '../utils/investments';
-import { ChevronLeftIcon, ChevronRightIcon, EditIcon, TrashIcon } from '../components/icons';
+import { ChevronLeftIcon, ChevronRightIcon, EditIcon, PiggyBankIcon, TrashIcon } from '../components/icons';
 import { InvestmentFormModal } from '../components/InvestmentFormModal';
 import { springSmooth, springTap } from '../lib/motion';
+import { EmptyState } from '../components/EmptyState';
 
 const overviewContainer = {
   hidden: {},
@@ -184,7 +185,12 @@ export function InvestmentsPage() {
                   <span className="ms-muted">{investments.length}</span>
                 </div>
                 {investments.length === 0 ? (
-                  <p className="empty">Nenhum investimento lançado ainda.</p>
+                  <EmptyState
+                    icon={<PiggyBankIcon />}
+                    title="Nenhum investimento lançado"
+                    description="Registre aportes e resgates para acompanhar o saldo e a evolução do ano."
+                    action={{ label: 'Novo lançamento', onClick: () => setModal({ kind: 'create' }) }}
+                  />
                 ) : (
                   <AnimatePresence initial={false}>
                     {investments.map((inv) => {

@@ -5,6 +5,8 @@ import { RowMenu } from '../../components/RowMenu';
 import { formatDayMonth } from '../../utils/format';
 import { WEEKDAYS_SHORT, countdownLabel, daysUntil } from '../../lib/studies';
 import { useEstudos } from './context';
+import { BookIcon } from '../../components/icons';
+import { EmptyState } from '../../components/EmptyState';
 
 /**
  * Faixas por proximidade. A pergunta do dia a dia é "o que eu estudo agora",
@@ -141,9 +143,16 @@ export function ProvasTab() {
 
         <div className="ms-card-body ms-card-body-flush">
           {visiveis.length === 0 ? (
-            <p className="empty">
-              {proximas.length === 0 ? 'Nenhuma prova marcada.' : 'Nenhuma prova nesta matéria.'}
-            </p>
+            <EmptyState
+              icon={<BookIcon />}
+              title={proximas.length === 0 ? 'Nenhuma prova marcada' : 'Nenhuma prova nesta matéria'}
+              description={
+                proximas.length === 0
+                  ? 'Marque as avaliações do semestre para elas aparecerem no dashboard e na agenda.'
+                  : 'Existem provas marcadas em outras matérias — troque o filtro para vê-las.'
+              }
+              action={proximas.length === 0 ? { label: 'Marcar prova', onClick: () => openExam() } : undefined}
+            />
           ) : (
             bands.map((band) => (
               <div key={band.id} className="ms-exam-band">

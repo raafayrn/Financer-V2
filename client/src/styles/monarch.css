@@ -2080,3 +2080,99 @@ body {
 .ms-token-meta code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 /* Revogado continua na lista: é ele que responde "esse canal ainda roda?". */
 .ms-token-revoked .ms-token-label { color: var(--text-muted); text-decoration: line-through; }
+
+/* ============================================================
+   Skeleton — o desenho do conteúdo antes do conteúdo
+   ============================================================
+   Ver client/src/components/Skeleton.tsx para o padrão de uso. As cores saem
+   dos tokens de superfície, então o brilho funciona igual no claro e no
+   escuro sem nenhuma cor fixa aqui. */
+.skeleton {
+  display: block;
+  background: linear-gradient(
+    90deg,
+    var(--surface-2) 25%,
+    var(--surface-3) 37%,
+    var(--surface-2) 63%
+  );
+  background-size: 400% 100%;
+  border-radius: var(--radius-sm);
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes skeleton-shimmer {
+  from { background-position: 100% 50%; }
+  to { background-position: 0 50%; }
+}
+/* Quem pediu menos movimento no sistema vê um bloco parado, mesma cor. */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; background: var(--surface-2); }
+}
+
+.skeleton-line { border-radius: var(--radius-pill); }
+.skeleton-circle { border-radius: var(--radius-pill); flex: none; }
+
+/* Mesma métrica de .ms-row: o conteúdo real nasce no lugar do skeleton, sem
+   deslocar nada ao chegar. */
+.skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.skeleton-row:last-child { border-bottom: none; }
+.skeleton-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* ============================================================
+   Estado vazio
+   ============================================================
+   Ver client/src/components/EmptyState.tsx. */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  padding: 28px 16px;
+  color: var(--text-muted);
+}
+.empty-state-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--text-faint);
+  margin-bottom: 2px;
+}
+.empty-state-icon svg { width: 20px; height: 20px; }
+.empty-state-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.empty-state-text {
+  margin: 0;
+  font-size: 0.85rem;
+  max-width: 38ch;
+  line-height: 1.45;
+}
+.empty-state-action { margin-top: 6px; }
+
+/* Nos cards do dashboard o vazio divide espaço com o resto da tela. */
+.empty-state-compact { padding: 16px 8px; gap: 6px; }
+.empty-state-compact .empty-state-icon { width: 34px; height: 34px; }
+.empty-state-compact .empty-state-icon svg { width: 16px; height: 16px; }
+.empty-state-compact .empty-state-title { font-size: 0.88rem; font-weight: 500; color: var(--text-muted); }
+
+/* Skeletons que precisam da métrica exata do card do dashboard. */
+.ms-hero-skeleton { display: flex; flex-direction: column; gap: 10px; margin: 4px 0; }
+.ms-invoice-bar-skeleton { margin: 14px 0 12px; }

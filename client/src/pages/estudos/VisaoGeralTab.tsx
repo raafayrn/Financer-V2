@@ -9,6 +9,8 @@ import {
   todayIsoStr,
 } from '../../lib/studies';
 import { useEstudos } from './context';
+import { BookIcon, CalendarIcon, CheckIcon } from '../../components/icons';
+import { EmptyState } from '../../components/EmptyState';
 
 /** Bloco de número grande + label, repetido no topo da aba. */
 function Tile({ label, value, hint }: { label: string; value: string; hint?: string }) {
@@ -86,7 +88,7 @@ export function VisaoGeralTab() {
               </div>
             </div>
             {todayClasses.length === 0 && todayEvents.length === 0 ? (
-              <p className="empty">Nenhuma aula hoje.</p>
+              <EmptyState compact icon={<BookIcon />} title="Nenhuma aula hoje" />
             ) : (
               <>
                 {todayClasses.map((c, i) => {
@@ -134,7 +136,7 @@ export function VisaoGeralTab() {
               </div>
             </div>
             {tasks.length === 0 ? (
-              <p className="empty">Tudo em dia! 🎉</p>
+              <EmptyState compact icon={<CheckIcon />} title="Tudo em dia" />
             ) : (
               tasks.slice(0, 6).map((t) => {
                 const subj = subjectById(t.subjectId);
@@ -171,7 +173,12 @@ export function VisaoGeralTab() {
               <h3 className="ms-card-title">Próximas provas</h3>
             </div>
             {upcomingExams.length === 0 ? (
-              <p className="empty">Nenhuma prova marcada.</p>
+              <EmptyState
+                compact
+                icon={<CalendarIcon />}
+                title="Nenhuma prova marcada"
+                action={{ label: 'Marcar prova', to: '/estudos/provas' }}
+              />
             ) : (
               upcomingExams.slice(0, 5).map((ex) => {
                 const subj = subjectById(ex.subjectId);

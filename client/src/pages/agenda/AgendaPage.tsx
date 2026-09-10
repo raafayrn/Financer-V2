@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useDeleteAgendaEvent } from '../../api/queries';
-import { ChevronLeftIcon, ChevronRightIcon, TrashIcon } from '../../components/icons';
+import { BookIcon, CalendarIcon, ChevronLeftIcon, ChevronRightIcon, TrashIcon } from '../../components/icons';
 import {
   CATEGORY_COLORS,
   CATEGORY_LABELS,
@@ -13,6 +13,7 @@ import {
   todayIsoStr,
 } from '../../lib/studies';
 import { useEstudos } from '../estudos/context';
+import { EmptyState } from '../../components/EmptyState';
 
 /** Quantos itens cabem numa célula antes de virar "+N". */
 const MAX_VISIBLE = 3;
@@ -187,7 +188,12 @@ export function AgendaPage() {
           </div>
 
           {selEmpty ? (
-            <p className="empty">Nenhum compromisso neste dia.</p>
+            <EmptyState
+              icon={<CalendarIcon />}
+              title="Nenhum compromisso neste dia"
+              description="Provas, tarefas e eventos marcados para a data aparecem aqui."
+              action={{ label: 'Novo evento', onClick: () => openEvent(undefined, selectedIso) }}
+            />
           ) : (
             <>
               {selEvents.map((ev) => (
@@ -252,7 +258,7 @@ export function AgendaPage() {
             </div>
           </div>
           {selClasses.length === 0 ? (
-            <p className="empty">Sem aula neste dia.</p>
+            <EmptyState compact icon={<BookIcon />} title="Sem aula neste dia" />
           ) : (
             selClasses.map((c, ci) => {
               const subj = subjectByName(c.name);

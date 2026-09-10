@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { BrandIcon } from '../../components/BrandIcon';
 import { ChatBox } from '../../components/ChatBox';
-import { EditIcon, MinusIcon, PlusIcon } from '../../components/icons';
+import { EditIcon, MinusIcon, PlusIcon, RepeatIcon, WalletIcon } from '../../components/icons';
 import { formatCurrency, formatDayMonth, monthName, monthShort } from '../../utils/format';
 import { GastoPorCategoria } from './GastoPorCategoria';
+import { EmptyState } from '../../components/EmptyState';
 import { useFinancas } from './context';
 import type { TrendPoint } from './context';
 
@@ -302,7 +303,12 @@ export function ResumoTab() {
           </div>
         </div>
         {recentEntries.length === 0 ? (
-          <p className="empty">Nenhum lançamento este mês.</p>
+          <EmptyState
+            icon={<WalletIcon />}
+            title="Nenhum lançamento este mês"
+            description="Gastos e receitas que você lançar aparecem aqui, do mais recente para o mais antigo."
+            action={{ label: 'Lançar gasto', onClick: () => openModal({ kind: 'create' }) }}
+          />
         ) : (
           recentEntries.map((entry) => {
             const cat = entry.categoryId ? categoryById.get(entry.categoryId) : undefined;
@@ -356,7 +362,12 @@ export function ResumoTab() {
         </div>
         <div className="ms-card-scroll">
           {recurring.length === 0 ? (
-            <p className="empty">Nenhuma conta fixa neste mês.</p>
+            <EmptyState
+              icon={<RepeatIcon />}
+              title="Nenhuma conta fixa neste mês"
+              description="Aluguel, streaming e academia entram sozinhos todo mês depois de cadastrados uma vez."
+              action={{ label: 'Cadastrar fixa', to: '/financas/recorrentes' }}
+            />
           ) : (
             recurring.map((item) => {
               const cat = item.categoryId ? categoryById.get(item.categoryId) : undefined;
@@ -391,7 +402,12 @@ export function ResumoTab() {
         </div>
         <div className="ms-card-scroll">
           {installments.length === 0 ? (
-            <p className="empty">Nenhuma compra parcelada neste mês.</p>
+            <EmptyState
+              icon={<PlusIcon />}
+              title="Nenhuma compra parcelada"
+              description="Um parcelamento nasce ao lançar uma despesa com mais de uma parcela."
+              action={{ label: 'Lançar parcelada', onClick: () => openModal({ kind: 'create' }) }}
+            />
           ) : (
             installments.map((item) => {
               const cat = item.categoryId ? categoryById.get(item.categoryId) : undefined;

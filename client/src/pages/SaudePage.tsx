@@ -18,11 +18,12 @@ import {
 } from '../api/queries';
 import type { WorkoutSession, WorkoutSessionInput } from '../api/types';
 import { formatDayMonth, todayIso } from '../utils/format';
-import { CheckIcon, EditIcon, PlayCircleIcon, PlusIcon } from '../components/icons';
+import { CheckIcon, DumbbellIcon, EditIcon, FlameIcon, HeartPulseIcon, PlayCircleIcon, PlusIcon } from '../components/icons';
 import { exerciseVideoSearchUrl } from '../utils/exerciseLibrary';
 import { WorkoutSessionModal } from '../components/WorkoutSessionModal';
 import { WorkoutPlanModal } from '../components/WorkoutPlanModal';
 import { springSmooth, springTap } from '../lib/motion';
+import { EmptyState } from '../components/EmptyState';
 
 const WEEKDAYS = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
 
@@ -105,7 +106,7 @@ function WaterRing({ percent, consumedMl, goalMl }: { percent: number; consumedM
 
 /** Mini gráfico de linha (evolução de carga). */
 function LineChart({ points }: { points: { date: string; maxWeight: number }[] }) {
-  if (points.length === 0) return <p className="empty">Sem dados ainda.</p>;
+  if (points.length === 0) return <EmptyState compact title="Sem dados ainda" />;
   const w = 300;
   const h = 90;
   const pad = 6;
@@ -376,9 +377,18 @@ export function SaudePage() {
                     ))}
                   </ul>
                 ) : today.day && today.day.kind === 'REST' ? (
-                  <p className="empty">Dia de descanso. Aproveite para recuperar! 💤</p>
+                  <EmptyState
+                    icon={<HeartPulseIcon />}
+                    title="Dia de descanso"
+                    description="Descanso faz parte do plano — aproveite para recuperar."
+                  />
                 ) : (
-                  <p className="empty">Nenhum treino configurado para hoje. Toque em “Rotina semanal” para montar.</p>
+                  <EmptyState
+                    icon={<DumbbellIcon />}
+                    title="Nenhum treino para hoje"
+                    description="Monte a rotina semanal uma vez e cada dia passa a saber o que treinar."
+                    action={{ label: 'Rotina semanal', onClick: () => setPlanOpen(true) }}
+                  />
                 )}
                 <div className="today-actions">
                   <motion.button
@@ -404,7 +414,12 @@ export function SaudePage() {
           <motion.section className="card overview-item overview-span-2" variants={overviewItem}>
             <h3 className="section-title">Evolução de carga</h3>
             {summary.exercises.length === 0 ? (
-              <p className="empty">Registre treinos com carga para ver sua evolução e recordes aqui.</p>
+              <EmptyState
+                icon={<FlameIcon />}
+                title="Sem evolução para mostrar"
+                description="Registre treinos com carga e peso para ver a progressão e os recordes por exercício."
+                action={{ label: 'Registrar treino', onClick: () => setSessionModal({ mode: 'create' }) }}
+              />
             ) : (
               <ul className="exercise-list">
                 {summary.exercises.map((ex) => (

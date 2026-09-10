@@ -4,7 +4,8 @@ import { Link } from 'react-router-dom';
 import type { AccountKind } from '../../api/types';
 import { BrandIcon } from '../../components/BrandIcon';
 import { Dropdown } from '../../components/Dropdown';
-import { FilterIcon, RepeatIcon, TrashIcon } from '../../components/icons';
+import { EmptyState } from '../../components/EmptyState';
+import { FilterIcon, RepeatIcon, TrashIcon, WalletIcon } from '../../components/icons';
 import { RowMenu } from '../../components/RowMenu';
 import { springSheet } from '../../lib/motion';
 import { formatCurrency, monthName } from '../../utils/format';
@@ -333,12 +334,23 @@ export function LancamentosTab() {
           )}
         </AnimatePresence>
 
-        {filtered.length === 0 ? (
-          <p className="empty">
-            {ledger.length === 0
-              ? 'Nenhum lançamento neste mês.'
-              : 'Nenhum lançamento com esses filtros.'}
-          </p>
+        {/* Dois vazios diferentes: "não existe nada" pede lançar; "o filtro
+            escondeu tudo" pede limpar o filtro. Tratar os dois como um só é o
+            que faz o usuário achar que perdeu lançamento. */}
+        {filtered.length === 0 && ledger.length === 0 ? (
+          <EmptyState
+            icon={<WalletIcon />}
+            title="Nenhum lançamento neste mês"
+            description="Comece lançando um gasto ou uma receita — o mês passa a contar a partir daí."
+            action={{ label: 'Novo lançamento', onClick: () => openModal({ kind: 'create' }) }}
+          />
+        ) : filtered.length === 0 ? (
+          <EmptyState
+            icon={<FilterIcon />}
+            title="Nada com esses filtros"
+            description="Os lançamentos do mês continuam aqui — o filtro atual é que não alcança nenhum."
+            action={{ label: 'Limpar filtros', onClick: resetFilters }}
+          />
         ) : grouped ? (
           groups.map((g) => (
             <div key={g.date} className="ms-ledger-group">

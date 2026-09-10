@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { formatCurrency } from '../../utils/format';
 import { useFinancas } from './context';
+import { PiggyBankIcon } from '../../components/icons';
+import { EmptyState } from '../../components/EmptyState';
 
 const R = 62; // raio do donut
 const STROKE = 26;
@@ -45,7 +47,11 @@ export function GastoPorCategoria({ compact = false, inline = false }: Props = {
     return (
       <section className="ms-card">
         <div className="ms-card-body">
-          <p className="empty">Nenhum gasto neste mês.</p>
+          <EmptyState
+            icon={<PiggyBankIcon />}
+            title="Nenhum gasto neste mês"
+            description="Quando houver gastos, esta é a divisão deles por categoria."
+          />
         </div>
       </section>
     );

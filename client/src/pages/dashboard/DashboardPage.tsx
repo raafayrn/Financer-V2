@@ -26,9 +26,25 @@ import {
   todayIsoStr,
 } from '../../lib/studies';
 import { ChatBox } from '../../components/ChatBox';
+import { EmptyState } from '../../components/EmptyState';
+import {
+  SkeletonBlock,
+  SkeletonCircle,
+  SkeletonLine,
+  SkeletonRows,
+} from '../../components/Skeleton';
 import { ExpenseFormModal } from '../../components/ExpenseFormModal';
 import { IncomeFormModal } from '../../components/IncomeFormModal';
-import { EyeIcon, EyeOffIcon, MinusIcon, PlusIcon } from '../../components/icons';
+import {
+  BookIcon,
+  CalendarIcon,
+  CheckIcon,
+  EyeIcon,
+  EyeOffIcon,
+  MinusIcon,
+  PlusIcon,
+  WalletIcon,
+} from '../../components/icons';
 
 function formatMl(ml: number): string {
   if (ml >= 1000) return `${(ml / 1000).toFixed(1).replace('.', ',')} L`;
@@ -75,18 +91,26 @@ function SourceTile({
   value,
   hint,
   negative,
+  loading,
 }: {
   label: string;
   value: string;
   hint?: string;
   negative?: boolean;
+  loading?: boolean;
 }) {
   return (
     <div className="ms-card ms-source">
       <span className="ms-label">{label}</span>
-      <span className="ms-source-value" style={negative ? { color: 'var(--over)' } : undefined}>
-        {value}
-      </span>
+      {loading ? (
+        // 20px é o font-size de .ms-source-value: o número nasce exatamente
+        // onde o skeleton está, sem empurrar o card.
+        <SkeletonLine width="80%" height="20px" />
+      ) : (
+        <span className="ms-source-value" style={negative ? { color: 'var(--over)' } : undefined}>
+          {value}
+        </span>
+      )}
       {hint && <span className="ms-muted">{hint}</span>}
     </div>
   );
@@ -237,17 +261,11 @@ export function DashboardPage() {
   const voucherLeft = (summary?.income.voucher ?? 0) - (summary?.accounts.foodVoucher ?? 0);
   const wallet = summary?.walletBalance ?? 0;
 
-  // Spinner só no primeiro carregamento do mês. Na TROCA de mês as queries
-  // devolvem os dados do mês anterior como placeholder (keepPreviousData), o
-  // estado fica 'success' e a tela não pisca.
-  const firstLoad = summaryQuery.isPending || expensesQuery.isPending || incomesQuery.isPending;
-  if (firstLoad) {
-    return (
-      <div className="center-pad">
-        <div className="spinner" />
-      </div>
-    );
-  }
+  // Nenhum spinner de tela cheia: cada card mostra o próprio skeleton, no
+  // lugar exato onde o conteúdo vai nascer (ver components/Skeleton.tsx). Na
+  // TROCA de mês nem isso aparece — as queries devolvem o mês anterior como
+  // placeholder (keepPreviousData) e o estado já é 'success'.
+  const entriesLoading = expensesQuery.isPending || incomesQuery.isPending;
 
   return (
     <div className="ms-dash">
@@ -266,6 +284,13 @@ export function DashboardPage() {
           </div>
           {summaryQuery.isError ? (
             <CardError onRetry={() => void summaryQuery.refetch()} />
+          ) : summaryQuery.isPending ? (
+            <div className="ms-hero-skeleton">
+              {/* 40px e 13px são os font-sizes de .ms-hero-value e
+                  .ms-hero-status — mesma altura do que vai aparecer. */}
+              <SkeletonLine width="58%" height="40px" />
+              <SkeletonLine width="76%" height="13px" />
+            </div>
           ) : (
             <>
               <span className="ms-hero-value">{mask(formatCurrency(summary?.remaining ?? 0))}</span>
@@ -294,18 +319,21 @@ export function DashboardPage() {
               value={mask(formatCurrency(salaryLeft))}
               hint="restante"
               negative={salaryLeft < 0}
+              loading={summaryQuery.isPending}
             />
             <SourceTile
               label="VR"
               value={mask(formatCurrency(voucherLeft))}
               hint="restante"
               negative={voucherLeft < 0}
+              loading={summaryQuery.isPending}
             />
             <SourceTile
               label="Carteira"
               value={mask(formatCurrency(wallet))}
               hint="saldo"
               negative={wallet < 0}
+              loading={summaryQuery.isPending}
             />
           </div>
         )}
@@ -314,12 +342,25 @@ export function DashboardPage() {
           <div className="ms-card-head">
             <h3 className="ms-card-title">Fatura estimada</h3>
             <div className="ms-card-actions">
-              <span className="ms-invoice-total">{mask(formatCurrency(invoice))}</span>
+              {summaryQuery.isPending ? (
+                <SkeletonLine width="84px" height="15px" />
+              ) : (
+                <span className="ms-invoice-total">{mask(formatCurrency(invoice))}</span>
+              )}
             </div>
           </div>
           <div className="ms-card-body">
             {summaryQuery.isError ? (
               <CardError onRetry={() => void summaryQuery.refetch()} />
+            ) : summaryQuery.isPending ? (
+              <>
+                {/* 10px é a altura da .ms-invoice-bar. */}
+                <SkeletonBlock height="10px" className="ms-invoice-bar-skeleton" />
+                <div className="ms-invoice-legend">
+                  <SkeletonLine width="104px" height="12px" />
+                  <SkeletonLine width="116px" height="12px" />
+                </div>
+              </>
             ) : (
               <>
                 <div className="ms-invoice-bar">
@@ -357,8 +398,15 @@ export function DashboardPage() {
                 void incomesQuery.refetch();
               }}
             />
+          ) : entriesLoading ? (
+            <SkeletonRows count={3} />
           ) : recentEntries.length === 0 ? (
-            <p className="empty">Nenhum lançamento este mês.</p>
+            <EmptyState
+              compact
+              icon={<WalletIcon />}
+              title="Nenhum lançamento este mês"
+              action={{ label: 'Lançar gasto', onClick: () => setFinModal('expense') }}
+            />
           ) : (
             recentEntries.map((entry) => (
               <div key={`${entry.kind}-${entry.id}`} className="ms-row ms-row-tight">
@@ -398,7 +446,8 @@ export function DashboardPage() {
             </div>
           </div>
           {todayClasses.length === 0 ? (
-            <p className="empty">Sem aulas hoje.</p>
+            // Sem ação: dia sem aula não é problema a resolver.
+            <EmptyState compact icon={<BookIcon />} title="Sem aulas hoje" />
           ) : (
             todayClasses.map((c) => {
               const [startStr, endStr] = c.time.split('–');
@@ -435,8 +484,15 @@ export function DashboardPage() {
           </div>
           {agendaQuery.isError ? (
             <CardError onRetry={() => void agendaQuery.refetch()} />
+          ) : agendaQuery.isPending ? (
+            <SkeletonRows count={3} circle={false} />
           ) : upcomingEvents.length === 0 ? (
-            <p className="empty">Nenhum evento nos próximos 30 dias.</p>
+            <EmptyState
+              compact
+              icon={<CalendarIcon />}
+              title="Nada nos próximos 30 dias"
+              action={{ label: 'Abrir agenda', to: '/agenda' }}
+            />
           ) : (
             upcomingEvents.map((ev) => (
               <div key={ev.id} className="ms-row">
@@ -473,6 +529,12 @@ export function DashboardPage() {
           {waterQuery.isError ? (
             <div className="ms-card-body">
               <CardError onRetry={() => void waterQuery.refetch()} />
+            </div>
+          ) : waterQuery.isPending ? (
+            <div className="ms-card-body ms-water">
+              {/* 56px é o tamanho do anel. */}
+              <SkeletonCircle size={56} />
+              <SkeletonLine width="120px" height="15px" />
             </div>
           ) : (
             <div className="ms-card-body ms-water">
@@ -515,8 +577,15 @@ export function DashboardPage() {
           </div>
           {studiesQuery.isError ? (
             <CardError onRetry={() => void studiesQuery.refetch()} />
+          ) : studiesQuery.isPending ? (
+            <SkeletonRows count={3} circle={false} />
           ) : upcomingExams.length === 0 ? (
-            <p className="empty">Nenhuma prova agendada.</p>
+            <EmptyState
+              compact
+              icon={<BookIcon />}
+              title="Nenhuma prova agendada"
+              action={{ label: 'Marcar prova', to: '/estudos/provas' }}
+            />
           ) : (
             upcomingExams.map((exam) => {
               const subj = subjectById(exam.subjectId);
@@ -547,8 +616,10 @@ export function DashboardPage() {
           </div>
           {studiesQuery.isError ? (
             <CardError onRetry={() => void studiesQuery.refetch()} />
+          ) : studiesQuery.isPending ? (
+            <SkeletonRows count={3} circle={false} />
           ) : pendingTasks.length === 0 ? (
-            <p className="empty">Nenhuma tarefa pendente.</p>
+            <EmptyState compact icon={<CheckIcon />} title="Tudo em dia" />
           ) : (
             pendingTasks.map((task) => {
               const days = task.dueDate ? daysUntil(task.dueDate) : null;

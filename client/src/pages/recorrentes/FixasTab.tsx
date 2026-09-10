@@ -10,9 +10,10 @@ import {
 } from '../../api/queries';
 import { BrandIcon } from '../../components/BrandIcon';
 import { Dropdown } from '../../components/Dropdown';
-import { EditIcon, TrashIcon } from '../../components/icons';
+import { EditIcon, RepeatIcon, TrashIcon } from '../../components/icons';
 import type { Account, RecurringExpense } from '../../api/types';
 import { formatCurrency, monthName } from '../../utils/format';
+import { EmptyState } from '../../components/EmptyState';
 import { useRecorrentes } from './context';
 
 /** Conta padrão de uma despesa fixa (a maioria cai no cartão). */
@@ -280,9 +281,11 @@ export function FixasTab() {
           </div>
 
           {items.length === 0 ? (
-            <p className="empty">
-              Nenhuma despesa fixa cadastrada. Aluguel, streaming e academia são bons começos.
-            </p>
+            <EmptyState
+              icon={<RepeatIcon />}
+              title="Nenhuma despesa fixa"
+              description="Aluguel, streaming e academia são bons começos: cadastre uma vez e ela entra sozinha todo mês."
+            />
           ) : (
             <>
               <AnimatePresence initial={false}>{active.map(renderItem)}</AnimatePresence>

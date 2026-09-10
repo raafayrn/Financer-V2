@@ -7,10 +7,11 @@ import {
   useDeleteTopic,
   useUpdateTopic,
 } from '../../api/queries';
-import { CheckIcon, ChevronDownIcon, PlusIcon, TrashIcon } from '../../components/icons';
+import { BookIcon, CheckIcon, ChevronDownIcon, PlusIcon, TrashIcon } from '../../components/icons';
 import { SUBJECT_COLORS } from '../../lib/studies';
 import { springSmooth } from '../../lib/motion';
 import { useEstudos } from './context';
+import { EmptyState } from '../../components/EmptyState';
 
 export function MateriasTab() {
   const { data, subjects } = useEstudos();
@@ -90,7 +91,12 @@ export function MateriasTab() {
 
         <div className="ms-card-body">
           {subjects.length === 0 ? (
-            <p className="empty">Adicione suas matérias.</p>
+            <EmptyState
+              icon={<BookIcon />}
+              title="Nenhuma matéria cadastrada"
+              description="Cadastre as matérias do semestre para acompanhar assuntos, provas e progresso."
+              action={{ label: 'Nova matéria', onClick: () => setAddingSubject(true) }}
+            />
           ) : (
             <div className="ms-subject-grid">
               {subjects.map((s) => {

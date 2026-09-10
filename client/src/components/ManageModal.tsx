@@ -5,6 +5,8 @@ import type { Category, TelegramStatus } from '../api/types';
 import { formatCurrency, monthName } from '../utils/format';
 import { springSmooth, springTap } from '../lib/motion';
 import { Modal, ModalTitle } from './Modal';
+import { GridIcon } from './icons';
+import { EmptyState } from './EmptyState';
 
 function TrashIcon() {
   return (
@@ -213,7 +215,12 @@ export function ManageModal({ year, month, onCancel, onCategoriesChanged }: Prop
             {catError && <div className="alert alert-error">{catError}</div>}
 
             {categories.length === 0 ? (
-              <p className="empty">Nenhuma categoria cadastrada.</p>
+              <EmptyState
+                compact
+                icon={<GridIcon />}
+                title="Nenhuma categoria cadastrada"
+                description="Categorias organizam o gasto do mês — crie a primeira no campo acima."
+              />
             ) : (
               <ul className="settings-cat-list">
                 <AnimatePresence initial={false}>

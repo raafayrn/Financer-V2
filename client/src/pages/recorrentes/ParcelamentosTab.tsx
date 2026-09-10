@@ -1,6 +1,8 @@
 import { BrandIcon } from '../../components/BrandIcon';
 import { formatCurrency, monthName } from '../../utils/format';
 import { useRecorrentes } from './context';
+import { PlusIcon } from '../../components/icons';
+import { EmptyState } from '../../components/EmptyState';
 
 interface Plan {
   groupId: string;
@@ -42,10 +44,12 @@ export function ParcelamentosTab() {
         <div className="ms-card-head">
           <h3 className="ms-card-title">Parcelamentos</h3>
         </div>
-        <p className="empty">
-          Nenhuma compra parcelada em {monthName(month).toLowerCase()}/{year}. Parcelamentos são
-          criados ao lançar uma despesa com mais de uma parcela.
-        </p>
+        <EmptyState
+          icon={<PlusIcon />}
+          title={`Nada parcelado em ${monthName(month).toLowerCase()}/${year}`}
+          description="Um parcelamento nasce ao lançar uma despesa com mais de uma parcela."
+          action={{ label: 'Ir para lançamentos', to: '/financas/lancamentos' }}
+        />
       </section>
     );
   }

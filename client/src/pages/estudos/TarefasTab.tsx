@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useDeleteStudyTask, useUpdateStudyTask } from '../../api/queries';
-import { EditIcon, TrashIcon } from '../../components/icons';
+import { CheckIcon, EditIcon, TrashIcon } from '../../components/icons';
 import { formatDayMonth } from '../../utils/format';
 import { countdownLabel, daysUntil } from '../../lib/studies';
 import { useEstudos } from './context';
+import { EmptyState } from '../../components/EmptyState';
 
 type Filter = 'todas' | 'atrasadas' | 'sem-prazo';
 
@@ -90,7 +91,8 @@ export function TarefasTab() {
         )}
 
         {sorted.length === 0 ? (
-          <p className="empty">Tudo em dia! 🎉</p>
+          // Sem ação: nada pendente é o estado desejado, não um beco sem saída.
+          <EmptyState icon={<CheckIcon />} title="Tudo em dia" description="Nenhuma tarefa pendente por aqui." />
         ) : (
           <>
             {sorted.map((t) => {
