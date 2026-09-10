@@ -12,6 +12,7 @@ import { expensesRouter } from './routes/expenses';
 import { incomeRouter } from './routes/income';
 import { accountsRouter } from './routes/accounts';
 import { summaryRouter } from './routes/summary';
+import { searchRouter } from './routes/search';
 import { reportsRouter } from './routes/reports';
 import { chatRouter } from './routes/chat';
 import { investmentsRouter } from './routes/investments';
@@ -54,6 +55,7 @@ export function createApp() {
   app.use('/api/income', incomeRouter);
   app.use('/api/accounts', accountsRouter);
   app.use('/api/summary', summaryRouter);
+  app.use('/api/search', searchRouter);
   app.use('/api/reports', reportsRouter);
   app.use('/api/chat', chatRouter);
   app.use('/api/investments', investmentsRouter);

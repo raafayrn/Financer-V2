@@ -32,6 +32,7 @@ import type {
   StudiesOverview,
   StudyTask,
   Subject,
+  SearchResponse,
   Summary,
   TelegramPairResult,
   TelegramStatus,
@@ -249,6 +250,14 @@ export const api = {
   updateInvestment: (id: string, data: Partial<InvestmentInput>) =>
     request<Investment>(`/investments/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteInvestment: (id: string) => request<void>(`/investments/${id}`, { method: 'DELETE' }),
+
+  /**
+   * Busca unificada. Recebe o `signal` do TanStack Query: enquanto alguém
+   * digita, a requisição da letra anterior é cancelada em vez de disputar a
+   * resposta com a nova.
+   */
+  search: (q: string, signal?: AbortSignal) =>
+    request<SearchResponse>(`/search?q=${encodeURIComponent(q)}`, { signal }),
 
   // Resumo e relatórios
   getSummary: (year: number, month: number) =>

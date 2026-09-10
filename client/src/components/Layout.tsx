@@ -1,10 +1,11 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { useEffect, useState, type ComponentType } from 'react';
+import { useCallback, useEffect, useState, type ComponentType } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { springSheet } from '../lib/motion';
 import { usePendingIngestions } from '../hooks/usePendingIngestions';
+import { CommandPalette, useAtalhoPalette } from './CommandPalette';
 import { MonthNavigator } from './MonthNavigator';
 import {
   BellIcon,
@@ -143,6 +144,8 @@ export function Layout() {
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  useAtalhoPalette(useCallback(() => setPaletteOpen(true), []));
   const [drawerOpen, setDrawerOpen] = useState(false);
   const entry = entryForPath(location.pathname);
 
@@ -151,7 +154,12 @@ export function Layout() {
 
   const utilities = (
     <>
-      <button className="ms-icon-btn" title="Buscar" aria-label="Buscar">
+      <button
+        className="ms-icon-btn"
+        title="Buscar (Ctrl+K)"
+        aria-label="Buscar"
+        onClick={() => setPaletteOpen(true)}
+      >
         <SearchIcon />
       </button>
       <button className="ms-icon-btn" title="Notificações" aria-label="Notificações">
@@ -257,6 +265,8 @@ export function Layout() {
           href — nada de abrir em nova aba, clique do meio ou "copiar link" — e
           o estado ativo tinha que ser calculado na mão. O `end` no "/" evita
           que o Dashboard fique aceso em todas as rotas. */}
+      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
+
       <nav className="ms-mobile-nav">
         {NAV.filter((e) => e.mobile).map((e) => (
           <NavLink

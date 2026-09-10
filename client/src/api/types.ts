@@ -496,3 +496,37 @@ export interface IngestTokenRow {
 export interface IngestTokenCreated extends IngestTokenRow {
   token: string;
 }
+
+// ============================================================
+// Busca unificada (GET /api/search)
+// ============================================================
+
+export type SearchKind =
+  | 'expense'
+  | 'income'
+  | 'recurring'
+  | 'investment'
+  | 'subject'
+  | 'exam'
+  | 'task'
+  | 'event';
+
+export interface SearchHit {
+  id: string;
+  kind: SearchKind;
+  title: string;
+  subtitle?: string;
+  /** Em reais, quando o registro tem valor. */
+  amount?: number;
+  /** AAAA-MM-DD, quando o registro tem data. */
+  date?: string;
+  /** Rota do client para onde ir ao escolher. */
+  href: string;
+  score: number;
+}
+
+export interface SearchResponse {
+  query: string;
+  limitPerKind?: number;
+  results: SearchHit[];
+}
