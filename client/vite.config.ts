@@ -49,9 +49,15 @@ export default defineConfig({
   ],
   server: {
     port: Number(process.env.PORT) || 5173,
+    // Escuta em IPv4 e IPv6. Sem isso o Vite sobe só em [::1] e, quando o
+    // Windows resolve "localhost" para 127.0.0.1, o navegador leva conexão
+    // recusada no que parece ser um servidor no ar.
+    host: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:4000',
+        // 127.0.0.1 em vez de "localhost": o proxy sofre da mesma ambiguidade
+        // de resolução, e o backend escuta nas duas famílias.
+        target: 'http://127.0.0.1:4000',
         changeOrigin: true,
       },
     },
