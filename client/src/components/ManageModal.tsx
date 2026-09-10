@@ -4,7 +4,7 @@ import { api, ApiError } from '../api/client';
 import type { Category, TelegramStatus } from '../api/types';
 import { formatCurrency, monthName } from '../utils/format';
 import { springSmooth, springTap } from '../lib/motion';
-import { Modal } from './Modal';
+import { Modal, ModalTitle } from './Modal';
 
 function TrashIcon() {
   return (
@@ -148,7 +148,7 @@ export function ManageModal({ year, month, onCancel, onCategoriesChanged }: Prop
     <Modal onCancel={onCancel}>
       {(close) => (
         <>
-          <h2 className="modal-title">Gerenciar</h2>
+          <ModalTitle>Gerenciar</ModalTitle>
 
           <section className="manage-section">
             <h3 className="section-title">Orçamento mensal</h3>

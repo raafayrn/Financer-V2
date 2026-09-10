@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import type { BodyMetric, BodyMetricInput } from '../api/types';
 import { ApiError } from '../api/client';
 import { todayIso } from '../utils/format';
-import { Modal } from './Modal';
+import { Modal, ModalTitle } from './Modal';
 
 interface Props {
   initial?: BodyMetric | null;
@@ -65,7 +65,7 @@ export function BodyMetricModal({ initial, onCancel, onSubmit }: Props) {
     <Modal onCancel={onCancel}>
       {(close) => (
         <>
-          <h2 className="modal-title">Peso e medidas</h2>
+          <ModalTitle>Peso e medidas</ModalTitle>
           <form onSubmit={handleSubmit} className="modal-form">
             <label className="field">
               <span>Data</span>

@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import type { Account, Category, Expense, ExpenseInput } from '../api/types';
 import { ApiError } from '../api/client';
 import { formatCurrency, todayIso } from '../utils/format';
-import { Modal } from './Modal';
+import { Modal, ModalTitle } from './Modal';
 import { Dropdown } from './Dropdown';
 
 interface Props {
@@ -135,10 +135,10 @@ export function ExpenseFormModal({
     <Modal onCancel={onCancel}>
       {(close) => (
         <>
-        <h2 className="modal-title">
+        <ModalTitle>
           {title}
           {progress && <span className="modal-progress">{progress}</span>}
-        </h2>
+        </ModalTitle>
 
         {initial?.suggestedCategoryName && !categoryId && (
           <div className="alert alert-info">

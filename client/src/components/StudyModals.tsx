@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import type { AgendaEvent, AgendaEventCategory, Exam, StudyTask, Subject } from '../api/types';
 import { ApiError } from '../api/client';
 import { todayIso } from '../utils/format';
-import { Modal } from './Modal';
+import { Modal, ModalTitle } from './Modal';
 import { Dropdown } from './Dropdown';
 
 function subjectOptions(subjects: Subject[]) {
@@ -66,7 +66,7 @@ export function AgendaEventModal({ initial, defaultDate, onCancel, onSubmit }: A
     <Modal onCancel={onCancel}>
       {(close) => (
         <>
-          <h2 className="modal-title">{initial ? 'Editar evento' : 'Novo evento'}</h2>
+          <ModalTitle>{initial ? 'Editar evento' : 'Novo evento'}</ModalTitle>
           <form onSubmit={handleSubmit} className="modal-form">
             <label className="field">
               <span>Título</span>
@@ -149,7 +149,7 @@ export function ExamModal({ subjects, initial, onCancel, onSubmit }: ExamProps) 
     <Modal onCancel={onCancel}>
       {(close) => (
         <>
-          <h2 className="modal-title">{initial ? 'Editar prova' : 'Nova prova'}</h2>
+          <ModalTitle>{initial ? 'Editar prova' : 'Nova prova'}</ModalTitle>
           <form onSubmit={handleSubmit} className="modal-form">
             <label className="field">
               <span>Título</span>
@@ -234,7 +234,7 @@ export function StudyTaskModal({ subjects, initial, onCancel, onSubmit }: TaskPr
     <Modal onCancel={onCancel}>
       {(close) => (
         <>
-          <h2 className="modal-title">{initial ? 'Editar tarefa' : 'Nova tarefa'}</h2>
+          <ModalTitle>{initial ? 'Editar tarefa' : 'Nova tarefa'}</ModalTitle>
           <form onSubmit={handleSubmit} className="modal-form">
             <label className="field">
               <span>Tarefa</span>

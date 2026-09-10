@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import type { WorkoutDay, WorkoutKind, WorkoutSession, WorkoutSessionInput } from '../api/types';
 import { ApiError } from '../api/client';
 import { todayIso } from '../utils/format';
-import { Modal } from './Modal';
+import { Modal, ModalTitle } from './Modal';
 import { PlusIcon, TrashIcon } from './icons';
 
 interface SetRow {
@@ -132,7 +132,7 @@ export function WorkoutSessionModal({ title, day, initial, onCancel, onSubmit }:
     <Modal onCancel={onCancel}>
       {(close) => (
         <>
-          <h2 className="modal-title">{title}</h2>
+          <ModalTitle>{title}</ModalTitle>
           <form onSubmit={handleSubmit} className="modal-form">
             <div className="field-row">
               <label className="field" style={{ flex: 2 }}>

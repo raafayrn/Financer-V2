@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import type { Investment, InvestmentInput, InvestmentKind, InvestmentType } from '../api/types';
 import { ApiError } from '../api/client';
 import { todayIso } from '../utils/format';
-import { Modal } from './Modal';
+import { Modal, ModalTitle } from './Modal';
 import { Dropdown } from './Dropdown';
 import { INVESTMENT_TYPE_LABEL } from '../utils/investments';
 
@@ -58,7 +58,7 @@ export function InvestmentFormModal({ initial, title, onCancel, onSubmit }: Prop
     <Modal onCancel={onCancel}>
       {(close) => (
         <>
-          <h2 className="modal-title">{title}</h2>
+          <ModalTitle>{title}</ModalTitle>
 
           <form onSubmit={handleSubmit} className="modal-form">
             <label className="field">

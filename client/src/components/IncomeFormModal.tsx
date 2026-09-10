@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import type { Account, Income, IncomeInput } from '../api/types';
 import { ApiError } from '../api/client';
 import { todayIso } from '../utils/format';
-import { Modal } from './Modal';
+import { Modal, ModalTitle } from './Modal';
 
 interface Props {
   accounts: Account[];
@@ -54,7 +54,7 @@ export function IncomeFormModal({ accounts, initial, defaultAccountId, title, on
     <Modal onCancel={onCancel}>
       {(close) => (
         <>
-        <h2 className="modal-title">{title}</h2>
+        <ModalTitle>{title}</ModalTitle>
 
         <form onSubmit={handleSubmit} className="modal-form">
           <label className="field">

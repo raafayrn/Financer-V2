@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { ApiError } from '../api/client';
 import type { Category, Expense, Income } from '../api/types';
 import { formatCurrency, monthName } from '../utils/format';
-import { Modal } from './Modal';
+import { Modal, ModalTitle } from './Modal';
 
 type Preset = 'all' | 'expenses' | 'incomes' | 'variable';
 
@@ -143,9 +143,9 @@ export function ClearMonthModal({
     <Modal onCancel={onCancel}>
       {(close) => (
         <>
-          <h2 className="modal-title">
+          <ModalTitle>
             Limpar lançamentos de {monthName(month).toLowerCase()} de {year}
-          </h2>
+          </ModalTitle>
 
           {rows.length === 0 ? (
             <>

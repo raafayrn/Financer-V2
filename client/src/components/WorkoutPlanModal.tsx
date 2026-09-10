@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import type { WorkoutDay, WorkoutKind } from '../api/types';
 import { api, ApiError } from '../api/client';
-import { Modal } from './Modal';
+import { Modal, ModalTitle } from './Modal';
 import { PlayCircleIcon, PlusIcon, TrashIcon } from './icons';
 import { DAY_PRESETS, exerciseVideoSearchUrl, exercisesForGroups, type DayPreset } from '../utils/exerciseLibrary';
 
@@ -145,7 +145,7 @@ export function WorkoutPlanModal({ plan: initialPlan, onClose, onChanged }: Prop
     <Modal onCancel={onClose}>
       {(close) => (
         <>
-          <h2 className="modal-title">Rotina semanal</h2>
+          <ModalTitle>Rotina semanal</ModalTitle>
           <p className="hint" style={{ marginTop: -6 }}>
             Defina o que você treina em cada dia da semana.
           </p>

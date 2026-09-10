@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { ApiError } from '../api/client';
-import { Modal } from './Modal';
+import { Modal, ModalTitle } from './Modal';
 
 interface Props {
   initialSalary: number;
@@ -63,7 +63,7 @@ export function IncomeSourcesModal({
     <Modal onCancel={onCancel}>
       {(close) => (
         <>
-        <h2 className="modal-title">Editar renda do mês</h2>
+        <ModalTitle>Editar renda do mês</ModalTitle>
 
         <form onSubmit={handleSubmit} className="modal-form">
           <div className="field-row">
