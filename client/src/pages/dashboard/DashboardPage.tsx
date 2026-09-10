@@ -1,21 +1,21 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { api } from '../../api/client';
 import { BrandIcon } from '../../components/BrandIcon';
-import type {
-  Account,
-  AgendaEvent,
-  Category,
-  ChatPreview,
-  Expense,
-  ExpenseInput,
-  Income,
-  IncomeInput,
-  StudiesOverview,
-  Summary,
-  WaterDay,
-} from '../../api/types';
-import { useMonth } from '../../context/MonthContext';
+import type { ChatPreview, ExpenseInput, IncomeInput } from '../../api/types';
+import {
+  useAccounts,
+  useAddWaterEntry,
+  useAfterFinanceChange,
+  useAgendaEvents,
+  useCategories,
+  useCreateExpense,
+  useCreateIncome,
+  useExpenses,
+  useIncomes,
+  useStudiesOverview,
+  useSummary,
+  useWaterDay,
+} from '../../api/queries';
 import { formatCurrency, formatDayMonth, todayIso } from '../../utils/format';
 import {
   CATEGORY_COLORS,
@@ -53,15 +53,20 @@ interface BatchState {
   index: number;
 }
 
-interface DashboardData {
-  summary: Summary | null;
-  expenses: Expense[];
-  incomes: Income[];
-  categories: Category[];
-  accounts: Account[];
-  waterDay: WaterDay | null;
-  studies: StudiesOverview | null;
-  agendaEvents: AgendaEvent[];
+/**
+ * Falha de um card, no lugar do conteúdo dele. Antes cada requisição tinha um
+ * `.catch(() => null)` e a falha aparecia como card vazio — indistinguível de
+ * "não há nada aqui". Um card que falhou não derruba os outros.
+ */
+function CardError({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className="alert alert-error">
+      Não foi possível carregar.{' '}
+      <button className="ms-btn ms-btn-ghost" onClick={onRetry}>
+        Tentar de novo
+      </button>
+    </div>
+  );
 }
 
 /** Saldo de uma fonte de dinheiro (salário, VR, carteira). */
@@ -88,80 +93,59 @@ function SourceTile({
 }
 
 export function DashboardPage() {
-  const { year, month } = useMonth();
   const navigate = useNavigate();
-  const [data, setData] = useState<DashboardData>({
-    summary: null,
-    expenses: [],
-    incomes: [],
-    categories: [],
-    accounts: [],
-    waterDay: null,
-    studies: null,
-    agendaEvents: [],
-  });
-  const [loading, setLoading] = useState(true);
+
+  // Uma query por recurso, cada uma com seu próprio loading e erro. O mês vem
+  // do MonthContext dentro dos hooks (ver api/queries.ts).
+  const summaryQuery = useSummary();
+  const expensesQuery = useExpenses();
+  const incomesQuery = useIncomes();
+  const categoriesQuery = useCategories();
+  const accountsQuery = useAccounts();
+  const waterQuery = useWaterDay(todayIso());
+  const studiesQuery = useStudiesOverview();
+  const agendaQuery = useAgendaEvents();
+
+  const createExpense = useCreateExpense();
+  const createIncome = useCreateIncome();
+  const addWaterEntry = useAddWaterEntry();
+  const afterFinanceChange = useAfterFinanceChange();
+
   const [finModal, setFinModal] = useState<FinModal>('closed');
   const [batch, setBatch] = useState<BatchState | null>(null);
-  const [addingWater, setAddingWater] = useState(false);
   const [hideValues, setHideValues] = useState(
     () => localStorage.getItem('hideFinValues') === '1',
   );
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    const [summary, expenses, incomes, categories, accounts, waterDay, studies, agendaEvents] =
-      await Promise.all([
-        api.getSummary(year, month).catch(() => null),
-        api.listExpenses(year, month).catch((): Expense[] => []),
-        api.listIncome(year, month).catch((): Income[] => []),
-        api.listCategories().catch((): Category[] => []),
-        api.listAccounts().catch((): Account[] => []),
-        api.getWaterDay(todayIso()).catch(() => null),
-        api.getStudiesOverview().catch(() => null),
-        api.listAgendaEvents().catch((): AgendaEvent[] => []),
-      ]);
-    setData({ summary, expenses, incomes, categories, accounts, waterDay, studies, agendaEvents });
-    setLoading(false);
-  }, [year, month]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
-
   async function handleCreateExpense(input: ExpenseInput) {
-    await api.createExpense(input);
+    await createExpense.mutateAsync(input);
     setFinModal('closed');
-    await load();
   }
   async function handleCreateIncome(input: IncomeInput) {
-    await api.createIncome(input);
+    await createIncome.mutateAsync(input);
     setFinModal('closed');
-    await load();
   }
 
   // Confirmação em lote (vários lançamentos extraídos de um arquivo no chat),
   // mesmo fluxo da aba Finanças: revisa um a um ou aceita todos de uma vez.
   async function handleBatchSubmit(input: ExpenseInput) {
-    await api.createExpense(input);
+    await createExpense.mutateAsync(input);
     advanceBatch();
   }
   function advanceBatch() {
     setBatch((prev) => {
       if (!prev) return null;
       const nextIndex = prev.index + 1;
-      if (nextIndex >= prev.previews.length) {
-        void load();
-        return null;
-      }
-      return { previews: prev.previews, index: nextIndex };
+      return nextIndex >= prev.previews.length
+        ? null
+        : { previews: prev.previews, index: nextIndex };
     });
   }
   async function handleAcceptAllBatch() {
     if (!batch) return;
     const defaultAccountId = accounts.find((a) => a.kind === 'CREDIT_CARD')?.id ?? null;
     for (const preview of batch.previews.slice(batch.index)) {
-      await api.createExpense({
+      await createExpense.mutateAsync({
         description: preview.description,
         amount: preview.amount,
         date: preview.date,
@@ -171,16 +155,9 @@ export function DashboardPage() {
       });
     }
     setBatch(null);
-    await load();
   }
   async function handleAddWater(ml: number) {
-    setAddingWater(true);
-    try {
-      await api.addWaterEntry(ml, todayIso());
-      await load();
-    } finally {
-      setAddingWater(false);
-    }
+    await addWaterEntry.mutateAsync({ ml, date: todayIso() });
   }
 
   function toggleHideValues() {
@@ -192,8 +169,14 @@ export function DashboardPage() {
   }
   const mask = (value: string) => (hideValues ? '••••' : value);
 
-  const { summary, expenses, incomes, categories, accounts, waterDay, studies, agendaEvents } =
-    data;
+  const summary = summaryQuery.data;
+  const expenses = expensesQuery.data ?? [];
+  const incomes = incomesQuery.data ?? [];
+  const categories = categoriesQuery.data ?? [];
+  const accounts = accountsQuery.data ?? [];
+  const waterDay = waterQuery.data;
+  const studies = studiesQuery.data;
+  const agendaEvents = agendaQuery.data ?? [];
 
   type Entry = {
     id: string;
@@ -254,7 +237,11 @@ export function DashboardPage() {
   const voucherLeft = (summary?.income.voucher ?? 0) - (summary?.accounts.foodVoucher ?? 0);
   const wallet = summary?.walletBalance ?? 0;
 
-  if (loading) {
+  // Spinner só no primeiro carregamento do mês. Na TROCA de mês as queries
+  // devolvem os dados do mês anterior como placeholder (keepPreviousData), o
+  // estado fica 'success' e a tela não pisca.
+  const firstLoad = summaryQuery.isPending || expensesQuery.isPending || incomesQuery.isPending;
+  if (firstLoad) {
     return (
       <div className="center-pad">
         <div className="spinner" />
@@ -277,11 +264,17 @@ export function DashboardPage() {
               {hideValues ? <EyeOffIcon /> : <EyeIcon />}
             </button>
           </div>
-          <span className="ms-hero-value">{mask(formatCurrency(summary?.remaining ?? 0))}</span>
-          <span className="ms-hero-status">
-            Renda {mask(formatCurrency(summary?.income.total ?? 0))} · Gastos{' '}
-            {mask(formatCurrency(summary?.totalSpent ?? 0))}
-          </span>
+          {summaryQuery.isError ? (
+            <CardError onRetry={() => void summaryQuery.refetch()} />
+          ) : (
+            <>
+              <span className="ms-hero-value">{mask(formatCurrency(summary?.remaining ?? 0))}</span>
+              <span className="ms-hero-status">
+                Renda {mask(formatCurrency(summary?.income.total ?? 0))} · Gastos{' '}
+                {mask(formatCurrency(summary?.totalSpent ?? 0))}
+              </span>
+            </>
+          )}
           <div className="ms-quick-actions">
             <button className="ms-quick ms-quick-expense" onClick={() => setFinModal('expense')}>
               <MinusIcon />
@@ -294,26 +287,28 @@ export function DashboardPage() {
           </div>
         </section>
 
-        <div className="ms-sources">
-          <SourceTile
-            label="Salário"
-            value={mask(formatCurrency(salaryLeft))}
-            hint="restante"
-            negative={salaryLeft < 0}
-          />
-          <SourceTile
-            label="VR"
-            value={mask(formatCurrency(voucherLeft))}
-            hint="restante"
-            negative={voucherLeft < 0}
-          />
-          <SourceTile
-            label="Carteira"
-            value={mask(formatCurrency(wallet))}
-            hint="saldo"
-            negative={wallet < 0}
-          />
-        </div>
+        {!summaryQuery.isError && (
+          <div className="ms-sources">
+            <SourceTile
+              label="Salário"
+              value={mask(formatCurrency(salaryLeft))}
+              hint="restante"
+              negative={salaryLeft < 0}
+            />
+            <SourceTile
+              label="VR"
+              value={mask(formatCurrency(voucherLeft))}
+              hint="restante"
+              negative={voucherLeft < 0}
+            />
+            <SourceTile
+              label="Carteira"
+              value={mask(formatCurrency(wallet))}
+              hint="saldo"
+              negative={wallet < 0}
+            />
+          </div>
+        )}
 
         <section className="ms-card">
           <div className="ms-card-head">
@@ -323,20 +318,26 @@ export function DashboardPage() {
             </div>
           </div>
           <div className="ms-card-body">
-            <div className="ms-invoice-bar">
-              <span className="ms-invoice-fixed" style={{ width: `${fixedPct}%` }} />
-              <span className="ms-invoice-variable" style={{ width: `${100 - fixedPct}%` }} />
-            </div>
-            <div className="ms-invoice-legend">
-              <span>
-                <i className="ms-dot ms-dot-fixed" />
-                Fixos <b>{mask(formatCurrency(fixed))}</b>
-              </span>
-              <span>
-                <i className="ms-dot ms-dot-variable" />
-                Variáveis <b>{mask(formatCurrency(variable))}</b>
-              </span>
-            </div>
+            {summaryQuery.isError ? (
+              <CardError onRetry={() => void summaryQuery.refetch()} />
+            ) : (
+              <>
+                <div className="ms-invoice-bar">
+                  <span className="ms-invoice-fixed" style={{ width: `${fixedPct}%` }} />
+                  <span className="ms-invoice-variable" style={{ width: `${100 - fixedPct}%` }} />
+                </div>
+                <div className="ms-invoice-legend">
+                  <span>
+                    <i className="ms-dot ms-dot-fixed" />
+                    Fixos <b>{mask(formatCurrency(fixed))}</b>
+                  </span>
+                  <span>
+                    <i className="ms-dot ms-dot-variable" />
+                    Variáveis <b>{mask(formatCurrency(variable))}</b>
+                  </span>
+                </div>
+              </>
+            )}
           </div>
         </section>
 
@@ -349,7 +350,14 @@ export function DashboardPage() {
               </Link>
             </div>
           </div>
-          {recentEntries.length === 0 ? (
+          {expensesQuery.isError || incomesQuery.isError ? (
+            <CardError
+              onRetry={() => {
+                void expensesQuery.refetch();
+                void incomesQuery.refetch();
+              }}
+            />
+          ) : recentEntries.length === 0 ? (
             <p className="empty">Nenhum lançamento este mês.</p>
           ) : (
             recentEntries.map((entry) => (
@@ -425,7 +433,9 @@ export function DashboardPage() {
               </Link>
             </div>
           </div>
-          {upcomingEvents.length === 0 ? (
+          {agendaQuery.isError ? (
+            <CardError onRetry={() => void agendaQuery.refetch()} />
+          ) : upcomingEvents.length === 0 ? (
             <p className="empty">Nenhum evento nos próximos 30 dias.</p>
           ) : (
             upcomingEvents.map((ev) => (
@@ -452,7 +462,7 @@ export function DashboardPage() {
             <div className="ms-card-actions">
               <button
                 className="ms-btn ms-btn-primary"
-                disabled={addingWater}
+                disabled={addWaterEntry.isPending}
                 onClick={() => void handleAddWater(WATER_QUICK_ADD.ml)}
                 title={`Adicionar garrafa (${WATER_QUICK_ADD.ml} ml)`}
               >
@@ -460,29 +470,35 @@ export function DashboardPage() {
               </button>
             </div>
           </div>
-          <div className="ms-card-body ms-water">
-            <div className="ms-water-ring">
-              <svg viewBox="0 0 56 56" width="56" height="56">
-                <circle cx="28" cy="28" r="24" fill="none" stroke="var(--surface-2)" strokeWidth="5" />
-                <circle
-                  cx="28"
-                  cy="28"
-                  r="24"
-                  fill="none"
-                  stroke="var(--primary)"
-                  strokeWidth="5"
-                  strokeDasharray={`${(Math.min(100, waterDay?.percent ?? 0) / 100) * 150.8} 150.8`}
-                  strokeLinecap="round"
-                  transform="rotate(-90 28 28)"
-                />
-              </svg>
-              <span className="ms-water-pct">{waterDay?.percent ?? 0}%</span>
+          {waterQuery.isError ? (
+            <div className="ms-card-body">
+              <CardError onRetry={() => void waterQuery.refetch()} />
             </div>
-            <div>
-              <span className="ms-value">{formatMl(waterDay?.consumedMl ?? 0)}</span>
-              <span className="ms-muted"> / {formatMl(waterDay?.goalMl ?? 3000)}</span>
+          ) : (
+            <div className="ms-card-body ms-water">
+              <div className="ms-water-ring">
+                <svg viewBox="0 0 56 56" width="56" height="56">
+                  <circle cx="28" cy="28" r="24" fill="none" stroke="var(--surface-2)" strokeWidth="5" />
+                  <circle
+                    cx="28"
+                    cy="28"
+                    r="24"
+                    fill="none"
+                    stroke="var(--primary)"
+                    strokeWidth="5"
+                    strokeDasharray={`${(Math.min(100, waterDay?.percent ?? 0) / 100) * 150.8} 150.8`}
+                    strokeLinecap="round"
+                    transform="rotate(-90 28 28)"
+                  />
+                </svg>
+                <span className="ms-water-pct">{waterDay?.percent ?? 0}%</span>
+              </div>
+              <div>
+                <span className="ms-value">{formatMl(waterDay?.consumedMl ?? 0)}</span>
+                <span className="ms-muted"> / {formatMl(waterDay?.goalMl ?? 3000)}</span>
+              </div>
             </div>
-          </div>
+          )}
         </section>
       </div>
 
@@ -497,7 +513,9 @@ export function DashboardPage() {
               </Link>
             </div>
           </div>
-          {upcomingExams.length === 0 ? (
+          {studiesQuery.isError ? (
+            <CardError onRetry={() => void studiesQuery.refetch()} />
+          ) : upcomingExams.length === 0 ? (
             <p className="empty">Nenhuma prova agendada.</p>
           ) : (
             upcomingExams.map((exam) => {
@@ -527,7 +545,9 @@ export function DashboardPage() {
               </Link>
             </div>
           </div>
-          {pendingTasks.length === 0 ? (
+          {studiesQuery.isError ? (
+            <CardError onRetry={() => void studiesQuery.refetch()} />
+          ) : pendingTasks.length === 0 ? (
             <p className="empty">Nenhuma tarefa pendente.</p>
           ) : (
             pendingTasks.map((task) => {
@@ -585,7 +605,7 @@ export function DashboardPage() {
 
       {/* Assistente: lançar por texto/foto ou perguntar sobre os gastos */}
       <ChatBox
-        onSaved={() => void load()}
+        onSaved={afterFinanceChange}
         onPreviews={(previews) => setBatch({ previews, index: 0 })}
       />
     </div>

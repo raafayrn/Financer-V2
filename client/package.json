@@ -11,6 +11,7 @@
     "gen:brands": "node scripts/gen-brand-icons.mjs"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.102.8",
     "framer-motion": "^12.42.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
