@@ -1,9 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MutationCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App from './App';
 import { ApiError } from './api/client';
+import { ToastHost, mensagemDeErro, podeRepetir, showToast } from './components/Toast';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import './index.css';
@@ -17,6 +18,18 @@ import { setupServiceWorker } from './registerSW';
  * (ver client/src/api/queries.ts) em vez de refetch nervoso.
  */
 const queryClient = new QueryClient({
+  // Erro de mutação em UM lugar só. Antes cada tela decidia (ou esquecia) o
+  // que fazer quando um POST falhava: o modal fechava, a lista voltava ao
+  // normal e o lançamento simplesmente não existia. Aqui todo erro de mutação
+  // vira toast, e o que pode ser repetido vem com o botão de repetir — sem
+  // nenhuma tela precisar tratar isso de novo.
+  mutationCache: new MutationCache({
+    onError: (error, variables, _context, mutation) => {
+      showToast(mensagemDeErro(error), {
+        retry: podeRepetir(error) ? () => void mutation.execute(variables) : undefined,
+      });
+    },
+  }),
   defaultOptions: {
     queries: {
       // 30s: tempo de navegar entre Dashboard → Finanças → abas sem refazer a
@@ -49,11 +62,13 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <BrowserRouter>
-          <AuthProvider>
-            <App />
-          </AuthProvider>
-        </BrowserRouter>
+        <ToastHost>
+          <BrowserRouter>
+            <AuthProvider>
+              <App />
+            </AuthProvider>
+          </BrowserRouter>
+        </ToastHost>
       </ThemeProvider>
     </QueryClientProvider>
   </React.StrictMode>,

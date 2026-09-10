@@ -2176,3 +2176,72 @@ body {
 /* Skeletons que precisam da métrica exata do card do dashboard. */
 .ms-hero-skeleton { display: flex; flex-direction: column; gap: 10px; margin: 4px 0; }
 .ms-invoice-bar-skeleton { margin: 14px 0 12px; }
+
+/* ============================================================
+   Toast de erro de mutação
+   ============================================================
+   Canto inferior ESQUERDO: o direito é do botão do assistente. No celular
+   sobe acima da barra de navegação e da área segura. */
+.toast-host {
+  position: fixed;
+  left: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: min(420px, calc(100vw - 32px));
+}
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 12px 12px 14px;
+  border-radius: var(--radius);
+  border: 0.5px solid var(--border);
+  box-shadow: var(--shadow-float);
+  background: var(--surface-solid);
+  animation: toast-in 0.2s cubic-bezier(0.32, 0.72, 0, 1);
+}
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast { animation: none; }
+}
+/* A faixa colorida à esquerda carrega a gravidade sem tingir o texto todo,
+   que precisa continuar legível. */
+.toast-error { border-left: 3px solid var(--over); }
+.toast-info { border-left: 3px solid var(--primary); }
+.toast-message { flex: 1; font-size: 0.88rem; color: var(--text); line-height: 1.4; }
+.toast-action { flex: none; }
+.toast-close {
+  flex: none;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 18px;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
+.toast-close:hover { background: var(--surface-2); color: var(--text); }
+
+@media (max-width: 767px) {
+  .toast-host { bottom: calc(84px + env(safe-area-inset-bottom)); right: 16px; }
+}
+
+/* Falha de renderização de uma seção (ver components/ErrorBoundary.tsx). */
+.error-boundary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.error-boundary-detail {
+  margin: 4px 0 0;
+  font-size: 0.82rem;
+  opacity: 0.85;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}

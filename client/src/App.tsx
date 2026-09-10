@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { MonthProvider } from './context/MonthContext';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Layout } from './components/Layout';
 import { DashboardPage } from './pages/dashboard/DashboardPage';
 import { FinancasPage } from './pages/financas/FinancasPage';
@@ -21,8 +22,13 @@ import { AgendaPage } from './pages/agenda/AgendaPage';
 import { AjustesPage } from './pages/ajustes/AjustesPage';
 
 /**
- * Única tela fora do app: aparece quando a API não respondeu. Não existe tela
- * de login — o app entra sozinho na conta do dono (ver AuthContext).
+ * Única tela fora do app: aparece quando a API não respondeu NA ABERTURA da
+ * sessão. É o único caso em que não há o que mostrar — sem token não há tela.
+ *
+ * Depois que o app abriu, queda de rede não volta mais para cá: a leitura que
+ * falha aparece no próprio card e a mutação que falha vira toast (ver
+ * components/Toast.tsx). Mandar o usuário para uma tela cheia de erro porque
+ * um card não carregou seria perder todo o resto que está funcionando.
  */
 function OfflineScreen({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
@@ -60,17 +66,17 @@ export default function App() {
     <MonthProvider>
       <Routes>
         <Route element={<Layout />}>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/financas" element={<FinancasPage />}>
+          <Route path="/" element={<ErrorBoundary section="O painel"><DashboardPage /></ErrorBoundary>} />
+          <Route path="/financas" element={<ErrorBoundary section="Finanças"><FinancasPage /></ErrorBoundary>}>
             <Route index element={<ResumoTab />} />
             <Route path="lancamentos" element={<LancamentosTab />} />
             <Route path="pendentes" element={<PendentesTab />} />
           </Route>
-          <Route path="/financas/recorrentes" element={<RecorrentesPage />}>
+          <Route path="/financas/recorrentes" element={<ErrorBoundary section="Recorrentes"><RecorrentesPage /></ErrorBoundary>}>
             <Route index element={<FixasTab />} />
             <Route path="parcelamentos" element={<ParcelamentosTab />} />
           </Route>
-          <Route path="/financas/investimentos" element={<InvestmentsPage />} />
+          <Route path="/financas/investimentos" element={<ErrorBoundary section="Investimentos"><InvestmentsPage /></ErrorBoundary>} />
 
           {/* Recorrentes e Investimentos viraram abas de Finanças; Relatórios saiu. */}
           <Route path="/recorrentes/*" element={<Navigate to="/financas/recorrentes" replace />} />
@@ -79,12 +85,12 @@ export default function App() {
           <Route path="/financas/relatorios" element={<Navigate to="/financas" replace />} />
           {/* Categorias virou um card dentro do Resumo. */}
           <Route path="/financas/categorias" element={<Navigate to="/financas" replace />} />
-          <Route path="/ajustes" element={<AjustesPage />} />
-          <Route path="/saude" element={<SaudePage />} />
-          <Route path="/agenda" element={<StudiesShell />}>
+          <Route path="/ajustes" element={<ErrorBoundary section="Ajustes"><AjustesPage /></ErrorBoundary>} />
+          <Route path="/saude" element={<ErrorBoundary section="Saúde"><SaudePage /></ErrorBoundary>} />
+          <Route path="/agenda" element={<ErrorBoundary section="Estudos"><StudiesShell /></ErrorBoundary>}>
             <Route index element={<AgendaPage />} />
           </Route>
-          <Route path="/estudos" element={<StudiesShell />}>
+          <Route path="/estudos" element={<ErrorBoundary section="Estudos"><StudiesShell /></ErrorBoundary>}>
             <Route index element={<VisaoGeralTab />} />
             <Route path="provas" element={<ProvasTab />} />
             <Route path="tarefas" element={<TarefasTab />} />
