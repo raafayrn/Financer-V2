@@ -88,3 +88,47 @@ export function SkeletonRows({ count = 3, circle = true }: { count?: number; cir
     </>
   );
 }
+
+/**
+ * Card inteiro em skeleton: cabeçalho (título + ação) e um miolo de linhas.
+ * É o bloco usado nas telas que carregam a página toda de uma vez, no lugar do
+ * antigo spinner centralizado.
+ */
+export function SkeletonCard({
+  rows = 3,
+  circle = true,
+  head = true,
+}: {
+  rows?: number;
+  circle?: boolean;
+  head?: boolean;
+}) {
+  return (
+    <section className="ms-card">
+      {head && (
+        <div className="ms-card-head">
+          <SkeletonLine width="42%" height="15px" />
+          <div className="ms-card-actions">
+            <SkeletonLine width="72px" height="15px" />
+          </div>
+        </div>
+      )}
+      <SkeletonRows count={rows} circle={circle} />
+    </section>
+  );
+}
+
+/** Faixa de cartões-resumo (as "fontes" do dashboard, os totais do ano). */
+export function SkeletonTiles({ count = 3, className }: { count?: number; className?: string }) {
+  return (
+    <div className={className ?? 'ms-sources'}>
+      {Array.from({ length: count }, (_, i) => (
+        <div key={i} className="ms-card ms-source">
+          <SkeletonLine width="52%" height="11px" />
+          <SkeletonLine width="80%" height="20px" />
+          <SkeletonLine width="40%" height="11px" />
+        </div>
+      ))}
+    </div>
+  );
+}

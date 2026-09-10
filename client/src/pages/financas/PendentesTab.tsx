@@ -11,6 +11,7 @@ import { BrandIcon } from '../../components/BrandIcon';
 import { ExpenseFormModal } from '../../components/ExpenseFormModal';
 import { formatCurrency } from '../../utils/format';
 import { EmptyState } from '../../components/EmptyState';
+import { SkeletonCard } from '../../components/Skeleton';
 import { CheckIcon } from '../../components/icons';
 import { useFinancas } from './context';
 
@@ -128,8 +129,8 @@ export function PendentesTab() {
 
   if (pendentes.isPending) {
     return (
-      <div className="center-pad">
-        <div className="spinner" />
+      <div className="ms-stack">
+        <SkeletonCard rows={3} />
       </div>
     );
   }

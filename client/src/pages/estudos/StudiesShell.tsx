@@ -13,6 +13,7 @@ import {
   useUpdateStudyTask,
 } from '../../api/queries';
 import type { AgendaEvent, AgendaEventCategory, Exam, StudyTask } from '../../api/types';
+import { SkeletonCard } from '../../components/Skeleton';
 import { AgendaEventModal, ExamModal, StudyTaskModal } from '../../components/StudyModals';
 import type { EstudosCtx } from './context';
 
@@ -80,8 +81,9 @@ export function StudiesShell() {
 
   if (!data && (overviewQuery.isPending || eventsQuery.isPending)) {
     return (
-      <div className="center-pad">
-        <div className="spinner" />
+      <div className="ms-stack">
+        <SkeletonCard rows={4} circle={false} />
+        <SkeletonCard rows={3} circle={false} />
       </div>
     );
   }

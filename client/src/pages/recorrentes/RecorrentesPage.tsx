@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { ApiError } from '../../api/client';
 import { useAccounts, useCategories, useExpenses, useRecurring } from '../../api/queries';
+import { SkeletonCard } from '../../components/Skeleton';
 import { useMonth } from '../../context/MonthContext';
 import type { RecorrentesCtx } from './context';
 
@@ -26,8 +27,8 @@ export function RecorrentesPage() {
 
   if (queries.some((q) => q.isPending)) {
     return (
-      <div className="center-pad">
-        <div className="spinner" />
+      <div className="ms-stack">
+        <SkeletonCard rows={5} />
       </div>
     );
   }

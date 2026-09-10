@@ -22,6 +22,7 @@ import { CheckIcon, DumbbellIcon, EditIcon, FlameIcon, HeartPulseIcon, PlayCircl
 import { exerciseVideoSearchUrl } from '../utils/exerciseLibrary';
 import { WorkoutSessionModal } from '../components/WorkoutSessionModal';
 import { WorkoutPlanModal } from '../components/WorkoutPlanModal';
+import { SkeletonBlock, SkeletonCircle, SkeletonLine, SkeletonRows } from '../components/Skeleton';
 import { springSmooth, springTap } from '../lib/motion';
 import { EmptyState } from '../components/EmptyState';
 
@@ -234,8 +235,22 @@ export function SaudePage() {
       </div>
 
       {loading && !ready ? (
-        <div className="center-pad">
-          <div className="spinner" />
+        <div className="overview-grid">
+          {/* Água: 200px é o diâmetro do anel real (.water-ring). */}
+          <section className="card overview-item overview-span-2 water-hero">
+            <SkeletonCircle size={200} />
+            <SkeletonLine width="140px" height="18px" />
+            <SkeletonLine width="180px" height="13px" />
+          </section>
+          <section className="card overview-item overview-span-2">
+            <SkeletonLine width="38%" height="15px" />
+            <SkeletonLine width="60%" height="22px" />
+            <SkeletonRows count={3} circle={false} />
+          </section>
+          <section className="card overview-item overview-span-2">
+            <SkeletonLine width="42%" height="15px" />
+            <SkeletonRows count={3} circle={false} />
+          </section>
         </div>
       ) : error ? (
         <div className="alert alert-error">
@@ -446,9 +461,9 @@ export function SaudePage() {
                           {exerciseHistory && exerciseHistory.name === ex.name ? (
                             <LineChart points={exerciseHistory.points} />
                           ) : (
-                            <div className="center-pad">
-                              <div className="spinner" />
-                            </div>
+                            // 90px é a altura do LineChart: o gráfico nasce no
+                            // lugar do bloco, sem empurrar a linha de baixo.
+                            <SkeletonBlock height="90px" />
                           )}
                         </motion.div>
                       )}

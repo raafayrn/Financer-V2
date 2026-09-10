@@ -14,6 +14,7 @@ import { formatCurrency, formatDayMonth, monthShort } from '../utils/format';
 import { INVESTMENT_TYPE_COLOR, INVESTMENT_TYPE_LABEL } from '../utils/investments';
 import { ChevronLeftIcon, ChevronRightIcon, EditIcon, PiggyBankIcon, TrashIcon } from '../components/icons';
 import { InvestmentFormModal } from '../components/InvestmentFormModal';
+import { SkeletonBlock, SkeletonCard, SkeletonLine, SkeletonTiles } from '../components/Skeleton';
 import { springSmooth, springTap } from '../lib/motion';
 import { EmptyState } from '../components/EmptyState';
 
@@ -92,8 +93,17 @@ export function InvestmentsPage() {
       </div>
 
       {loading && !summary ? (
-        <div className="center-pad">
-          <div className="spinner" />
+        // A barra de ano e o botão "+ Novo" ficam de fora deste ramo: já estão
+        // clicáveis enquanto o resto carrega.
+        <div className="ms-stack">
+          <SkeletonTiles count={4} className="ms-sources ms-sources-4" />
+          <section className="ms-card">
+            <div className="ms-card-head">
+              <SkeletonLine width="46%" height="15px" />
+            </div>
+            <SkeletonBlock height="140px" />
+          </section>
+          <SkeletonCard rows={5} />
         </div>
       ) : error ? (
         <div className="alert alert-error">

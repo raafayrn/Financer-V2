@@ -29,6 +29,7 @@ import { IncomeFormModal } from '../../components/IncomeFormModal';
 import { IncomeSourcesModal } from '../../components/IncomeSourcesModal';
 import { ManageModal } from '../../components/ManageModal';
 import { ClearMonthModal } from '../../components/ClearMonthModal';
+import { SkeletonCard, SkeletonLine, SkeletonTiles } from '../../components/Skeleton';
 import type { FinancasCtx, ModalState } from './context';
 
 /**
@@ -272,10 +273,19 @@ export function FinancasPage() {
     expensesQuery.isPlaceholderData ||
     incomesQuery.isPlaceholderData;
 
+  // Primeiro carregamento: o desenho do Resumo (a aba índice) em vez do
+  // spinner de tela cheia. Ver o padrão em components/Skeleton.tsx.
   if (!summary && essenciais.some((q) => q.isPending)) {
     return (
-      <div className="center-pad">
-        <div className="spinner" />
+      <div className="ms-stack">
+        <section className="ms-card ms-hero">
+          <SkeletonLine width="34%" height="11px" />
+          <SkeletonLine width="52%" height="40px" />
+          <SkeletonLine width="70%" height="13px" />
+        </section>
+        <SkeletonTiles count={3} />
+        <SkeletonCard rows={4} />
+        <SkeletonCard rows={3} />
       </div>
     );
   }
