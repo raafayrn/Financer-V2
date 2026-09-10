@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { api } from '../../api/client';
+import { useDeleteAgendaEvent } from '../../api/queries';
 import { ChevronLeftIcon, ChevronRightIcon, TrashIcon } from '../../components/icons';
 import {
   CATEGORY_COLORS,
@@ -18,7 +18,8 @@ import { useEstudos } from '../estudos/context';
 const MAX_VISIBLE = 3;
 
 export function AgendaPage() {
-  const { data, subjects, events, subjectById, openExam, openTask, openEvent, reload } =
+  const removeEvent = useDeleteAgendaEvent();
+  const { data, subjects, events, subjectById, openExam, openTask, openEvent } =
     useEstudos();
 
   const today = new Date();
@@ -41,8 +42,7 @@ export function AgendaPage() {
   }
 
   async function deleteEvent(id: string) {
-    await api.deleteAgendaEvent(id);
-    await reload();
+    await removeEvent.mutateAsync(id);
   }
 
   const firstDay = new Date(cal.year, cal.month, 1).getDay();

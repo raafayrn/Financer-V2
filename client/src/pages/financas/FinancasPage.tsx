@@ -1,58 +1,62 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Outlet, useSearchParams } from 'react-router-dom';
-import { api, ApiError } from '../../api/client';
+import { useQueryClient } from '@tanstack/react-query';
+import { ApiError } from '../../api/client';
 import { springTap } from '../../lib/motion';
-import type {
-  Account,
-  Category,
-  Expense,
-  ExpenseInput,
-  Income,
-  IncomeInput,
-  Summary,
-} from '../../api/types';
+import type { ExpenseInput, IncomeInput } from '../../api/types';
+import {
+  afterCategoryChange,
+  afterMonthSettingChange,
+  useAccounts,
+  useCategories,
+  useClearMonth,
+  useCreateExpense,
+  useCreateIncome,
+  useDeleteExpense,
+  useDeleteIncome,
+  useExpenses,
+  useIncomes,
+  useSaveIncomeSources,
+  useSummary,
+  useTrend,
+  useUpdateExpense,
+  useUpdateIncome,
+} from '../../api/queries';
 import { useMonth } from '../../context/MonthContext';
 import { ExpenseFormModal } from '../../components/ExpenseFormModal';
 import { IncomeFormModal } from '../../components/IncomeFormModal';
 import { IncomeSourcesModal } from '../../components/IncomeSourcesModal';
 import { ManageModal } from '../../components/ManageModal';
 import { ClearMonthModal } from '../../components/ClearMonthModal';
-import type { FinancasCtx, ModalState, TrendPoint } from './context';
-
-/** Últimos `n` meses (mais antigo → mais novo) terminando em (year, month). */
-function lastMonths(year: number, month: number, n: number): { year: number; month: number }[] {
-  const result: { year: number; month: number }[] = [];
-  let y = year;
-  let m = month;
-  for (let i = 0; i < n; i++) {
-    result.unshift({ year: y, month: m });
-    m -= 1;
-    if (m < 1) {
-      m = 12;
-      y -= 1;
-    }
-  }
-  return result;
-}
+import type { FinancasCtx, ModalState } from './context';
 
 /**
- * Container das três abas de Finanças. Carrega os dados do mês uma única vez,
- * expõe tudo pelo contexto do Outlet e concentra os modais — assim navegar
- * entre Resumo / Lançamentos / Categorias é instantâneo.
+ * Container das três abas de Finanças. As queries (ver api/queries.ts) são
+ * compartilhadas por key, então navegar entre Resumo / Lançamentos / Pendentes
+ * não refaz requisição nenhuma, e o mês trocado volta do cache.
  */
 export function FinancasPage() {
   const { year, month } = useMonth();
-  const [summary, setSummary] = useState<Summary | null>(null);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [incomes, setIncomes] = useState<Income[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [trend, setTrend] = useState<TrendPoint[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const qc = useQueryClient();
   const [modal, setModal] = useState<ModalState>({ kind: 'closed' });
   const [searchParams, setSearchParams] = useSearchParams();
+
+  const summaryQuery = useSummary();
+  const expensesQuery = useExpenses();
+  const incomesQuery = useIncomes();
+  const categoriesQuery = useCategories();
+  const accountsQuery = useAccounts();
+  const trend = useTrend(6);
+
+  const createExpense = useCreateExpense();
+  const updateExpense = useUpdateExpense();
+  const removeExpense = useDeleteExpense();
+  const createIncome = useCreateIncome();
+  const updateIncome = useUpdateIncome();
+  const removeIncome = useDeleteIncome();
+  const clearMonth = useClearMonth();
+  const saveIncomeSources = useSaveIncomeSources();
 
   useEffect(() => {
     if (searchParams.get('manage') === '1') {
@@ -68,65 +72,19 @@ export function FinancasPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  const loadRequestRef = useRef(0);
-
-  const load = useCallback(async () => {
-    const requestId = ++loadRequestRef.current;
-    setLoading(true);
-    setError(null);
-    try {
-      const [s, e, inc, c, a] = await Promise.all([
-        api.getSummary(year, month),
-        api.listExpenses(year, month),
-        api.listIncome(year, month),
-        api.listCategories(),
-        api.listAccounts(),
-      ]);
-
-      const wanted = lastMonths(year, month, 6);
-      const years = Array.from(new Set(wanted.map((w) => w.year)));
-      const reports = await Promise.all(years.map((y) => api.getMonthlyReport(y)));
-
-      if (requestId !== loadRequestRef.current) return; // uma requisição mais nova já resolveu
-
-      setSummary(s);
-      setExpenses(e);
-      setIncomes(inc);
-      setCategories(c);
-      setAccounts(a);
-
-      const spentByKey = new Map<string, number>();
-      for (const r of reports) {
-        for (const m of r.months) spentByKey.set(`${r.year}-${m.month}`, m.spent);
-      }
-      setTrend(
-        wanted.map((w) => ({
-          year: w.year,
-          month: w.month,
-          spent: spentByKey.get(`${w.year}-${w.month}`) ?? 0,
-        })),
-      );
-    } catch (err) {
-      if (requestId !== loadRequestRef.current) return;
-      setError(err instanceof ApiError ? err.message : 'Erro ao carregar dados.');
-    } finally {
-      if (requestId === loadRequestRef.current) setLoading(false);
-    }
-  }, [year, month]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const summary = summaryQuery.data;
+  const expenses = expensesQuery.data ?? [];
+  const incomes = incomesQuery.data ?? [];
+  const categories = categoriesQuery.data ?? [];
+  const accounts = accountsQuery.data ?? [];
 
   async function handleCreate(data: ExpenseInput) {
-    await api.createExpense(data);
+    await createExpense.mutateAsync(data);
     setModal({ kind: 'closed' });
-    await load();
   }
   async function handleEdit(id: string, data: ExpenseInput) {
-    await api.updateExpense(id, data);
+    await updateExpense.mutateAsync({ id, data });
     setModal({ kind: 'closed' });
-    await load();
   }
   async function deleteExpense(id: string) {
     const expense = expenses.find((e) => e.id === id);
@@ -140,54 +98,49 @@ export function FinancasPage() {
           'Cancelar = apaga só esta parcela.',
       );
       if (!apagarGrupo && !confirm('Excluir apenas esta parcela?')) return;
-      await api.deleteExpense(id, apagarGrupo);
-      await load();
+      await removeExpense.mutateAsync({ id, group: apagarGrupo });
       return;
     }
 
     if (!confirm('Excluir este lançamento?')) return;
-    await api.deleteExpense(id);
-    await load();
+    await removeExpense.mutateAsync({ id });
   }
 
   async function handleClearMonth(expenseIds: string[], incomeIds: string[]) {
-    await api.clearMonth(year, month, expenseIds, incomeIds);
-    await load();
+    await clearMonth.mutateAsync({ year, month, expenseIds, incomeIds });
   }
 
   async function handleCreateIncome(data: IncomeInput) {
-    await api.createIncome(data);
+    await createIncome.mutateAsync(data);
     setModal({ kind: 'closed' });
-    await load();
   }
   async function handleEditIncome(id: string, data: IncomeInput) {
-    await api.updateIncome(id, data);
+    await updateIncome.mutateAsync({ id, data });
     setModal({ kind: 'closed' });
-    await load();
   }
   async function deleteIncome(id: string) {
     if (!confirm('Excluir esta receita?')) return;
-    await api.deleteIncome(id);
-    await load();
+    await removeIncome.mutateAsync(id);
   }
   async function handleSaveIncomeSources(
     salaryValue: number | null,
     voucherValue: number | null,
     walletBaseValue: number | null,
   ) {
-    const tasks: Promise<unknown>[] = [];
-    if (salaryValue !== null) tasks.push(api.setSalary(year, month, salaryValue));
-    if (voucherValue !== null) tasks.push(api.setVoucher(year, month, voucherValue));
-    if (walletBaseValue !== null) tasks.push(api.setWalletBase(year, month, walletBaseValue));
-    await Promise.all(tasks);
+    await saveIncomeSources.mutateAsync({
+      year,
+      month,
+      salary: salaryValue,
+      voucher: voucherValue,
+      walletBase: walletBaseValue,
+    });
     setModal({ kind: 'closed' });
-    await load();
   }
 
   // Fluxo de confirmação em lote (vários lançamentos extraídos de uma foto).
   async function handleBatchSubmit(data: ExpenseInput) {
     if (modal.kind !== 'chat-batch') return;
-    await api.createExpense(data);
+    await createExpense.mutateAsync(data);
     advanceBatch();
   }
   function advanceBatch() {
@@ -195,7 +148,6 @@ export function FinancasPage() {
     const nextIndex = modal.index + 1;
     if (nextIndex >= modal.previews.length) {
       setModal({ kind: 'closed' });
-      void load();
     } else {
       setModal({ kind: 'chat-batch', previews: modal.previews, index: nextIndex });
     }
@@ -206,7 +158,7 @@ export function FinancasPage() {
     const remaining = modal.previews.slice(modal.index);
     const defaultAccountId = accounts.find((a) => a.kind === 'CREDIT_CARD')?.id ?? null;
     for (const preview of remaining) {
-      await api.createExpense({
+      await createExpense.mutateAsync({
         description: preview.description,
         amount: preview.amount,
         date: preview.date,
@@ -216,7 +168,6 @@ export function FinancasPage() {
       });
     }
     setModal({ kind: 'closed' });
-    await load();
   }
 
   const modals = (
@@ -296,21 +247,45 @@ export function FinancasPage() {
         <ManageModal
           year={year}
           month={month}
-          onCancel={() => setModal({ kind: 'closed' })}
-          onCategoriesChanged={() => void load()}
+          // O modal cuida do próprio estado e também mexe no orçamento do mês;
+          // ao fechar, invalida tudo que ele pode ter mudado.
+          onCancel={() => {
+            afterCategoryChange(qc);
+            afterMonthSettingChange(qc);
+            setModal({ kind: 'closed' });
+          }}
+          onCategoriesChanged={() => afterCategoryChange(qc)}
         />
       )}
     </>
   );
 
-  if (loading && !summary) {
+  // Só as queries sem as quais não há tela: as abas leem tudo do contexto.
+  const essenciais = [summaryQuery, expensesQuery, incomesQuery, categoriesQuery, accountsQuery];
+  const firstError = essenciais.find((q) => q.error)?.error;
+
+  // O véu só cobre a TROCA DE MÊS — enquanto o que está na tela ainda é o mês
+  // anterior (placeholder). Refetch em background depois de uma mutação não
+  // escurece mais a tela: a lista já foi atualizada de forma otimista.
+  const loading =
+    summaryQuery.isPlaceholderData ||
+    expensesQuery.isPlaceholderData ||
+    incomesQuery.isPlaceholderData;
+
+  if (!summary && essenciais.some((q) => q.isPending)) {
     return (
       <div className="center-pad">
         <div className="spinner" />
       </div>
     );
   }
-  if (error) return <div className="alert alert-error">{error}</div>;
+  if (firstError) {
+    return (
+      <div className="alert alert-error">
+        {firstError instanceof ApiError ? firstError.message : 'Erro ao carregar dados.'}
+      </div>
+    );
+  }
   if (!summary) return null;
 
   const ctx: FinancasCtx = {
@@ -319,14 +294,20 @@ export function FinancasPage() {
     incomes,
     categories,
     accounts,
-    trend,
+    trend: trend.data,
     year,
     month,
     categoryById: new Map(categories.map((c) => [c.id, c])),
     accountById: new Map(accounts.map((a) => [a.id, a])),
     walletAccountId: accounts.find((a) => a.kind === 'WALLET')?.id,
     openModal: setModal,
-    reload: () => void load(),
+    // As abas continuam podendo pedir "recarrega isso" (ex.: o assistente
+    // lançou um gasto). Agora é invalidação de cache, não refetch na mão.
+    reload: () => {
+      void qc.invalidateQueries({ queryKey: ['expenses'] });
+      void qc.invalidateQueries({ queryKey: ['income'] });
+      void qc.invalidateQueries({ queryKey: ['summary'] });
+    },
     deleteExpense,
     deleteIncome,
   };

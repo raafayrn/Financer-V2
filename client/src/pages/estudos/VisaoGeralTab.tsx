@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { api } from '../../api/client';
+import { useUpdateStudyTask } from '../../api/queries';
 import { formatDayMonth } from '../../utils/format';
 import {
   WEEKDAYS_FULL,
@@ -22,7 +22,8 @@ function Tile({ label, value, hint }: { label: string; value: string; hint?: str
 }
 
 export function VisaoGeralTab() {
-  const { data, subjects, events, subjectById, openTask, reload } = useEstudos();
+  const { data, subjects, events, subjectById, openTask } = useEstudos();
+  const updateStudyTask = useUpdateStudyTask();
 
   const today = todayIsoStr();
   const todayClasses = classesForIso(today);
@@ -42,8 +43,7 @@ export function VisaoGeralTab() {
   });
 
   async function completeTask(id: string) {
-    await api.updateStudyTask(id, { done: true });
-    await reload();
+    await updateStudyTask.mutateAsync({ id, data: { done: true } });
   }
 
   return (

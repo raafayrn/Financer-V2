@@ -69,6 +69,7 @@
 import {
   keepPreviousData,
   useMutation,
+  useQueries,
   useQuery,
   useQueryClient,
   type QueryClient,
@@ -78,14 +79,27 @@ import { useMonth } from '../context/MonthContext';
 import type {
   Account,
   AgendaEvent,
+  AgendaEventCategory,
   Category,
+  Exam,
+  ExamInput,
   Expense,
   ExpenseInput,
   Income,
   IncomeInput,
+  Ingestion,
+  IngestionConfirmInput,
+  Investment,
+  InvestmentInput,
+  RecurringExpense,
+  RecurringExpenseInput,
   StudiesOverview,
+  StudyTask,
+  Subject,
   Summary,
+  Topic,
   WaterDay,
+  WorkoutSessionInput,
 } from './types';
 
 /** Mês explícito; ausente = o mês selecionado no MonthContext. */
@@ -112,6 +126,13 @@ export const keys = {
 
   waterDay: (date: string) => ['water', 'day', date] as const,
   waterHistory: (days: number) => ['water', 'history', days] as const,
+
+  workoutPlan: () => ['workouts', 'plan'] as const,
+  workoutToday: () => ['workouts', 'today'] as const,
+  workoutSummary: () => ['workouts', 'summary'] as const,
+  workoutSessions: (from?: string, to?: string) => ['workouts', 'sessions', from, to] as const,
+  exerciseHistory: (name: string) => ['workouts', 'exerciseHistory', name] as const,
+  bodyMetrics: () => ['workouts', 'body'] as const,
 
   studiesOverview: () => ['studies', 'overview'] as const,
   subjects: () => ['studies', 'subjects'] as const,
@@ -155,6 +176,28 @@ export function afterIngestionChange(qc: QueryClient): void {
   void qc.invalidateQueries({ queryKey: ['ingestions'] });
   afterExpenseChange(qc);
   afterIncomeChange(qc);
+}
+
+export function afterInvestmentChange(qc: QueryClient): void {
+  void qc.invalidateQueries({ queryKey: ['investments'] });
+}
+
+export function afterStudiesChange(qc: QueryClient): void {
+  void qc.invalidateQueries({ queryKey: ['studies'] });
+}
+
+/** Evento de agenda também aparece no agregado de estudos (visão geral). */
+export function afterAgendaChange(qc: QueryClient): void {
+  void qc.invalidateQueries({ queryKey: ['agenda'] });
+  void qc.invalidateQueries({ queryKey: ['studies'] });
+}
+
+export function afterWorkoutChange(qc: QueryClient): void {
+  void qc.invalidateQueries({ queryKey: ['workouts'] });
+}
+
+export function afterWaterChange(qc: QueryClient): void {
+  void qc.invalidateQueries({ queryKey: ['water'] });
 }
 
 /** Renda fixa / orçamento / base da carteira: muda a key do mês e o resumo. */
@@ -339,16 +382,459 @@ export function useCreateIncome() {
   });
 }
 
+/**
+ * Beber água é o gesto mais repetido do app e o anel precisa responder no
+ * toque. Aqui o update otimista vale a pena: consumido + ml e a porcentagem
+ * derivada, aritmética que o servidor faz igual — nada da complexidade do
+ * resumo financeiro.
+ */
 export function useAddWaterEntry() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ ml, date }: { ml: number; date?: string }) => api.addWaterEntry(ml, date),
+    onMutate: async ({ ml, date }) => {
+      if (!date) return { key: null };
+      const key = keys.waterDay(date);
+      await qc.cancelQueries({ queryKey: key });
+      const previous = qc.getQueryData<WaterDay>(key);
+      if (previous) {
+        const consumedMl = previous.consumedMl + ml;
+        qc.setQueryData<WaterDay>(key, {
+          ...previous,
+          consumedMl,
+          percent:
+            previous.goalMl > 0 ? Math.min(100, Math.round((consumedMl / previous.goalMl) * 100)) : 0,
+        });
+      }
+      return { key, previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.key) qc.setQueryData(context.key, context.previous);
+    },
+    onSettled: () => afterWaterChange(qc),
+  });
+}
+
+/**
+ * Fábrica das mutações que não têm nada de especial: chama a API e invalida o
+ * que a mudança alcança. Quem precisa de update otimista (ver useCreateExpense)
+ * escreve o hook na mão.
+ */
+function useApiMutation<TVars, TData>(
+  mutationFn: (vars: TVars) => Promise<TData>,
+  invalidate: (qc: QueryClient) => void,
+) {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn, onSuccess: () => invalidate(qc) });
+}
+
+// ---------- Finanças: gasto, receita e ajustes do mês ----------
+
+export function useUpdateExpense() {
+  return useApiMutation(
+    ({ id, data }: { id: string; data: Partial<ExpenseInput> }) => api.updateExpense(id, data),
+    afterExpenseChange,
+  );
+}
+
+export function useDeleteExpense() {
+  return useApiMutation(
+    ({ id, group = false }: { id: string; group?: boolean }) => api.deleteExpense(id, group),
+    afterExpenseChange,
+  );
+}
+
+export function useClearMonth() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      year,
+      month,
+      expenseIds,
+      incomeIds,
+    }: {
+      year: number;
+      month: number;
+      expenseIds: string[];
+      incomeIds: string[];
+    }) => api.clearMonth(year, month, expenseIds, incomeIds),
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['water'] });
+      afterExpenseChange(qc);
+      afterIncomeChange(qc);
     },
   });
 }
 
+export function useUpdateIncome() {
+  return useApiMutation(
+    ({ id, data }: { id: string; data: Partial<IncomeInput> }) => api.updateIncome(id, data),
+    afterIncomeChange,
+  );
+}
+
+export function useDeleteIncome() {
+  return useApiMutation((id: string) => api.deleteIncome(id), afterIncomeChange);
+}
+
+/** Salário, VR e base da carteira do mês: `null` = não mexer neste campo. */
+export function useSaveIncomeSources() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      year,
+      month,
+      salary,
+      voucher,
+      walletBase,
+    }: {
+      year: number;
+      month: number;
+      salary: number | null;
+      voucher: number | null;
+      walletBase: number | null;
+    }) => {
+      const tasks: Promise<unknown>[] = [];
+      if (salary !== null) tasks.push(api.setSalary(year, month, salary));
+      if (voucher !== null) tasks.push(api.setVoucher(year, month, voucher));
+      if (walletBase !== null) tasks.push(api.setWalletBase(year, month, walletBase));
+      await Promise.all(tasks);
+    },
+    onSuccess: () => afterMonthSettingChange(qc),
+  });
+}
+
+// ---------- Finanças: tendência dos últimos meses ----------
+
+/** Últimos `n` meses (mais antigo → mais novo) terminando em (year, month). */
+export function lastMonths(year: number, month: number, n: number): MonthArg[] {
+  const result: MonthArg[] = [];
+  let y = year;
+  let m = month;
+  for (let i = 0; i < n; i++) {
+    result.unshift({ year: y, month: m });
+    m -= 1;
+    if (m < 1) {
+      m = 12;
+      y -= 1;
+    }
+  }
+  return result;
+}
+
+export interface TrendPoint {
+  year: number;
+  month: number;
+  spent: number;
+}
+
+/**
+ * Gasto dos últimos `n` meses. O relatório do servidor é por ANO, então uma
+ * janela de 6 meses cruzando o réveillon precisa de dois relatórios — cada um
+ * na sua própria key, para o ano anterior (que não muda mais) ficar no cache.
+ */
+export function useTrend(n = 6): { data: TrendPoint[]; isPending: boolean } {
+  const { year, month } = useMonth();
+  const wanted = lastMonths(year, month, n);
+  const years = Array.from(new Set(wanted.map((w) => w.year)));
+
+  const reports = useQueries({
+    queries: years.map((y) => ({
+      queryKey: keys.monthlyReport(y),
+      queryFn: () => api.getMonthlyReport(y),
+    })),
+  });
+
+  const spentByKey = new Map<string, number>();
+  for (const r of reports) {
+    if (!r.data) continue;
+    for (const m of r.data.months) spentByKey.set(`${r.data.year}-${m.month}`, m.spent);
+  }
+
+  return {
+    data: wanted.map((w) => ({
+      year: w.year,
+      month: w.month,
+      spent: spentByKey.get(`${w.year}-${w.month}`) ?? 0,
+    })),
+    isPending: reports.some((r) => r.isPending),
+  };
+}
+
+// ---------- Despesas fixas (templates) ----------
+
+export function useRecurring() {
+  return useQuery({ queryKey: keys.recurring(), queryFn: () => api.listRecurring() });
+}
+
+export function useCreateRecurring() {
+  return useApiMutation(
+    (data: RecurringExpenseInput) => api.createRecurring(data),
+    afterRecurringChange,
+  );
+}
+
+export function useUpdateRecurring() {
+  return useApiMutation(
+    ({ id, data }: { id: string; data: Partial<RecurringExpenseInput> }) =>
+      api.updateRecurring(id, data),
+    afterRecurringChange,
+  );
+}
+
+export function useDeleteRecurring() {
+  return useApiMutation(
+    ({ id, deleteGenerated = false }: { id: string; deleteGenerated?: boolean }) =>
+      api.deleteRecurring(id, deleteGenerated),
+    afterRecurringChange,
+  );
+}
+
+export function useMaterializeRecurring() {
+  return useApiMutation(
+    ({ year, month }: MonthArg) => api.materializeRecurring(year, month),
+    afterRecurringChange,
+  );
+}
+
+export function useImportRecurring() {
+  return useApiMutation(
+    ({ year, month }: MonthArg) => api.importRecurring(year, month),
+    afterRecurringChange,
+  );
+}
+
+// ---------- Investimentos ----------
+
+export function useInvestments() {
+  return useQuery({ queryKey: keys.investments(), queryFn: () => api.listInvestments() });
+}
+
+export function useInvestmentSummary(year: number) {
+  return useQuery({
+    queryKey: keys.investmentSummary(year),
+    queryFn: () => api.getInvestmentSummary(year),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useCreateInvestment() {
+  return useApiMutation((data: InvestmentInput) => api.createInvestment(data), afterInvestmentChange);
+}
+
+export function useUpdateInvestment() {
+  return useApiMutation(
+    ({ id, data }: { id: string; data: Partial<InvestmentInput> }) => api.updateInvestment(id, data),
+    afterInvestmentChange,
+  );
+}
+
+export function useDeleteInvestment() {
+  return useApiMutation((id: string) => api.deleteInvestment(id), afterInvestmentChange);
+}
+
+// ---------- Ingestão automática ----------
+
+export function useIngestions(status: 'pending' | 'all' = 'pending') {
+  return useQuery({
+    queryKey: keys.ingestions(status),
+    queryFn: () => api.listIngestions(status),
+  });
+}
+
+/**
+ * Contador da aba Pendentes. `staleTime: 0` porque a fila enche sozinha (e-mail
+ * do banco, atalho do iPhone) — o refetch ao voltar para a aba é justamente o
+ * que faz o número aparecer sem recarregar a página.
+ */
+export function usePendingIngestionCount() {
+  return useQuery({
+    queryKey: keys.ingestionCount(),
+    queryFn: () => api.countPendingIngestions().then((r) => r.pending),
+    staleTime: 0,
+  });
+}
+
+export function useConfirmIngestion() {
+  return useApiMutation(
+    ({ id, data }: { id: string; data?: IngestionConfirmInput }) =>
+      api.confirmIngestion(id, data ?? {}),
+    afterIngestionChange,
+  );
+}
+
+export function useDiscardIngestion() {
+  return useApiMutation((id: string) => api.discardIngestion(id), afterIngestionChange);
+}
+
+export function useUnmergeIngestion() {
+  return useApiMutation((id: string) => api.unmergeIngestion(id), afterIngestionChange);
+}
+
+// ---------- Saúde: treinos e água ----------
+
+export function useWorkoutPlan() {
+  return useQuery({ queryKey: keys.workoutPlan(), queryFn: () => api.getWorkoutPlan() });
+}
+
+export function useWorkoutToday() {
+  return useQuery({ queryKey: keys.workoutToday(), queryFn: () => api.getWorkoutToday() });
+}
+
+export function useWorkoutSummary() {
+  return useQuery({ queryKey: keys.workoutSummary(), queryFn: () => api.getWorkoutSummary() });
+}
+
+/** Histórico de um exercício: só busca quando há exercício selecionado. */
+export function useExerciseHistory(name: string | null) {
+  return useQuery({
+    queryKey: keys.exerciseHistory(name ?? ''),
+    queryFn: () => api.getExerciseHistory(name!),
+    enabled: name !== null,
+  });
+}
+
+export function useCreateWorkoutSession() {
+  return useApiMutation(
+    (data: WorkoutSessionInput) => api.createWorkoutSession(data),
+    afterWorkoutChange,
+  );
+}
+
+export function useUpdateWorkoutSession() {
+  return useApiMutation(
+    ({ id, data }: { id: string; data: Partial<WorkoutSessionInput> }) =>
+      api.updateWorkoutSession(id, data),
+    afterWorkoutChange,
+  );
+}
+
+export function useDeleteWorkoutSession() {
+  return useApiMutation((id: string) => api.deleteWorkoutSession(id), afterWorkoutChange);
+}
+
+export function useSetWaterGoal() {
+  return useApiMutation((goalMl: number) => api.setWaterGoal(goalMl), afterWaterChange);
+}
+
+export function useResetWaterDay() {
+  return useApiMutation((date?: string) => api.resetWaterDay(date), afterWaterChange);
+}
+
+// ---------- Estudos ----------
+
+export function useCreateExam() {
+  return useApiMutation((data: ExamInput) => api.createExam(data), afterStudiesChange);
+}
+
+export function useUpdateExam() {
+  return useApiMutation(
+    ({ id, data }: { id: string; data: Partial<ExamInput> }) => api.updateExam(id, data),
+    afterStudiesChange,
+  );
+}
+
+export function useDeleteExam() {
+  return useApiMutation((id: string) => api.deleteExam(id), afterStudiesChange);
+}
+
+export function useCreateStudyTask() {
+  return useApiMutation(
+    (data: { title: string; dueDate?: string | null; subjectId?: string | null }) =>
+      api.createStudyTask(data),
+    afterStudiesChange,
+  );
+}
+
+export function useUpdateStudyTask() {
+  return useApiMutation(
+    ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: Partial<{ title: string; dueDate: string | null; subjectId: string | null; done: boolean }>;
+    }) => api.updateStudyTask(id, data),
+    afterStudiesChange,
+  );
+}
+
+export function useDeleteStudyTask() {
+  return useApiMutation((id: string) => api.deleteStudyTask(id), afterStudiesChange);
+}
+
+export function useCreateSubject() {
+  return useApiMutation(
+    (data: { name: string; color?: string }) => api.createSubject(data),
+    afterStudiesChange,
+  );
+}
+
+export function useDeleteSubject() {
+  return useApiMutation((id: string) => api.deleteSubject(id), afterStudiesChange);
+}
+
+export function useAddTopic() {
+  return useApiMutation(
+    ({ subjectId, name }: { subjectId: string; name: string }) =>
+      api.addTopic(subjectId, { name }),
+    afterStudiesChange,
+  );
+}
+
+export function useUpdateTopic() {
+  return useApiMutation(
+    ({ id, data }: { id: string; data: Partial<{ name: string; done: boolean; order: number }> }) =>
+      api.updateTopic(id, data),
+    afterStudiesChange,
+  );
+}
+
+export function useDeleteTopic() {
+  return useApiMutation((id: string) => api.deleteTopic(id), afterStudiesChange);
+}
+
+// ---------- Agenda ----------
+
+export interface AgendaEventInput {
+  title: string;
+  date: string;
+  time?: string | null;
+  notes?: string | null;
+  category?: AgendaEventCategory;
+}
+
+export function useCreateAgendaEvent() {
+  return useApiMutation((data: AgendaEventInput) => api.createAgendaEvent(data), afterAgendaChange);
+}
+
+export function useUpdateAgendaEvent() {
+  return useApiMutation(
+    ({ id, data }: { id: string; data: Partial<AgendaEventInput> }) =>
+      api.updateAgendaEvent(id, data),
+    afterAgendaChange,
+  );
+}
+
+export function useDeleteAgendaEvent() {
+  return useApiMutation((id: string) => api.deleteAgendaEvent(id), afterAgendaChange);
+}
+
 // Re-export dos tipos que as telas consomem junto com os hooks, para não
 // precisarem importar de dois lugares.
-export type { Account, AgendaEvent, Category, Expense, Income, StudiesOverview, Summary, WaterDay };
+export type {
+  Account,
+  AgendaEvent,
+  Category,
+  Exam,
+  Expense,
+  Income,
+  Ingestion,
+  Investment,
+  RecurringExpense,
+  StudiesOverview,
+  StudyTask,
+  Subject,
+  Summary,
+  Topic,
+  WaterDay,
+};

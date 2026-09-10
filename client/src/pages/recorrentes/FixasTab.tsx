@@ -1,6 +1,13 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useState, type FormEvent } from 'react';
-import { api, ApiError } from '../../api/client';
+import { ApiError } from '../../api/client';
+import {
+  useCreateRecurring,
+  useDeleteRecurring,
+  useImportRecurring,
+  useMaterializeRecurring,
+  useUpdateRecurring,
+} from '../../api/queries';
 import { BrandIcon } from '../../components/BrandIcon';
 import { Dropdown } from '../../components/Dropdown';
 import { EditIcon, TrashIcon } from '../../components/icons';
@@ -40,10 +47,17 @@ export function FixasTab() {
     accountById,
     year,
     month,
-    reload,
     notice,
     setNotice,
   } = useRecorrentes();
+
+  // Toda mutação de fixa invalida ['recurring'] + o mês (afterRecurringChange),
+  // então nenhuma delas precisa chamar reload() depois.
+  const createRecurring = useCreateRecurring();
+  const updateRecurring = useUpdateRecurring();
+  const deleteRecurring = useDeleteRecurring();
+  const materialize = useMaterializeRecurring();
+  const importRecurring = useImportRecurring();
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ ...emptyForm, accountId: defaultAccountId(accounts) });
@@ -93,14 +107,13 @@ export function FixasTab() {
     setSaving(true);
     try {
       if (editingId) {
-        await api.updateRecurring(editingId, payload);
+        await updateRecurring.mutateAsync({ id: editingId, data: payload });
         setNotice({ kind: 'info', text: 'Despesa fixa atualizada. O lançamento deste mês foi ajustado.' });
       } else {
-        await api.createRecurring(payload);
+        await createRecurring.mutateAsync(payload);
         setNotice({ kind: 'info', text: 'Despesa fixa criada e já lançada neste mês.' });
       }
       resetForm();
-      await reload();
     } catch (err) {
       setNotice({ kind: 'error', text: err instanceof ApiError ? err.message : 'Erro ao salvar.' });
     } finally {
@@ -111,8 +124,7 @@ export function FixasTab() {
   async function toggleActive(item: RecurringExpense) {
     setNotice(null);
     try {
-      await api.updateRecurring(item.id, { active: !item.active });
-      await reload();
+      await updateRecurring.mutateAsync({ id: item.id, data: { active: !item.active } });
     } catch (err) {
       setNotice({ kind: 'error', text: err instanceof ApiError ? err.message : 'Erro ao alterar.' });
     }
@@ -132,8 +144,7 @@ export function FixasTab() {
 
     setNotice(null);
     try {
-      await api.deleteRecurring(item.id, alsoDelete);
-      await reload();
+      await deleteRecurring.mutateAsync({ id: item.id, deleteGenerated: alsoDelete });
     } catch (err) {
       setNotice({ kind: 'error', text: err instanceof ApiError ? err.message : 'Erro ao remover.' });
     }
@@ -150,7 +161,7 @@ export function FixasTab() {
     setNotice(null);
     setBusy('pull');
     try {
-      const res = await api.materializeRecurring(proximo.year, proximo.month);
+      const res = await materialize.mutateAsync(proximo);
       const nome = `${monthName(proximo.month)}/${proximo.year}`;
       setNotice({
         kind: 'info',
@@ -159,7 +170,6 @@ export function FixasTab() {
             ? `As fixas de ${nome} já estavam lançadas (${formatCurrency(res.recurringTotal)}).`
             : `${res.createdCount} despesa(s) lançada(s) em ${nome}, somando ${formatCurrency(res.recurringTotal)}.`,
       });
-      await reload();
     } catch (err) {
       setNotice({
         kind: 'error',
@@ -174,7 +184,7 @@ export function FixasTab() {
     setNotice(null);
     setBusy('import');
     try {
-      const res = await api.importRecurring(year, month);
+      const res = await importRecurring.mutateAsync({ year, month });
       if (res.importedCount === 0) {
         setNotice({
           kind: 'info',
@@ -185,7 +195,6 @@ export function FixasTab() {
           kind: 'info',
           text: `${res.importedCount} despesa(s) importada(s): ${res.imported.join(', ')}.`,
         });
-        await reload();
       }
     } catch (err) {
       setNotice({ kind: 'error', text: err instanceof ApiError ? err.message : 'Erro ao importar.' });

@@ -1,15 +1,22 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { api, ApiError } from '../api/client';
-import type {
-  ExerciseHistory,
-  WaterDay,
-  WorkoutDay,
-  WorkoutSession,
-  WorkoutSessionInput,
-  WorkoutSummary,
-  WorkoutToday,
-} from '../api/types';
+import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { ApiError } from '../api/client';
+import {
+  afterWorkoutChange,
+  useAddWaterEntry,
+  useCreateWorkoutSession,
+  useDeleteWorkoutSession,
+  useExerciseHistory,
+  useResetWaterDay,
+  useSetWaterGoal,
+  useUpdateWorkoutSession,
+  useWaterDay,
+  useWorkoutPlan,
+  useWorkoutSummary,
+  useWorkoutToday,
+} from '../api/queries';
+import type { WorkoutSession, WorkoutSessionInput } from '../api/types';
 import { formatDayMonth, todayIso } from '../utils/format';
 import { CheckIcon, EditIcon, PlayCircleIcon, PlusIcon } from '../components/icons';
 import { exerciseVideoSearchUrl } from '../utils/exerciseLibrary';
@@ -124,69 +131,39 @@ function LineChart({ points }: { points: { date: string; maxWeight: number }[] }
 }
 
 export function SaudePage() {
+  const qc = useQueryClient();
+
   // ---------- Água ----------
-  const [waterDay, setWaterDay] = useState<WaterDay | null>(null);
-  const [waterLoading, setWaterLoading] = useState(true);
-  const [waterError, setWaterError] = useState<string | null>(null);
   const [editingGoal, setEditingGoal] = useState(false);
   const [goalInput, setGoalInput] = useState('');
   const [customMl, setCustomMl] = useState('');
-  const waterLoadRef = useRef(0);
-  const currentDateRef = useRef(new Date().toDateString());
 
-  const loadWater = useCallback(async () => {
-    const id = ++waterLoadRef.current;
-    setWaterError(null);
-    try {
-      // Sempre manda a data local explicitamente: o dia do usuário é o do
-      // aparelho dele, nunca o do relógio do servidor.
-      const d = await api.getWaterDay(todayIso());
-      if (id !== waterLoadRef.current) return;
-      setWaterDay(d);
-    } catch (err) {
-      if (id !== waterLoadRef.current) return;
-      setWaterError(err instanceof ApiError ? err.message : 'Erro ao carregar.');
-    } finally {
-      if (id === waterLoadRef.current) setWaterLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void loadWater();
-  }, [loadWater]);
-
-  // Detecta troca de dia (verifica a cada minuto) e recarrega automaticamente.
+  // A data local entra na query key: o dia do usuário é o do aparelho dele,
+  // nunca o do relógio do servidor. Quando o dia vira, a key muda e o novo dia
+  // é buscado sozinho — é o que o antigo currentDateRef fazia na mão.
+  const [waterDate, setWaterDate] = useState(todayIso());
   useEffect(() => {
     const interval = setInterval(() => {
-      const today = new Date().toDateString();
-      if (today !== currentDateRef.current) {
-        currentDateRef.current = today;
-        void loadWater();
-      }
+      const iso = todayIso();
+      setWaterDate((prev) => (prev === iso ? prev : iso));
     }, 60_000);
     return () => clearInterval(interval);
-  }, [loadWater]);
+  }, []);
+
+  const waterQuery = useWaterDay(waterDate);
+  const addWaterEntry = useAddWaterEntry();
+  const setWaterGoal = useSetWaterGoal();
+  const resetDay = useResetWaterDay();
+  const waterDay = waterQuery.data;
 
   async function resetWaterDay() {
     if (!confirm('Resetar contagem de água de hoje?')) return;
-    await api.resetWaterDay(todayIso());
-    await loadWater();
+    await resetDay.mutateAsync(waterDate);
   }
 
+  /** O anel responde na hora: a inserção otimista está em useAddWaterEntry. */
   async function addWater(ml: number) {
-    if (!waterDay) return;
-    // Atualização otimista para resposta instantânea.
-    setWaterDay({
-      ...waterDay,
-      consumedMl: waterDay.consumedMl + ml,
-      percent: Math.min(100, Math.round(((waterDay.consumedMl + ml) / waterDay.goalMl) * 100)),
-    });
-    try {
-      await api.addWaterEntry(ml, todayIso());
-      await loadWater();
-    } catch {
-      await loadWater();
-    }
+    await addWaterEntry.mutateAsync({ ml, date: waterDate });
   }
 
   async function addCustomWater() {
@@ -199,78 +176,51 @@ export function SaudePage() {
   async function saveGoal() {
     const ml = Math.round(Number(goalInput));
     if (!Number.isFinite(ml) || ml < 100) return;
-    await api.setWaterGoal(ml);
+    await setWaterGoal.mutateAsync(ml);
     setEditingGoal(false);
-    await loadWater();
   }
 
   // ---------- Treinos ----------
-  const [today, setToday] = useState<WorkoutToday | null>(null);
-  const [summary, setSummary] = useState<WorkoutSummary | null>(null);
-  const [plan, setPlan] = useState<WorkoutDay[]>([]);
-  const [workoutLoading, setWorkoutLoading] = useState(true);
-  const [workoutError, setWorkoutError] = useState<string | null>(null);
-
   const [sessionModal, setSessionModal] = useState<{ mode: 'create' | 'edit'; session?: WorkoutSession } | null>(null);
   const [planOpen, setPlanOpen] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [exerciseHistory, setExerciseHistory] = useState<ExerciseHistory | null>(null);
 
-  const workoutLoadRef = useRef(0);
+  const todayQuery = useWorkoutToday();
+  const summaryQuery = useWorkoutSummary();
+  const planQuery = useWorkoutPlan();
+  // O histórico só é buscado quando um exercício está aberto, e fica em cache
+  // por nome: reabrir o mesmo exercício não refaz a requisição.
+  const historyQuery = useExerciseHistory(expanded);
 
-  const loadWorkouts = useCallback(async () => {
-    const id = ++workoutLoadRef.current;
-    setWorkoutError(null);
-    try {
-      const [t, s, p] = await Promise.all([api.getWorkoutToday(), api.getWorkoutSummary(), api.getWorkoutPlan()]);
-      if (id !== workoutLoadRef.current) return;
-      setToday(t);
-      setSummary(s);
-      setPlan(p);
-    } catch (err) {
-      if (id !== workoutLoadRef.current) return;
-      setWorkoutError(err instanceof ApiError ? err.message : 'Erro ao carregar.');
-    } finally {
-      if (id === workoutLoadRef.current) setWorkoutLoading(false);
-    }
-  }, []);
+  const createSession = useCreateWorkoutSession();
+  const updateSession = useUpdateWorkoutSession();
+  const removeSession = useDeleteWorkoutSession();
 
-  useEffect(() => {
-    void loadWorkouts();
-  }, [loadWorkouts]);
+  const today = todayQuery.data;
+  const summary = summaryQuery.data;
+  const plan = planQuery.data ?? [];
+  const exerciseHistory = historyQuery.data ?? null;
 
   async function saveSession(data: WorkoutSessionInput) {
     if (sessionModal?.mode === 'edit' && sessionModal.session) {
-      await api.updateWorkoutSession(sessionModal.session.id, data);
+      await updateSession.mutateAsync({ id: sessionModal.session.id, data });
     } else {
-      await api.createWorkoutSession(data);
+      await createSession.mutateAsync(data);
     }
     setSessionModal(null);
-    await loadWorkouts();
   }
   async function deleteSession(id: string) {
     if (!confirm('Excluir este treino registrado?')) return;
-    await api.deleteWorkoutSession(id);
-    await loadWorkouts();
+    await removeSession.mutateAsync(id);
   }
 
-  async function toggleExercise(name: string) {
-    if (expanded === name) {
-      setExpanded(null);
-      setExerciseHistory(null);
-      return;
-    }
-    setExpanded(name);
-    setExerciseHistory(null);
-    try {
-      setExerciseHistory(await api.getExerciseHistory(name));
-    } catch {
-      /* ignora */
-    }
+  function toggleExercise(name: string) {
+    setExpanded((prev) => (prev === name ? null : name));
   }
 
-  const loading = waterLoading || workoutLoading;
-  const error = waterError || workoutError;
+  const queries = [waterQuery, todayQuery, summaryQuery, planQuery];
+  const loading = queries.some((q) => q.isPending);
+  const error = queries.find((q) => q.error)?.error;
   const ready = !!waterDay && !!today && !!summary;
 
   return (
@@ -287,7 +237,9 @@ export function SaudePage() {
           <div className="spinner" />
         </div>
       ) : error ? (
-        <div className="alert alert-error">{error}</div>
+        <div className="alert alert-error">
+          {error instanceof ApiError ? error.message : 'Erro ao carregar.'}
+        </div>
       ) : waterDay && today && summary ? (
         <motion.div className="overview-grid" variants={overviewContainer} initial="hidden" animate="show">
           {/* Água */}
@@ -504,7 +456,7 @@ export function SaudePage() {
         />
       )}
       {planOpen && (
-        <WorkoutPlanModal plan={plan} onClose={() => setPlanOpen(false)} onChanged={() => void loadWorkouts()} />
+        <WorkoutPlanModal plan={plan} onClose={() => setPlanOpen(false)} onChanged={() => afterWorkoutChange(qc)} />
       )}
     </div>
   );

@@ -1,5 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
-import { api, ApiError } from '../../api/client';
+import { useState } from 'react';
+import { ApiError } from '../../api/client';
+import {
+  useConfirmIngestion,
+  useDiscardIngestion,
+  useIngestions,
+  useUnmergeIngestion,
+} from '../../api/queries';
 import type { Ingestion } from '../../api/types';
 import { BrandIcon } from '../../components/BrandIcon';
 import { ExpenseFormModal } from '../../components/ExpenseFormModal';
@@ -45,42 +51,31 @@ function isHighConfidence(i: Ingestion): boolean {
 }
 
 export function PendentesTab() {
-  const { categories, accounts, categoryById, reload } = useFinancas();
-  const [items, setItems] = useState<Ingestion[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { categories, accounts, categoryById } = useFinancas();
+  const pendentes = useIngestions('pending');
+  // Confirmar/descartar/desfazer invalidam ['ingestions'] E o mês inteiro
+  // (gastos, receitas, resumo) — ver afterIngestionChange em api/queries.ts.
+  const confirmIngestion = useConfirmIngestion();
+  const discardIngestion = useDiscardIngestion();
+  const unmergeIngestion = useUnmergeIngestion();
+
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [editing, setEditing] = useState<Ingestion | null>(null);
 
-  const load = useCallback(async () => {
-    try {
-      setItems(await api.listIngestions('pending'));
-      setError(null);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Erro ao carregar pendentes.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const items = pendentes.data ?? [];
 
-  useEffect(() => {
-    void load();
-  }, [load]);
-
-  /** Depois de mexer na fila, o resto do app precisa recontar o mês. */
-  const afterChange = useCallback(async () => {
-    await load();
-    reload();
-    window.dispatchEvent(new CustomEvent('ingestions-changed'));
-  }, [load, reload]);
+  function reportError(err: unknown, fallback: string) {
+    setError(err instanceof ApiError ? err.message : fallback);
+  }
 
   async function confirm(item: Ingestion) {
     setBusyId(item.id);
+    setError(null);
     try {
-      await api.confirmIngestion(item.id);
-      await afterChange();
+      await confirmIngestion.mutateAsync({ id: item.id });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Erro ao confirmar.');
+      reportError(err, 'Erro ao confirmar.');
     } finally {
       setBusyId(null);
     }
@@ -88,11 +83,11 @@ export function PendentesTab() {
 
   async function discard(item: Ingestion) {
     setBusyId(item.id);
+    setError(null);
     try {
-      await api.discardIngestion(item.id);
-      await afterChange();
+      await discardIngestion.mutateAsync(item.id);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Erro ao descartar.');
+      reportError(err, 'Erro ao descartar.');
     } finally {
       setBusyId(null);
     }
@@ -100,11 +95,11 @@ export function PendentesTab() {
 
   async function unmerge(item: Ingestion) {
     setBusyId(item.id);
+    setError(null);
     try {
-      await api.unmergeIngestion(item.id);
-      await afterChange();
+      await unmergeIngestion.mutateAsync(item.id);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Erro ao desfazer a fusão.');
+      reportError(err, 'Erro ao desfazer a fusão.');
     } finally {
       setBusyId(null);
     }
@@ -115,13 +110,13 @@ export function PendentesTab() {
     const alvos = items.filter(isHighConfidence);
     if (alvos.length === 0) return;
     setBusyId('lote');
+    setError(null);
     try {
       for (const item of alvos) {
-        await api.confirmIngestion(item.id);
+        await confirmIngestion.mutateAsync({ id: item.id });
       }
-      await afterChange();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Erro ao confirmar em lote.');
+      reportError(err, 'Erro ao confirmar em lote.');
     } finally {
       setBusyId(null);
     }
@@ -129,7 +124,7 @@ export function PendentesTab() {
 
   const highConfidenceCount = items.filter(isHighConfidence).length;
 
-  if (loading) {
+  if (pendentes.isPending) {
     return (
       <div className="center-pad">
         <div className="spinner" />
@@ -164,7 +159,14 @@ export function PendentesTab() {
           )}
         </div>
 
-        {error && <div className="alert alert-error">{error}</div>}
+        {(error || pendentes.error) && (
+          <div className="alert alert-error">
+            {error ??
+              (pendentes.error instanceof ApiError
+                ? pendentes.error.message
+                : 'Erro ao carregar pendentes.')}
+          </div>
+        )}
 
         {items.length === 0 ? (
           <p className="empty">
@@ -261,15 +263,17 @@ export function PendentesTab() {
           }}
           onCancel={() => setEditing(null)}
           onSubmit={async (data) => {
-            await api.confirmIngestion(editing.id, {
-              amount: data.amount,
-              description: data.description,
-              categoryId: data.categoryId,
-              accountId: data.accountId,
-              date: data.date,
+            await confirmIngestion.mutateAsync({
+              id: editing.id,
+              data: {
+                amount: data.amount,
+                description: data.description,
+                categoryId: data.categoryId,
+                accountId: data.accountId,
+                date: data.date,
+              },
             });
             setEditing(null);
-            await afterChange();
           }}
         />
       )}

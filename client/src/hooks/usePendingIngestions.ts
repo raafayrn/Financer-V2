@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
-import { api } from '../api/client';
+import { usePendingIngestionCount } from '../api/queries';
 
 /**
  * Quantos lançamentos automáticos esperam confirmação.
@@ -8,34 +7,14 @@ import { api } from '../api/client';
  * banco ou pelo atalho não avisa em lugar nenhum, e um gasto esquecido lá
  * dentro é um gasto que não existe para o mês.
  *
- * A tela de pendentes dispara `ingestions-changed` ao mexer na fila; é o que
- * mantém o contador certo sem ficar perguntando ao servidor de tempos em
- * tempos.
+ * O contador é uma query como qualquer outra (`['ingestions', 'count']`): a
+ * tela de pendentes invalida essa key ao mexer na fila, e o refetch ao voltar
+ * para a aba do navegador cobre o que chegou sozinho enquanto o app estava em
+ * segundo plano. Foi o que substituiu o evento `ingestions-changed` e os
+ * listeners de `focus` que este hook mantinha na mão.
  */
 export function usePendingIngestions(): number {
-  const [count, setCount] = useState(0);
-
-  const refresh = useCallback(async () => {
-    try {
-      const { pending } = await api.countPendingIngestions();
-      setCount(pending);
-    } catch {
-      // O contador é enfeite: se falhar, a aba continua lá e alcançável.
-      setCount(0);
-    }
-  }, []);
-
-  useEffect(() => {
-    void refresh();
-    const onChange = () => void refresh();
-    window.addEventListener('ingestions-changed', onChange);
-    // Voltar para a aba do navegador é quando um gasto novo pode ter chegado.
-    window.addEventListener('focus', onChange);
-    return () => {
-      window.removeEventListener('ingestions-changed', onChange);
-      window.removeEventListener('focus', onChange);
-    };
-  }, [refresh]);
-
-  return count;
+  // O contador é enfeite: se a requisição falhar, a aba continua lá e
+  // alcançável, só sem o número.
+  return usePendingIngestionCount().data ?? 0;
 }

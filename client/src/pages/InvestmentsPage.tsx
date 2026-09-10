@@ -1,7 +1,14 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { api, ApiError } from '../api/client';
-import type { Investment, InvestmentInput, InvestmentSummary } from '../api/types';
+import { useState } from 'react';
+import { ApiError } from '../api/client';
+import {
+  useCreateInvestment,
+  useDeleteInvestment,
+  useInvestments,
+  useInvestmentSummary,
+  useUpdateInvestment,
+} from '../api/queries';
+import type { Investment, InvestmentInput } from '../api/types';
 import { BrandIcon } from '../components/BrandIcon';
 import { formatCurrency, formatDayMonth, monthShort } from '../utils/format';
 import { INVESTMENT_TYPE_COLOR, INVESTMENT_TYPE_LABEL } from '../utils/investments';
@@ -24,49 +31,35 @@ type ModalState = { kind: 'closed' } | { kind: 'create' } | { kind: 'edit'; inve
 export function InvestmentsPage() {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
-  const [summary, setSummary] = useState<InvestmentSummary | null>(null);
-  const [investments, setInvestments] = useState<Investment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [modal, setModal] = useState<ModalState>({ kind: 'closed' });
 
-  const loadRequestRef = useRef(0);
+  // O ano é o escopo da key do resumo: trocar de ano usa o cache do ano já
+  // visitado, e keepPreviousData mantém os números na tela durante a troca —
+  // era o que o loadRequestRef guardava contra (resposta antiga chegando
+  // depois da nova), agora garantido pela própria key.
+  const summaryQuery = useInvestmentSummary(year);
+  const investmentsQuery = useInvestments();
 
-  const load = useCallback(async () => {
-    const requestId = ++loadRequestRef.current;
-    setLoading(true);
-    setError(null);
-    try {
-      const [s, list] = await Promise.all([api.getInvestmentSummary(year), api.listInvestments()]);
-      if (requestId !== loadRequestRef.current) return;
-      setSummary(s);
-      setInvestments(list);
-    } catch (err) {
-      if (requestId !== loadRequestRef.current) return;
-      setError(err instanceof ApiError ? err.message : 'Erro ao carregar.');
-    } finally {
-      if (requestId === loadRequestRef.current) setLoading(false);
-    }
-  }, [year]);
+  const createInvestment = useCreateInvestment();
+  const updateInvestment = useUpdateInvestment();
+  const removeInvestment = useDeleteInvestment();
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const summary = summaryQuery.data;
+  const investments = investmentsQuery.data ?? [];
+  const loading = summaryQuery.isPending || investmentsQuery.isPending;
+  const error = summaryQuery.error ?? investmentsQuery.error;
 
   async function handleCreate(data: InvestmentInput) {
-    await api.createInvestment(data);
+    await createInvestment.mutateAsync(data);
     setModal({ kind: 'closed' });
-    await load();
   }
   async function handleEdit(id: string, data: InvestmentInput) {
-    await api.updateInvestment(id, data);
+    await updateInvestment.mutateAsync({ id, data });
     setModal({ kind: 'closed' });
-    await load();
   }
   async function handleDelete(id: string) {
     if (!confirm('Excluir este lançamento de investimento?')) return;
-    await api.deleteInvestment(id);
-    await load();
+    await removeInvestment.mutateAsync(id);
   }
 
   const maxMonthValue = summary
@@ -102,7 +95,9 @@ export function InvestmentsPage() {
           <div className="spinner" />
         </div>
       ) : error ? (
-        <div className="alert alert-error">{error}</div>
+        <div className="alert alert-error">
+          {error instanceof ApiError ? error.message : 'Erro ao carregar.'}
+        </div>
       ) : summary ? (
         <motion.div className="ms-stack" variants={overviewContainer} initial="hidden" animate="show">
           <motion.div className="ms-sources ms-sources-4" variants={overviewItem}>

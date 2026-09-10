@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { api } from '../../api/client';
+import { useDeleteExam } from '../../api/queries';
 import type { Exam } from '../../api/types';
 import { RowMenu } from '../../components/RowMenu';
 import { formatDayMonth } from '../../utils/format';
@@ -19,13 +19,13 @@ const BANDS = [
 ] as const;
 
 export function ProvasTab() {
-  const { data, subjectById, openExam, reload } = useEstudos();
+  const { data, subjectById, openExam } = useEstudos();
+  const removeExam = useDeleteExam();
   const [subjectFilter, setSubjectFilter] = useState<string>('all');
 
   async function deleteExam(id: string) {
     if (!confirm('Excluir esta prova?')) return;
-    await api.deleteExam(id);
-    await reload();
+    await removeExam.mutateAsync(id);
   }
 
   const exams = [...data.upcomingExams].sort((a, b) => a.date.localeCompare(b.date));

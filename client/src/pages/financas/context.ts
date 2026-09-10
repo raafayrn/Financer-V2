@@ -1,11 +1,8 @@
 import { useOutletContext } from 'react-router-dom';
 import type { Account, Category, ChatPreview, Expense, Income, Summary } from '../../api/types';
+import type { TrendPoint } from '../../api/queries';
 
-export interface TrendPoint {
-  year: number;
-  month: number;
-  spent: number;
-}
+export type { TrendPoint };
 
 /** O que as abas de Finanças podem abrir. O container é quem renderiza. */
 export type ModalState =
@@ -36,6 +33,7 @@ export interface FinancasCtx {
   accountById: Map<string, Account>;
   walletAccountId?: string;
   openModal: (modal: ModalState) => void;
+  /** Invalida as queries do mês (ver api/queries.ts). */
   reload: () => void;
   deleteExpense: (id: string) => Promise<void>;
   deleteIncome: (id: string) => Promise<void>;

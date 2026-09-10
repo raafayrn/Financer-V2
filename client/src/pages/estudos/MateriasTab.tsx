@@ -1,13 +1,24 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useState, type FormEvent } from 'react';
-import { api } from '../../api/client';
+import {
+  useAddTopic,
+  useCreateSubject,
+  useDeleteSubject,
+  useDeleteTopic,
+  useUpdateTopic,
+} from '../../api/queries';
 import { CheckIcon, ChevronDownIcon, PlusIcon, TrashIcon } from '../../components/icons';
 import { SUBJECT_COLORS } from '../../lib/studies';
 import { springSmooth } from '../../lib/motion';
 import { useEstudos } from './context';
 
 export function MateriasTab() {
-  const { data, subjects, reload } = useEstudos();
+  const { data, subjects } = useEstudos();
+  const createSubject = useCreateSubject();
+  const removeSubject = useDeleteSubject();
+  const createTopic = useAddTopic();
+  const patchTopic = useUpdateTopic();
+  const removeTopic = useDeleteTopic();
   const [expanded, setExpanded] = useState<string | null>(null);
   const [addingSubject, setAddingSubject] = useState(false);
   const [subjectName, setSubjectName] = useState('');
@@ -17,30 +28,25 @@ export function MateriasTab() {
     e.preventDefault();
     if (!subjectName.trim()) return;
     const color = SUBJECT_COLORS[subjects.length % SUBJECT_COLORS.length];
-    await api.createSubject({ name: subjectName.trim(), color });
+    await createSubject.mutateAsync({ name: subjectName.trim(), color });
     setSubjectName('');
     setAddingSubject(false);
-    await reload();
   }
   async function deleteSubject(id: string) {
     if (!confirm('Excluir esta matéria e seus assuntos?')) return;
-    await api.deleteSubject(id);
-    await reload();
+    await removeSubject.mutateAsync(id);
   }
   async function addTopic(subjectId: string) {
     const name = (topicInputs[subjectId] ?? '').trim();
     if (!name) return;
-    await api.addTopic(subjectId, { name });
+    await createTopic.mutateAsync({ subjectId, name });
     setTopicInputs((p) => ({ ...p, [subjectId]: '' }));
-    await reload();
   }
   async function toggleTopic(id: string, done: boolean) {
-    await api.updateTopic(id, { done });
-    await reload();
+    await patchTopic.mutateAsync({ id, data: { done } });
   }
   async function deleteTopic(id: string) {
-    await api.deleteTopic(id);
-    await reload();
+    await removeTopic.mutateAsync(id);
   }
 
   const totalTopics = subjects.reduce((sum, s) => sum + s.topicCount, 0);

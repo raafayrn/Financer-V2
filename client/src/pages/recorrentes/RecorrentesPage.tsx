@@ -1,68 +1,64 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { api, ApiError } from '../../api/client';
-import type { Account, Category, Expense, RecurringExpense } from '../../api/types';
+import { useQueryClient } from '@tanstack/react-query';
+import { ApiError } from '../../api/client';
+import { useAccounts, useCategories, useExpenses, useRecurring } from '../../api/queries';
 import { useMonth } from '../../context/MonthContext';
 import type { RecorrentesCtx } from './context';
 
 /**
  * Container das abas Fixas / Parcelamentos. As fixas são templates (não
- * dependem do mês); os parcelamentos são derivados das despesas do mês em
- * exibição, por isso o mês continua valendo no header.
+ * dependem do mês, key global `['recurring']`); os parcelamentos são derivados
+ * das despesas do mês em exibição, por isso o mês continua valendo no header.
  */
 export function RecorrentesPage() {
   const { year, month } = useMonth();
-  const [items, setItems] = useState<RecurringExpense[]>([]);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const qc = useQueryClient();
   const [notice, setNotice] = useState<RecorrentesCtx['notice']>(null);
 
-  const load = useCallback(async () => {
-    try {
-      const [r, e, c, a] = await Promise.all([
-        api.listRecurring(),
-        api.listExpenses(year, month),
-        api.listCategories(),
-        api.listAccounts(),
-      ]);
-      setItems(r);
-      setExpenses(e);
-      setCategories(c);
-      setAccounts(a);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Erro ao carregar.');
-    } finally {
-      setLoading(false);
-    }
-  }, [year, month]);
+  const recurringQuery = useRecurring();
+  const expensesQuery = useExpenses();
+  const categoriesQuery = useCategories();
+  const accountsQuery = useAccounts();
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const queries = [recurringQuery, expensesQuery, categoriesQuery, accountsQuery];
+  const firstError = queries.find((q) => q.error)?.error;
 
-  if (loading) {
+  if (queries.some((q) => q.isPending)) {
     return (
       <div className="center-pad">
         <div className="spinner" />
       </div>
     );
   }
-  if (error) return <div className="alert alert-error">{error}</div>;
+  if (firstError) {
+    return (
+      <div className="alert alert-error">
+        {firstError instanceof ApiError ? firstError.message : 'Erro ao carregar.'}
+      </div>
+    );
+  }
+
+  const categories = categoriesQuery.data ?? [];
+  const accounts = accountsQuery.data ?? [];
 
   const ctx: RecorrentesCtx = {
-    items,
-    expenses,
+    items: recurringQuery.data ?? [],
+    expenses: expensesQuery.data ?? [],
     categories,
     accounts,
     year,
     month,
     categoryById: new Map(categories.map((c) => [c.id, c])),
     accountById: new Map(accounts.map((a) => [a.id, a])),
-    reload: load,
+    // As mutações de fixa já invalidam sozinhas (afterRecurringChange). Isto
+    // fica para quem precisa forçar, e é invalidação — não refetch na mão.
+    reload: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['recurring'] }),
+        qc.invalidateQueries({ queryKey: ['expenses'] }),
+      ]);
+    },
     notice,
     setNotice,
   };

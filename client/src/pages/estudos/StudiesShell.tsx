@@ -1,13 +1,18 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { api, ApiError } from '../../api/client';
-import type {
-  AgendaEvent,
-  AgendaEventCategory,
-  Exam,
-  StudiesOverview,
-  StudyTask,
-} from '../../api/types';
+import { useQueryClient } from '@tanstack/react-query';
+import { ApiError } from '../../api/client';
+import {
+  useAgendaEvents,
+  useCreateAgendaEvent,
+  useCreateExam,
+  useCreateStudyTask,
+  useStudiesOverview,
+  useUpdateAgendaEvent,
+  useUpdateExam,
+  useUpdateStudyTask,
+} from '../../api/queries';
+import type { AgendaEvent, AgendaEventCategory, Exam, StudyTask } from '../../api/types';
 import { AgendaEventModal, ExamModal, StudyTaskModal } from '../../components/StudyModals';
 import type { EstudosCtx } from './context';
 
@@ -21,35 +26,27 @@ type EventModalState = { event?: AgendaEvent; defaultDate?: string } | null;
  * então dividir o carregamento evitaria manter dois estados em sincronia.
  */
 export function StudiesShell() {
-  const [data, setData] = useState<StudiesOverview | null>(null);
-  const [events, setEvents] = useState<AgendaEvent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const qc = useQueryClient();
 
   const [examModal, setExamModal] = useState<ExamModalState>(null);
   const [taskModal, setTaskModal] = useState<TaskModalState>(null);
   const [eventModal, setEventModal] = useState<EventModalState>(null);
 
-  const loadRef = useRef(0);
-  const load = useCallback(async () => {
-    const id = ++loadRef.current;
-    setError(null);
-    try {
-      const [d, evs] = await Promise.all([api.getStudiesOverview(), api.listAgendaEvents()]);
-      if (id !== loadRef.current) return;
-      setData(d);
-      setEvents(evs);
-    } catch (err) {
-      if (id !== loadRef.current) return;
-      setError(err instanceof ApiError ? err.message : 'Erro ao carregar.');
-    } finally {
-      if (id === loadRef.current) setLoading(false);
-    }
-  }, []);
+  // As duas seções (Estudos e Agenda) montam este shell e compartilham as
+  // mesmas keys — trocar de uma para a outra não refaz requisição nenhuma.
+  const overviewQuery = useStudiesOverview();
+  const eventsQuery = useAgendaEvents();
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const createExam = useCreateExam();
+  const updateExam = useUpdateExam();
+  const createTask = useCreateStudyTask();
+  const updateTask = useUpdateStudyTask();
+  const createEvent = useCreateAgendaEvent();
+  const updateEvent = useUpdateAgendaEvent();
+
+  const data = overviewQuery.data;
+  const events = eventsQuery.data ?? [];
+  const error = overviewQuery.error ?? eventsQuery.error;
 
   async function saveExam(d: {
     title: string;
@@ -58,17 +55,15 @@ export function StudiesShell() {
     term: number | null;
     notes: string | null;
   }) {
-    if (examModal?.exam) await api.updateExam(examModal.exam.id, d);
-    else await api.createExam(d);
+    if (examModal?.exam) await updateExam.mutateAsync({ id: examModal.exam.id, data: d });
+    else await createExam.mutateAsync(d);
     setExamModal(null);
-    await load();
   }
 
   async function saveTask(d: { title: string; dueDate: string | null; subjectId: string | null }) {
-    if (taskModal?.task) await api.updateStudyTask(taskModal.task.id, d);
-    else await api.createStudyTask(d);
+    if (taskModal?.task) await updateTask.mutateAsync({ id: taskModal.task.id, data: d });
+    else await createTask.mutateAsync(d);
     setTaskModal(null);
-    await load();
   }
 
   async function saveEvent(d: {
@@ -78,20 +73,25 @@ export function StudiesShell() {
     notes: string | null;
     category: AgendaEventCategory;
   }) {
-    if (eventModal?.event) await api.updateAgendaEvent(eventModal.event.id, d);
-    else await api.createAgendaEvent(d);
+    if (eventModal?.event) await updateEvent.mutateAsync({ id: eventModal.event.id, data: d });
+    else await createEvent.mutateAsync(d);
     setEventModal(null);
-    await load();
   }
 
-  if (loading && !data) {
+  if (!data && (overviewQuery.isPending || eventsQuery.isPending)) {
     return (
       <div className="center-pad">
         <div className="spinner" />
       </div>
     );
   }
-  if (error) return <div className="alert alert-error">{error}</div>;
+  if (error) {
+    return (
+      <div className="alert alert-error">
+        {error instanceof ApiError ? error.message : 'Erro ao carregar.'}
+      </div>
+    );
+  }
   if (!data) return null;
 
   const subjects = data.subjects ?? [];
@@ -100,7 +100,14 @@ export function StudiesShell() {
     subjects,
     events,
     subjectById: (id) => subjects.find((s) => s.id === id),
-    reload: load,
+    // As mutações de estudos/agenda já invalidam ['studies'] e ['agenda'];
+    // isto atende quem ainda pede recarga explícita.
+    reload: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['studies'] }),
+        qc.invalidateQueries({ queryKey: ['agenda'] }),
+      ]);
+    },
     openExam: (exam) => setExamModal({ exam }),
     openTask: (task) => setTaskModal({ task }),
     openEvent: (event, defaultDate) => setEventModal({ event, defaultDate }),

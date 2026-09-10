@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { api } from '../../api/client';
+import { useDeleteStudyTask, useUpdateStudyTask } from '../../api/queries';
 import { EditIcon, TrashIcon } from '../../components/icons';
 import { formatDayMonth } from '../../utils/format';
 import { countdownLabel, daysUntil } from '../../lib/studies';
@@ -8,17 +8,17 @@ import { useEstudos } from './context';
 type Filter = 'todas' | 'atrasadas' | 'sem-prazo';
 
 export function TarefasTab() {
-  const { data, subjects, subjectById, openTask, reload } = useEstudos();
+  const { data, subjects, subjectById, openTask } = useEstudos();
+  const updateStudyTask = useUpdateStudyTask();
+  const deleteStudyTask = useDeleteStudyTask();
   const [filter, setFilter] = useState<Filter>('todas');
   const [subjectFilter, setSubjectFilter] = useState<string>('all');
 
   async function toggleTask(id: string) {
-    await api.updateStudyTask(id, { done: true });
-    await reload();
+    await updateStudyTask.mutateAsync({ id, data: { done: true } });
   }
   async function deleteTask(id: string) {
-    await api.deleteStudyTask(id);
-    await reload();
+    await deleteStudyTask.mutateAsync(id);
   }
 
   const all = data.pendingTasks;
