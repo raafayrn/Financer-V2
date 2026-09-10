@@ -253,16 +253,21 @@ export function Layout() {
         </>
       )}
 
+      {/* NavLink, não <button onClick={navigate}>: com botão a barra perdia o
+          href — nada de abrir em nova aba, clique do meio ou "copiar link" — e
+          o estado ativo tinha que ser calculado na mão. O `end` no "/" evita
+          que o Dashboard fique aceso em todas as rotas. */}
       <nav className="ms-mobile-nav">
         {NAV.filter((e) => e.mobile).map((e) => (
-          <button
+          <NavLink
             key={e.to}
-            className={`ms-mobile-nav-item${e.to === entry.to ? ' active' : ''}`}
-            onClick={() => navigate(e.to)}
+            to={e.to}
+            end={e.to === '/'}
+            className={({ isActive }) => `ms-mobile-nav-item${isActive ? ' active' : ''}`}
           >
             <e.icon />
             {e.label}
-          </button>
+          </NavLink>
         ))}
       </nav>
     </div>

@@ -95,7 +95,11 @@ export function AjustesPage() {
             <h3 className="ms-card-title">Aparência</h3>
           </div>
           <Row title="Tema" hint={theme === 'dark' ? 'Escuro (cozy)' : 'Claro'}>
-            <button className="ms-btn" onClick={toggleTheme}>
+            <button
+              className="ms-btn"
+              onClick={toggleTheme}
+              aria-label={theme === 'dark' ? 'Usar tema claro' : 'Usar tema escuro'}
+            >
               {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
               {theme === 'dark' ? 'Usar claro' : 'Usar escuro'}
             </button>

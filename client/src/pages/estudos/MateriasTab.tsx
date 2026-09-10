@@ -68,6 +68,7 @@ export function MateriasTab() {
               <form className="ms-inline-form" onSubmit={addSubject}>
                 <input
                   type="text"
+                  aria-label="Nome da matéria"
                   value={subjectName}
                   onChange={(e) => setSubjectName(e.target.value)}
                   placeholder="Nome da matéria"
@@ -167,13 +168,14 @@ export function MateriasTab() {
                           >
                             <input
                               type="text"
+                              aria-label="Nome do assunto"
                               value={topicInputs[s.id] ?? ''}
                               onChange={(e) =>
                                 setTopicInputs((p) => ({ ...p, [s.id]: e.target.value }))
                               }
                               placeholder="Novo assunto…"
                             />
-                            <button type="submit" className="ms-btn ms-btn-primary">
+                            <button type="submit" className="ms-btn ms-btn-primary" aria-label="Adicionar assunto">
                               <PlusIcon />
                             </button>
                           </form>

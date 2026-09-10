@@ -180,6 +180,7 @@ export function WorkoutSessionModal({ title, day, initial, onCancel, onSubmit }:
                   <div className="workout-ex-head">
                     <input
                       type="text"
+                      aria-label="Nome do exercício"
                       className="workout-ex-name"
                       value={ex.name}
                       onChange={(e) => updateExercise(exIdx, { name: e.target.value })}
@@ -191,6 +192,7 @@ export function WorkoutSessionModal({ title, day, initial, onCancel, onSubmit }:
                   </div>
                   <input
                     type="text"
+                    aria-label="Grupo muscular"
                     className="workout-ex-muscle"
                     value={ex.muscleGroup}
                     onChange={(e) => updateExercise(exIdx, { muscleGroup: e.target.value })}
@@ -206,8 +208,8 @@ export function WorkoutSessionModal({ title, day, initial, onCancel, onSubmit }:
                     {ex.sets.map((s, setIdx) => (
                       <div key={setIdx} className="workout-set-row">
                         <span className="workout-set-idx">{setIdx + 1}</span>
-                        <input type="text" inputMode="decimal" value={s.weight} onChange={(e) => updateSet(exIdx, setIdx, { weight: e.target.value })} placeholder="—" />
-                        <input type="number" inputMode="numeric" value={s.reps} onChange={(e) => updateSet(exIdx, setIdx, { reps: e.target.value })} placeholder="—" />
+                        <input aria-label="Carga em kg" type="text" inputMode="decimal" value={s.weight} onChange={(e) => updateSet(exIdx, setIdx, { weight: e.target.value })} placeholder="—" />
+                        <input aria-label="Repetições" type="number" inputMode="numeric" value={s.reps} onChange={(e) => updateSet(exIdx, setIdx, { reps: e.target.value })} placeholder="—" />
                         <button type="button" className="icon-btn" title="Remover série" onClick={() => removeSet(exIdx, setIdx)}>
                           <TrashIcon />
                         </button>

@@ -1,7 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion';
-import { useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { springSheet, springTap } from '../lib/motion';
+import * as Menu from '@radix-ui/react-dropdown-menu';
 
 interface DropdownOption {
   value: string;
@@ -15,125 +12,76 @@ interface Props {
   ariaLabel?: string;
 }
 
-interface MenuRect {
-  top: number;
-  left: number;
-  width: number;
-}
-
+/**
+ * Seletor de valor único, sobre @radix-ui/react-dropdown-menu.
+ *
+ * O que a versão anterior fazia na mão e agora é do Radix:
+ *
+ *   - POSIÇÃO. Havia um getBoundingClientRect com listeners de `resize` e
+ *     `scroll` (em captura) recalculando `top`/`left` a cada quadro de rolagem.
+ *     O `align`/`sideOffset` do Radix faz isso, e ainda vira o menu para cima
+ *     quando não cabe embaixo — o que a conta manual não fazia.
+ *   - FECHAR AO CLICAR FORA. Era um `mousedown` no document com uma exceção
+ *     para o menu (que vive em portal, fora do rootRef).
+ *   - PONTEIRO ÓRFÃO. O `pointerEvents = 'none'` imperativo existia porque, se
+ *     o AnimatePresence não desmontasse o menu, o nó ficava por cima do modal
+ *     engolindo clique. Sem AnimatePresence, o problema deixa de existir.
+ *
+ * O que é novo, e era o ponto da migração: navegação por setas, Home/End,
+ * digitar-para-buscar, Escape, foco de volta no gatilho ao fechar, e o
+ * `aria-activedescendant` que um `role="listbox"` feito à mão não tinha.
+ *
+ * As classes CSS são as mesmas (.dropdown, .dropdown-trigger, .dropdown-menu,
+ * .dropdown-item). A animação virou CSS ancorada no `data-state` do Radix — o
+ * framer-motion não fecha o ciclo de saída em elementos passados por `asChild`
+ * (ver o comentário em Modal.tsx), e aqui o menu precisa MESMO sumir do DOM.
+ *
+ * É um menu de rádio, não um listbox: para o leitor de tela, "uma opção marcada
+ * entre várias" é exatamente o que este componente faz.
+ */
 export function Dropdown({ value, options, onChange, ariaLabel }: Props) {
-  const [open, setOpen] = useState(false);
-  const [menuRect, setMenuRect] = useState<MenuRect | null>(null);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
   const selected = options.find((o) => o.value === value);
 
-  useEffect(() => {
-    if (!open) return;
-
-    function updateRect() {
-      const el = rootRef.current;
-      if (!el) return;
-      const rect = el.getBoundingClientRect();
-      setMenuRect({ top: rect.bottom + 8, left: rect.left, width: rect.width });
-    }
-    updateRect();
-
-    function handleClick(e: MouseEvent) {
-      const target = e.target as Node;
-      // O menu vive num portal no body, entao nao esta dentro de rootRef — sem
-      // checar menuRef, o mousedown no item fecharia antes do click chegar.
-      if (menuRef.current?.contains(target)) return;
-      if (rootRef.current && !rootRef.current.contains(target)) {
-        if (menuRef.current) menuRef.current.style.pointerEvents = 'none';
-        setOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClick);
-    window.addEventListener('resize', updateRect);
-    window.addEventListener('scroll', updateRect, true);
-    return () => {
-      document.removeEventListener('mousedown', handleClick);
-      window.removeEventListener('resize', updateRect);
-      window.removeEventListener('scroll', updateRect, true);
-    };
-  }, [open]);
-
   return (
-    <div className="dropdown" ref={rootRef}>
-      <motion.button
-        type="button"
-        className={`dropdown-trigger ${open ? 'dropdown-trigger-open' : ''}`}
-        aria-label={ariaLabel}
-        aria-expanded={open}
-        onClick={() =>
-          setOpen((o) => {
-            // Se o AnimatePresence nao desmontar o menu (acontece nesta versao
-            // do framer-motion, ver Modal), o no fica no DOM acima do backdrop
-            // e engole os cliques do modal — cortar o ponteiro ao fechar
-            // resolve sem depender do desmonte.
-            if (menuRef.current) menuRef.current.style.pointerEvents = o ? 'none' : '';
-            return !o;
-          })
-        }
-        whileTap={{ scale: 0.98 }}
-        transition={springTap}
-      >
-        <span>{selected?.label ?? ''}</span>
-        <motion.svg
-          className="dropdown-chevron"
-          viewBox="0 0 24 24"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          animate={{ rotate: open ? 180 : 0 }}
-          transition={springTap}
-        >
-          <path d="M6 9l6 6 6-6" />
-        </motion.svg>
-      </motion.button>
-      {createPortal(
-        <AnimatePresence>
-          {open && menuRect && (
-            <motion.div
-              ref={menuRef}
-              className="dropdown-menu dropdown-menu-portal"
-              role="listbox"
-              style={{
-                transformOrigin: 'top center',
-                position: 'fixed',
-                top: menuRect.top,
-                left: menuRect.left,
-                width: menuRect.width,
-              }}
-              initial={{ opacity: 0, scale: 0.9, y: -8 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.92, y: -6 }}
-              transition={springSheet}
-            >
+    <div className="dropdown">
+      <Menu.Root>
+        <Menu.Trigger className="dropdown-trigger" aria-label={ariaLabel}>
+          <span>{selected?.label ?? ''}</span>
+          <svg
+            className="dropdown-chevron"
+            viewBox="0 0 24 24"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </Menu.Trigger>
+
+        <Menu.Portal>
+          <Menu.Content
+            className="dropdown-menu dropdown-menu-portal"
+            align="start"
+            sideOffset={8}
+            // Copia a largura do gatilho, como o menu antigo fazia com o
+            // width medido na mão.
+            style={{ width: 'var(--radix-dropdown-menu-trigger-width)' }}
+          >
+            <Menu.RadioGroup value={value} onValueChange={onChange}>
               {options.map((o) => (
-                <motion.button
-                  type="button"
+                <Menu.RadioItem
                   key={o.value}
-                  role="option"
-                  aria-selected={o.value === value}
+                  value={o.value}
                   className={`dropdown-item ${o.value === value ? 'dropdown-item-active' : ''}`}
-                  whileTap={{ scale: 0.97 }}
-                  transition={springTap}
-                  onClick={() => {
-                    onChange(o.value);
-                    if (menuRef.current) menuRef.current.style.pointerEvents = 'none';
-                    setOpen(false);
-                  }}
                 >
                   {o.label}
-                </motion.button>
+                </Menu.RadioItem>
               ))}
-            </motion.div>
-          )}
-        </AnimatePresence>,
-        document.body,
-      )}
+            </Menu.RadioGroup>
+          </Menu.Content>
+        </Menu.Portal>
+      </Menu.Root>
     </div>
   );
 }

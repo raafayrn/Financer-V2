@@ -3158,3 +3158,46 @@ select option {
   font-size: 0.9rem;
   flex: none;
 }
+
+/* ---------- Menus do Radix: posição e animação ----------
+   O Radix posiciona o menu por transform no elemento do portal, então o
+   `position: absolute; top/left/right` do .dropdown-menu base (herdado do menu
+   feito à mão) precisa sair de cena aqui. A animação passou a ser CSS ancorada
+   no data-state: o framer-motion não fecha o ciclo de saída em elementos
+   passados por asChild, e este menu precisa mesmo sumir do DOM ao fechar. */
+.dropdown-menu[data-radix-popper-content-wrapper],
+.dropdown-menu[data-state] {
+  position: static;
+  top: auto;
+  left: auto;
+  right: auto;
+}
+.dropdown-menu[data-state='open'] {
+  animation: menu-in 0.16s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.dropdown-menu[data-state='closed'] {
+  animation: menu-out 0.12s ease-in;
+}
+@keyframes menu-in {
+  from { opacity: 0; transform: scale(0.94) translateY(-6px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes menu-out {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.96); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dropdown-menu[data-state] { animation: none; }
+}
+/* O Radix marca o item sob o teclado/ponteiro com data-highlighted — é o que
+   faz a navegação por setas ser visível. */
+.dropdown-item[data-highlighted] {
+  background: var(--surface-2);
+  outline: none;
+}
+.dropdown-item-danger[data-highlighted] { background: var(--over-bg, var(--surface-2)); }
+/* O gatilho aberto mantém o realce que a versão anterior aplicava por classe. */
+.dropdown-trigger[data-state='open'] {
+  outline: 2px solid var(--primary);
+  outline-offset: -1px;
+}

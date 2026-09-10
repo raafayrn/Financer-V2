@@ -347,6 +347,7 @@ export function ChatBox({ onSaved, onPreviews }: Props) {
             <input
               ref={inputRef}
               type="text"
+              aria-label="Mensagem para o assistente"
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder="Digite aqui..."
@@ -357,6 +358,7 @@ export function ChatBox({ onSaved, onPreviews }: Props) {
             <input
               ref={fileInputRef}
               type="file"
+              aria-label="Anexar foto, PDF ou extrato"
               accept="image/*,application/pdf,.pdf,.csv,text/csv,.ofx,application/x-ofx"
               onChange={handleFileSelected}
               hidden
@@ -370,7 +372,12 @@ export function ChatBox({ onSaved, onPreviews }: Props) {
             >
               <PaperclipIcon />
             </button>
-            <button type="submit" className="btn-primary btn-sm" disabled={loading || !text.trim()}>
+            <button
+              type="submit"
+              className="btn-primary btn-sm"
+              aria-label="Enviar mensagem"
+              disabled={loading || !text.trim()}
+            >
               <SendIcon />
             </button>
           </form>

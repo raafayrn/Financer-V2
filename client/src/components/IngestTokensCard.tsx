@@ -130,6 +130,7 @@ export function IngestTokensCard() {
         <div className="ms-token-new">
           <input
             type="text"
+            aria-label="Nome do canal automático"
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             placeholder="Nome do canal (ex.: iPhone, E-mail Nubank)"

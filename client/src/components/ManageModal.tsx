@@ -166,6 +166,7 @@ export function ManageModal({ year, month, onCancel, onCategoriesChanged }: Prop
               <input
                 type="text"
                 inputMode="decimal"
+                aria-label="Orçamento do mês"
                 value={budget}
                 onChange={(e) => setBudget(e.target.value)}
                 placeholder="Ex.: 3000"
@@ -183,6 +184,7 @@ export function ManageModal({ year, month, onCancel, onCategoriesChanged }: Prop
             <form onSubmit={addCategory} className="cat-form">
               <input
                 type="text"
+                aria-label="Nome da nova categoria"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="Nova categoria"

@@ -281,6 +281,7 @@ export function SaudePage() {
               <input
                 type="number"
                 inputMode="numeric"
+                aria-label="Meta diária de água em ml"
                 placeholder="Outro valor (ml)"
                 value={customMl}
                 onChange={(e) => setCustomMl(e.target.value)}
@@ -297,6 +298,7 @@ export function SaudePage() {
                   <input
                     type="number"
                     inputMode="numeric"
+                    aria-label="Quantidade de água em ml"
                     className="water-goal-input"
                     value={goalInput}
                     onChange={(e) => setGoalInput(e.target.value)}

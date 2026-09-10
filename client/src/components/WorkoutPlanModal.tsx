@@ -260,11 +260,11 @@ export function WorkoutPlanModal({ plan: initialPlan, onClose, onChanged }: Prop
                 )}
 
                 <form onSubmit={addExercise} className="plan-ex-add">
-                  <input type="text" value={exName} onChange={(e) => setExName(e.target.value)} placeholder="Exercício" />
-                  <input type="text" value={exMuscle} onChange={(e) => setExMuscle(e.target.value)} placeholder="Grupo" />
-                  <input type="number" inputMode="numeric" value={exSets} onChange={(e) => setExSets(e.target.value)} placeholder="Séries" className="plan-ex-num" />
-                  <input type="text" value={exReps} onChange={(e) => setExReps(e.target.value)} placeholder="Reps" className="plan-ex-num" />
-                  <button type="submit" className="btn-primary btn-sm">
+                  <input aria-label="Nome do exercício" type="text" value={exName} onChange={(e) => setExName(e.target.value)} placeholder="Exercício" />
+                  <input aria-label="Grupo muscular" type="text" value={exMuscle} onChange={(e) => setExMuscle(e.target.value)} placeholder="Grupo" />
+                  <input aria-label="Séries" type="number" inputMode="numeric" value={exSets} onChange={(e) => setExSets(e.target.value)} placeholder="Séries" className="plan-ex-num" />
+                  <input aria-label="Repetições" type="text" value={exReps} onChange={(e) => setExReps(e.target.value)} placeholder="Reps" className="plan-ex-num" />
+                  <button type="submit" className="btn-primary btn-sm" aria-label="Adicionar exercício">
                     <PlusIcon />
                   </button>
                 </form>

@@ -1,7 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion';
-import { useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { springSheet, springTap } from '../lib/motion';
+import * as Menu from '@radix-ui/react-dropdown-menu';
 
 export interface RowMenuItem {
   label: string;
@@ -20,102 +17,43 @@ interface Props {
  * hover — invisíveis no toque e disputando espaço com o valor. Aqui vira um
  * alvo só, sempre no mesmo lugar, com os rótulos escritos.
  *
- * O menu é renderizado em portal (como o Dropdown) para não ser cortado pelo
- * overflow da lista nem ficar embaixo do cabeçalho sticky do grupo.
+ * Mesma migração do Dropdown, pelos mesmos motivos (ver o comentário lá): o
+ * Radix cuida de posição, clique fora, Escape, setas, Home/End,
+ * digitar-para-buscar e devolução do foco ao gatilho. O portal continua sendo
+ * necessário para o menu não ser cortado pelo overflow da lista nem ficar
+ * embaixo do cabeçalho fixo do grupo — só que agora é o do Radix.
  */
 export function RowMenu({ items, ariaLabel = 'Mais ações' }: Props) {
-  const [open, setOpen] = useState(false);
-  const [rect, setRect] = useState<{ top: number; right: number } | null>(null);
-  const rootRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-
-    function updateRect() {
-      const el = rootRef.current;
-      if (!el) return;
-      const r = el.getBoundingClientRect();
-      setRect({ top: r.bottom + 6, right: window.innerWidth - r.right });
-    }
-    updateRect();
-
-    function handleClick(e: MouseEvent) {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
-    }
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setOpen(false);
-    }
-    document.addEventListener('mousedown', handleClick);
-    document.addEventListener('keydown', handleKey);
-    window.addEventListener('resize', updateRect);
-    window.addEventListener('scroll', updateRect, true);
-    return () => {
-      document.removeEventListener('mousedown', handleClick);
-      document.removeEventListener('keydown', handleKey);
-      window.removeEventListener('resize', updateRect);
-      window.removeEventListener('scroll', updateRect, true);
-    };
-  }, [open]);
-
   return (
-    <div className="row-menu" ref={rootRef}>
-      <button
-        type="button"
-        className={`ms-icon-btn${open ? ' ms-icon-btn-on' : ''}`}
-        aria-label={ariaLabel}
-        aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
-      >
-        <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
-          <circle cx="12" cy="5" r="1.8" />
-          <circle cx="12" cy="12" r="1.8" />
-          <circle cx="12" cy="19" r="1.8" />
-        </svg>
-      </button>
+    <div className="row-menu">
+      <Menu.Root>
+        <Menu.Trigger className="ms-icon-btn" aria-label={ariaLabel}>
+          <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true">
+            <circle cx="12" cy="5" r="1.8" />
+            <circle cx="12" cy="12" r="1.8" />
+            <circle cx="12" cy="19" r="1.8" />
+          </svg>
+        </Menu.Trigger>
 
-      {createPortal(
-        <AnimatePresence>
-          {open && rect && (
-            <motion.div
-              className="dropdown-menu row-menu-list"
-              role="menu"
-              // `left: auto` anula o `left: 0` do .dropdown-menu base (feito pra
-              // menu de select, que copia a largura do gatilho) — sem isso o
-              // menu estica de ponta a ponta da tela.
-              style={{
-                position: 'fixed',
-                top: rect.top,
-                left: 'auto',
-                right: rect.right,
-                width: 'max-content',
-                transformOrigin: 'top right',
-              }}
-              initial={{ opacity: 0, scale: 0.92, y: -6 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.94, y: -4 }}
-              transition={springSheet}
-            >
-              {items.map((item) => (
-                <motion.button
-                  key={item.label}
-                  type="button"
-                  role="menuitem"
-                  className={`dropdown-item${item.danger ? ' dropdown-item-danger' : ''}`}
-                  whileTap={{ scale: 0.97 }}
-                  transition={springTap}
-                  onClick={() => {
-                    setOpen(false);
-                    item.onSelect();
-                  }}
-                >
-                  {item.label}
-                </motion.button>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>,
-        document.body,
-      )}
+        <Menu.Portal>
+          <Menu.Content
+            className="dropdown-menu dropdown-menu-portal row-menu-list"
+            align="end"
+            sideOffset={6}
+            style={{ width: 'max-content' }}
+          >
+            {items.map((item) => (
+              <Menu.Item
+                key={item.label}
+                className={`dropdown-item${item.danger ? ' dropdown-item-danger' : ''}`}
+                onSelect={item.onSelect}
+              >
+                {item.label}
+              </Menu.Item>
+            ))}
+          </Menu.Content>
+        </Menu.Portal>
+      </Menu.Root>
     </div>
   );
 }
