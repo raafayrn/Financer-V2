@@ -1,4 +1,6 @@
 import type {
+  BackgroundPreset,
+  BackgroundSetting,
   Account,
   AgendaEvent,
   AgendaEventCategory,
@@ -253,6 +255,9 @@ export const api = {
   // Resumo e relatórios
   getSummary: (year: number, month: number) =>
     request<Summary>(`/summary?year=${year}&month=${month}`),
+  getBackground: () => request<BackgroundSetting>('/background'),
+  setBackground: (data: { preset: BackgroundPreset; image?: string }) =>
+    request<BackgroundSetting>('/background', { method: 'PUT', body: JSON.stringify(data) }),
   getMonthlyReport: (year: number) =>
     request<MonthlyReport>(`/reports/monthly?year=${year}`),
 

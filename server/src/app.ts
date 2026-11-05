@@ -25,6 +25,7 @@ import { cleanupRouter } from './routes/cleanup';
 import { ingestRouter } from './routes/ingest';
 import { ingestTokensRouter } from './routes/ingestTokens';
 import { ingestionsRouter } from './routes/ingestions';
+import { backgroundRouter } from './routes/background';
 
 export function createApp() {
   const app = express();
@@ -65,6 +66,7 @@ export function createApp() {
   app.use('/api/cleanup', cleanupRouter);
   app.use('/api/ingest-tokens', ingestTokensRouter);
   app.use('/api/ingestions', ingestionsRouter);
+  app.use('/api/background', backgroundRouter);
 
   app.use((_req, res) => {
     res.status(404).json({ error: 'Rota não encontrada.' });

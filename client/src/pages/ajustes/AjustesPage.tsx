@@ -4,10 +4,9 @@ import { api } from '../../api/client';
 import type { Account, Category } from '../../api/types';
 import { useAuth } from '../../context/AuthContext';
 import { useMonth } from '../../context/MonthContext';
-import { useTheme } from '../../context/ThemeContext';
 import { ManageModal } from '../../components/ManageModal';
 import { IngestTokensCard } from '../../components/IngestTokensCard';
-import { MoonIcon, SunIcon } from '../../components/icons';
+import { AparenciaCard } from './AparenciaCard';
 import { CLASS_SCHEDULE } from '../../lib/studies';
 import { DATA_COLORS } from '../../utils/palette';
 
@@ -47,7 +46,6 @@ function Row({
  */
 export function AjustesPage() {
   const { user } = useAuth();
-  const { theme, toggleTheme } = useTheme();
   const { year, month } = useMonth();
   const [manageOpen, setManageOpen] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -90,17 +88,7 @@ export function AjustesPage() {
   return (
     <div className="ms-grid-main-side">
       <div className="ms-stack">
-        <section className="ms-card">
-          <div className="ms-card-head">
-            <h3 className="ms-card-title">Aparência</h3>
-          </div>
-          <Row title="Tema" hint={theme === 'dark' ? 'Escuro (cozy)' : 'Claro'}>
-            <button className="ms-btn" onClick={toggleTheme}>
-              {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
-              {theme === 'dark' ? 'Usar claro' : 'Usar escuro'}
-            </button>
-          </Row>
-        </section>
+        <AparenciaCard />
 
         <section className="ms-card">
           <div className="ms-card-head">

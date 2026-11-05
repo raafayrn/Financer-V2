@@ -69,6 +69,22 @@ model User {
   // Ingestão automática (e-mail do Nubank, atalho do iPhone)
   ingestions   ExpenseIngestion[]
   ingestTokens IngestToken[]
+
+  // Aparência sincronizada entre aparelhos (plano de fundo do app)
+  background UserBackground?
+}
+
+// Plano de fundo do app. `preset` é uma das cenas embutidas no cliente; quando
+// for 'custom', `image` guarda a foto do usuário JÁ reduzida e desfocada pelo
+// cliente (data URL JPEG, dezenas de KB) — o servidor só armazena.
+model UserBackground {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  preset    String   @default("aurora")
+  image     String?
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // Registro de qual aviso proativo já foi enviado em qual dia. A unicidade

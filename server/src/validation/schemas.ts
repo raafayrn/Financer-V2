@@ -492,3 +492,20 @@ export const ingestionConfirmSchema = z.object({
   accountId: z.string().trim().min(1).nullable().optional(),
   date: isoDate.optional(),
 });
+
+// Plano de fundo: uma cena embutida OU uma foto já processada pelo cliente.
+// O limite de tamanho fica abaixo do limite de corpo JSON (200kb) do app.
+export const BACKGROUND_PRESETS = ['aurora', 'dusk', 'plain', 'custom'] as const;
+export const backgroundUpdateSchema = z
+  .object({
+    preset: z.enum(BACKGROUND_PRESETS),
+    image: z
+      .string()
+      .regex(/^data:image\/(jpeg|webp|png);base64,[A-Za-z0-9+/=]+$/, 'Imagem inválida.')
+      .max(180_000, 'Imagem muito grande.')
+      .optional(),
+  })
+  .refine((v) => v.preset !== 'custom' || !!v.image, {
+    message: 'Envie a imagem para o fundo personalizado.',
+    path: ['image'],
+  });

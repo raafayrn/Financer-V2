@@ -275,9 +275,9 @@ export function SaudePage() {
 
   return (
     <div className="page">
-      <div className="section-head">
-        <h2 className="page-title">Saúde</h2>
-        <motion.button className="btn-ghost btn-sm" onClick={() => setPlanOpen(true)} whileTap={{ scale: 0.95 }} transition={springTap}>
+      {/* O título "Saúde" já vem do cabeçalho da casca. */}
+      <div className="section-head" style={{ justifyContent: 'flex-end' }}>
+        <motion.button className="ms-btn" onClick={() => setPlanOpen(true)} whileTap={{ scale: 0.95 }} transition={springTap}>
           Rotina semanal
         </motion.button>
       </div>

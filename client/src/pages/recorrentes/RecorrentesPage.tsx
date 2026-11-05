@@ -4,6 +4,7 @@ import { api, ApiError } from '../../api/client';
 import type { Account, Category, Expense, RecurringExpense } from '../../api/types';
 import { useMonth } from '../../context/MonthContext';
 import type { RecorrentesCtx } from './context';
+import { useDataChanged } from '../../lib/dataEvents';
 
 /**
  * Container das abas Fixas / Parcelamentos. As fixas são templates (não
@@ -43,6 +44,9 @@ export function RecorrentesPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Gasto lançado pelo "+" do dock ou pelo assistente.
+  useDataChanged(() => void load());
 
   if (loading) {
     return (

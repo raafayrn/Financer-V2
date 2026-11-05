@@ -59,3 +59,29 @@ export function todayIso(): string {
   const d = String(now.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
 }
+
+/** Valor curto para eixo de gráfico: "R$ 850", "R$ 1,2 mil". */
+export function formatCompact(value: number): string {
+  const abs = Math.abs(value);
+  if (abs >= 1000) {
+    const k = abs / 1000;
+    return `${value < 0 ? '−' : ''}R$ ${k.toFixed(k >= 10 ? 0 : 1).replace('.', ',')} mil`;
+  }
+  return `${value < 0 ? '−' : ''}R$ ${Math.round(abs)}`;
+}
+
+/** Últimos `n` meses (mais antigo → mais novo) terminando em (year, month). */
+export function lastMonths(year: number, month: number, n: number): { year: number; month: number }[] {
+  const result: { year: number; month: number }[] = [];
+  let y = year;
+  let m = month;
+  for (let i = 0; i < n; i++) {
+    result.unshift({ year: y, month: m });
+    m -= 1;
+    if (m < 1) {
+      m = 12;
+      y -= 1;
+    }
+  }
+  return result;
+}

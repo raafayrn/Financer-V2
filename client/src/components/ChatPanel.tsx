@@ -6,8 +6,15 @@ import { formatCurrency } from '../utils/format';
 import { springBouncy, springSheet, springTap } from '../lib/motion';
 
 interface Props {
+  /** Fechar o painel (botão ×, Esc). */
+  onClose: () => void;
   onSaved: () => void;
   onPreviews: (previews: ChatPreview[]) => void;
+  /**
+   * Mensagem digitada no campo da barra do topo: o painel abre e já a envia.
+   * O `id` muda a cada envio, para a mesma frase poder ser mandada de novo.
+   */
+  pending?: { id: number; text: string } | null;
 }
 
 type MessageRole = 'user' | 'assistant';
@@ -34,14 +41,6 @@ interface IncomeCard {
 
 type ChatMessage = TextMessage | ExpenseCard | IncomeCard;
 
-function ChatIcon() {
-  return (
-    <svg viewBox="0 0 24 24" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4H6.5A2.5 2.5 0 0 1 4 13.5v-8Z" />
-    </svg>
-  );
-}
-
 function CloseIcon() {
   return (
     <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -66,9 +65,14 @@ function SendIcon() {
   );
 }
 
-export function ChatBox({ onSaved, onPreviews }: Props) {
+/**
+ * Painel do assistente. Mora na casca (ver QuickActions): abre pelo campo de
+ * comando da barra do topo e fica montado só enquanto aberto — sem
+ * AnimatePresence, cujo `exit` não desmonta de forma confiável nesta base.
+ * Fechar e reabrir começa uma conversa nova, como antes.
+ */
+export function ChatPanel({ onClose, onSaved, onPreviews, pending }: Props) {
   const [enabled, setEnabled] = useState<boolean | null>(null);
-  const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
@@ -83,13 +87,26 @@ export function ChatBox({ onSaved, onPreviews }: Props) {
   }, []);
 
   useEffect(() => {
-    if (open) {
-      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
-      inputRef.current?.focus();
-    }
-  }, [open, messages]);
+    setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+    inputRef.current?.focus();
+  }, [messages]);
 
-  if (enabled === false) return null;
+  useEffect(() => {
+    const onKey = (ev: KeyboardEvent) => {
+      if (ev.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  // A frase que veio do campo do topo é enviada uma vez por id.
+  const sentPendingRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!pending || sentPendingRef.current === pending.id) return;
+    sentPendingRef.current = pending.id;
+    void send(pending.text);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pending]);
 
   function addMessage(msg: ChatMessage) {
     setMessages((prev) => [...prev, msg]);
@@ -151,8 +168,11 @@ export function ChatBox({ onSaved, onPreviews }: Props) {
     e.preventDefault();
     const trimmed = text.trim();
     if (!trimmed || loading) return;
-
     setText('');
+    await send(trimmed);
+  }
+
+  async function send(trimmed: string) {
     addMessage({ kind: 'text', role: 'user', text: trimmed });
     setLoading(true);
 
@@ -208,7 +228,7 @@ export function ChatBox({ onSaved, onPreviews }: Props) {
           text: `Encontrei ${result.previews.length} lançamento(s) no arquivo. Abrindo para confirmação...`,
         });
         onPreviews(result.previews);
-        setOpen(false);
+        onClose();
       } else {
         addMessage({ kind: 'text', role: 'assistant', text: result.message });
       }
@@ -224,46 +244,34 @@ export function ChatBox({ onSaved, onPreviews }: Props) {
   }
 
   return (
-    <>
-      <motion.button
-        className="chat-fab"
-        onClick={() => setOpen((o) => !o)}
-        title="Assistente financeiro"
-        aria-label="Abrir assistente"
-        whileTap={{ scale: 0.9 }}
-        transition={springTap}
-      >
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.span
-            key={open ? 'close' : 'chat'}
-            initial={{ rotate: -90, opacity: 0, scale: 0.6 }}
-            animate={{ rotate: 0, opacity: 1, scale: 1 }}
-            exit={{ rotate: 90, opacity: 0, scale: 0.6 }}
-            transition={springTap}
-            style={{ display: 'flex' }}
-          >
-            {open ? <CloseIcon /> : <ChatIcon />}
-          </motion.span>
-        </AnimatePresence>
-      </motion.button>
-
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            className="chat-panel"
-            style={{ transformOrigin: 'bottom right' }}
-            initial={{ opacity: 0, scale: 0.4, y: 40 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.4, y: 30 }}
-            transition={springSheet}
-          >
+    <motion.div
+      className="chat-panel"
+      role="dialog"
+      aria-label="Assistente"
+      initial={{ opacity: 0, y: -10, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={springSheet}
+    >
           <div className="chat-panel-header">
             <span className="chat-panel-title">Assistente</span>
             <span className="chat-panel-hint">Gasto, receita ou pergunta</span>
+            <button
+              type="button"
+              className="ms-icon-btn chat-panel-close"
+              aria-label="Fechar assistente"
+              onClick={onClose}
+            >
+              <CloseIcon />
+            </button>
           </div>
 
           <div className="chat-messages">
-            {messages.length === 0 && (
+            {enabled === false && (
+              <div className="chat-empty">
+                O assistente está desligado: falta a chave da API da Anthropic no servidor.
+              </div>
+            )}
+            {enabled !== false && messages.length === 0 && (
               <div className="chat-empty">
                 Exemplos:<br />
                 <em>"gastei 50 no mercado"</em><br />
@@ -326,12 +334,14 @@ export function ChatBox({ onSaved, onPreviews }: Props) {
                 )}
               </motion.div>
             ))}
+            </AnimatePresence>
+            {/* Fora do AnimatePresence: o `exit` dele não desmonta aqui, e os
+                três pontinhos ficariam presos depois da resposta. */}
             {loading && (
               <motion.div
                 className="chat-bubble-wrap assistant"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
                 transition={springTap}
               >
                 <div className="chat-bubble assistant chat-typing">
@@ -339,7 +349,6 @@ export function ChatBox({ onSaved, onPreviews }: Props) {
                 </div>
               </motion.div>
             )}
-            </AnimatePresence>
             <div ref={messagesEndRef} />
           </div>
 
@@ -350,7 +359,7 @@ export function ChatBox({ onSaved, onPreviews }: Props) {
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder="Digite aqui..."
-              disabled={loading || enabled === null}
+              disabled={loading || enabled !== true}
               maxLength={1000}
               className="chat-input"
             />
@@ -366,7 +375,7 @@ export function ChatBox({ onSaved, onPreviews }: Props) {
               className="icon-btn-outline"
               title="Anexar foto, PDF, CSV ou OFX"
               onClick={() => fileInputRef.current?.click()}
-              disabled={loading || enabled === null}
+              disabled={loading || enabled !== true}
             >
               <PaperclipIcon />
             </button>
@@ -374,10 +383,7 @@ export function ChatBox({ onSaved, onPreviews }: Props) {
               <SendIcon />
             </button>
           </form>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
+    </motion.div>
   );
 }
 

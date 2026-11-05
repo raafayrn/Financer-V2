@@ -1,177 +1,196 @@
 /* =========================================================================
-   Design system "Monarch" — Fase 0 do redesign.
+   Design system do Orbit — tokens.
    Carregado DEPOIS do index.css: os tokens abaixo vencem os antigos, entao as
-   telas que ainda nao migraram ja herdam a paleta e os raios novos.
-   Principios: superficie lisa, cards solidos, borda 1px, sombra minima,
-   raio 12px, labels MAIUSCULAS, numeros grandes. Dois temas: o claro do
-   Monarch e um escuro "cozy" em marrom/bege. Toda cor sai de token — nao
-   escreva cor fixa fora do bloco :root, senao um dos temas quebra.
+   telas que ainda usam classes antigas herdam a paleta nova.
+
+   Linguagem "vidro fosco" (nov/2026): o app flutua sobre uma CENA de fundo
+   (gradiente embutido ou foto do usuario, sempre JA desfocada) e as
+   superficies sao translucidas. Como a cena ja vem borrada, os cards nao
+   precisam de backdrop-filter — so a barra do topo, o trilho, o dock, o chat
+   e o fundo do modal desfocam de verdade (ver glass.css).
+
+   Toda cor sai de token — nao escreva cor fixa fora destes blocos, senao um
+   dos temas quebra. E nao ponha `background`/`color` em `transition` nas
+   regras que usam estes tokens: o Chrome congela o valor do tema anterior.
    ========================================================================= */
 
-/* ---------- Tema claro "areia": bege quente, cartao creme, roxo ----------
-   Sem cinza frio e sem branco puro: o fundo e uma areia quente, os cartoes
-   sao creme e o texto e marrom escuro. O par acento e roxo (acao) + verde
-   (dinheiro que entra), que e o que separa "clicavel" de "resultado".
-   Fica coerente com o tema escuro, que ja era marrom/bege. */
-:root,
+/* ---------- Tema claro: vidro creme sobre cena quente ---------- */
 :root[data-theme='light'] {
-  --bg: #ece3d1;
+  --bg: #e6d8c3;
   --bg-blob-1: transparent;
   --bg-blob-2: transparent;
   --bg-blob-3: transparent;
 
-  --surface: #fdfbf6;
-  --surface-solid: #fdfbf6;
-  --surface-2: #f1e9d9;
-  --surface-3: #f7f1e5;
-  --menu-bg: #fdfbf6;
-  /* Sidebar: creme, um degrau acima do canvas de areia. Usando --bg ela
-     sumia no fundo e o app parecia nao ter estrutura. */
-  --chrome: #fbf7ee;
-  --nav-active: #e7dcc4;
-  --bar-idle: #d5c9ae;
+  /* Cenas embutidas (o "papel de parede"). Ficam aqui, e nao no glass.css,
+     porque cada tema precisa da sua versao. */
+  --scene-aurora:
+    radial-gradient(60% 55% at 82% 8%, #f6d9b0 0%, transparent 70%),
+    radial-gradient(55% 60% at 8% 92%, #a9805c 0%, transparent 72%),
+    radial-gradient(45% 45% at 50% 55%, #e9d2b4 0%, transparent 75%),
+    linear-gradient(160deg, #d9c2a3 0%, #c6a582 48%, #9c7a5b 100%);
+  --scene-dusk:
+    radial-gradient(55% 50% at 15% 10%, #f3c4a0 0%, transparent 70%),
+    radial-gradient(60% 55% at 90% 85%, #b98a9c 0%, transparent 70%),
+    linear-gradient(200deg, #e7c9b0 0%, #c9a3a1 55%, #8f7488 100%);
+  /* Veu sobre a cena: segura o contraste mesmo com foto clara ou escura. */
+  --scene-tint: rgba(246, 238, 226, 0.3);
 
-  --text: #33291f;
-  --text-muted: #6d6152;
-  --text-faint: #7c6e5b;
-  --border: #ded3bd;
-  --border-strong: #c9bda3;
+  /* Vidro. --surface e o card translucido; --surface-solid e o opaco
+     (botoes, campos, menus — o que nao pode deixar o fundo vazar). */
+  --surface: rgba(255, 250, 242, 0.6);
+  --surface-solid: #fbf6ec;
+  --surface-2: rgba(110, 82, 52, 0.09);
+  --surface-3: rgba(255, 255, 255, 0.4);
+  --menu-bg: #fbf6ec;
+  --chrome: rgba(255, 249, 240, 0.55);
+  --stage: rgba(255, 250, 242, 0.26);
+  --glass-edge: rgba(255, 255, 255, 0.62);
+  --glass-hi: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  --nav-active: #ffffff;
+  --nav-active-text: #1d1712;
+  --bar-idle: rgba(110, 82, 52, 0.16);
 
-  --primary: #5a45ad;
-  --primary-hover: #4b3894;
+  --text: #2a2119;
+  --text-muted: #5b4e40;
+  --text-faint: #6b5c4b;
+  --border: rgba(92, 70, 45, 0.13);
+  --border-strong: rgba(92, 70, 45, 0.24);
+
+  --primary: #c4461e;
+  --primary-hover: #ac3b17;
   --primary-contrast: #ffffff;
-  --accent-soft: #e6dff8;
+  --accent-soft: rgba(226, 84, 44, 0.14);
+  /* Preto de acao (botao principal "Transferir" dos prints). No escuro ele
+     inverte para creme, senao some no fundo. */
+  --ink: #1d1712;
+  --ink-hover: #3a2e24;
+  --ink-contrast: #fbf6ec;
+  /* Card de destaque verde-agua. */
+  --feature: #2a8574;
+  --feature-2: #1f6a5d;
+  --feature-contrast: #ffffff;
+  --chart-1: #e2542c;
+  --chart-2: #1d1712;
 
-  --ok: #2f7d52;
-  --ok-bg: #dfeddb;
-  --warning: #8d6509;
-  --warning-bg: #f6e9cd;
-  --over: #b23a2b;
-  --over-bg: #f7e1da;
-  --info-bg: #e6dff8;
+  --ok: #2b7a50;
+  --ok-bg: rgba(47, 125, 82, 0.15);
+  --warning: #855e08;
+  --warning-bg: rgba(170, 120, 20, 0.16);
+  --over: #b3361f;
+  --over-bg: rgba(179, 54, 31, 0.13);
+  --info-bg: rgba(226, 84, 44, 0.12);
 
-  --invoice-fixed: #5a45ad;
-  --invoice-variable: #2f7d7d;
+  --invoice-fixed: #c4461e;
+  --invoice-variable: #2a8574;
 
-  /* Sombra na cor do fundo (marrom), nao cinza: sobre bege, sombra cinza
-     acinzenta o cartao inteiro. */
-  --shadow: 0 1px 2px rgba(74, 58, 36, 0.06);
-  --shadow-float: 0 8px 24px rgba(74, 58, 36, 0.16);
+  --shadow: 0 1px 2px rgba(74, 58, 36, 0.05), 0 10px 30px rgba(74, 58, 36, 0.08);
+  --shadow-float: 0 12px 34px rgba(74, 58, 36, 0.2);
 }
-/* ---------- Tema escuro "cozy": marrom e bege, pouco contraste duro ----------
-   Nada de preto puro nem branco puro: o fundo é um marrom bem escuro e o texto
-   é bege, o que reduz o brilho na leitura noturna. As superfícies sobem de
-   marrom conforme se aproximam do primeiro plano. */
+
+/* ---------- Tema escuro "cozy": vidro marrom sobre cena escura ----------
+   Nada de preto puro nem branco puro. E o padrao de quem nunca escolheu, por
+   isso tambem vale para `:root` sem data-theme (antes do React montar). */
+:root,
 :root[data-theme='dark'] {
   --bg: #1b1512;
   --bg-blob-1: transparent;
   --bg-blob-2: transparent;
   --bg-blob-3: transparent;
 
-  --surface: #241d18;
-  --surface-solid: #241d18;
-  --surface-2: #322820;
-  --surface-3: #201a15;
+  --scene-aurora:
+    radial-gradient(60% 55% at 82% 8%, #7a4f2c 0%, transparent 70%),
+    radial-gradient(55% 60% at 8% 92%, #3b2618 0%, transparent 72%),
+    radial-gradient(45% 45% at 50% 55%, #5a3f2b 0%, transparent 75%),
+    linear-gradient(160deg, #4a3526 0%, #2e2119 50%, #1a130f 100%);
+  --scene-dusk:
+    radial-gradient(55% 50% at 15% 10%, #7d4630 0%, transparent 70%),
+    radial-gradient(60% 55% at 90% 85%, #4b3046 0%, transparent 70%),
+    linear-gradient(200deg, #3d2a25 0%, #2a1e22 55%, #17121a 100%);
+  --scene-tint: rgba(18, 12, 8, 0.42);
+
+  --surface: rgba(48, 37, 29, 0.6);
+  --surface-solid: #2a211b;
+  --surface-2: rgba(255, 236, 214, 0.08);
+  --surface-3: rgba(255, 236, 214, 0.05);
   --menu-bg: #2a221c;
-  /* No escuro o degrau e pra cima tambem: a sidebar clareia em relacao ao
-     fundo, mantendo a mesma hierarquia do tema claro. */
-  --chrome: #221b16;
-  --nav-active: #382c23;
-  --bar-idle: #453629;
+  --chrome: rgba(36, 28, 22, 0.6);
+  --stage: rgba(40, 31, 25, 0.3);
+  --glass-edge: rgba(255, 236, 214, 0.12);
+  --glass-hi: inset 0 1px 0 rgba(255, 236, 214, 0.08);
+  --nav-active: #efe3d2;
+  --nav-active-text: #1f1813;
+  --bar-idle: rgba(255, 236, 214, 0.14);
 
-  --text: #efe3d2;
-  --text-muted: #b8a793;
-  --text-faint: #a3907a;
-  --border: #362b23;
-  --border-strong: #4a3b2f;
+  --text: #f3e8d8;
+  --text-muted: #c6b6a1;
+  --text-faint: #b09d86;
+  --border: rgba(255, 236, 214, 0.1);
+  --border-strong: rgba(255, 236, 214, 0.2);
 
-  --primary: #e08b52;
-  --primary-hover: #eca06a;
+  --primary: #ee6a40;
+  --primary-hover: #f47f57;
   --primary-contrast: #241a12;
-  --accent-soft: #362a20;
+  --accent-soft: rgba(238, 106, 64, 0.17);
+  --ink: #efe3d2;
+  --ink-hover: #ffffff;
+  --ink-contrast: #1f1813;
+  --feature: #2b8371;
+  --feature-2: #1c5a4e;
+  --feature-contrast: #ffffff;
+  --chart-1: #ee6a40;
+  --chart-2: #efe3d2;
 
   --ok: #8fbf6f;
-  --ok-bg: #29301f;
+  --ok-bg: rgba(143, 191, 111, 0.15);
   --warning: #d9a441;
-  --warning-bg: #352a17;
-  --over: #e2705c;
-  --over-bg: #3a231e;
-  --info-bg: #24262e;
+  --warning-bg: rgba(217, 164, 65, 0.15);
+  --over: #e8775f;
+  --over-bg: rgba(226, 112, 92, 0.16);
+  --info-bg: rgba(238, 106, 64, 0.14);
 
-  --invoice-fixed: #e08b52;
-  --invoice-variable: #6aa9d8;
+  --invoice-fixed: #ee6a40;
+  --invoice-variable: #5fb3a1;
 
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
-  --shadow-float: 0 10px 30px rgba(0, 0, 0, 0.55);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 30px rgba(0, 0, 0, 0.25);
+  --shadow-float: 0 14px 40px rgba(0, 0, 0, 0.5);
 }
 
-/* Sem escolha explícita, segue o sistema (vence o bloco do index.css). */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    --bg: #1b1512;
-    --surface: #241d18;
-    --surface-solid: #241d18;
-    --surface-2: #322820;
-    --surface-3: #201a15;
-    --menu-bg: #2a221c;
-    --nav-active: #382c23;
-    --bar-idle: #453629;
-
-    --text: #efe3d2;
-    --text-muted: #b8a793;
-    --text-faint: #a3907a;
-    --border: #362b23;
-    --border-strong: #4a3b2f;
-
-    --primary: #e08b52;
-    --primary-hover: #eca06a;
-    --primary-contrast: #241a12;
-    --accent-soft: #362a20;
-
-    --ok: #8fbf6f;
-    --ok-bg: #29301f;
-    --warning: #d9a441;
-    --warning-bg: #352a17;
-    --over: #e2705c;
-    --over-bg: #3a231e;
-    --info-bg: #24262e;
-
-    --invoice-fixed: #e08b52;
-    --invoice-variable: #6aa9d8;
-
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
-    --shadow-float: 0 10px 30px rgba(0, 0, 0, 0.55);
-  }
+/* "Reduzir transparencia" (Ajustes, por aparelho): tudo vira solido e
+   nenhum backdrop-filter roda. Saida de emergencia se o vidro pesar. */
+:root[data-glass='off'][data-theme='light'] {
+  --surface: #fbf6ec;
+  --chrome: #f6efe2;
+  --stage: transparent;
+  --surface-3: #f3ebdc;
+}
+:root[data-glass='off'][data-theme='dark'] {
+  --surface: #2a211b;
+  --chrome: #241d18;
+  --stage: transparent;
+  --surface-3: #2f251e;
 }
 
 /* Medidas — iguais nos dois temas. */
 :root {
-  --radius: 12px;
-  --radius-sm: 8px;
+  --radius: 20px;
+  --radius-sm: 10px;
   --radius-pill: 999px;
   --blur: none;
+  --glass-blur: blur(22px) saturate(140%);
 
-  --sidebar-w: 232px;
+  --rail-w: 60px;
+  --topbar-h: 60px;
   --header-h: 60px;
   --maxw: 100%;
   --maxw-desktop: 1640px;
 }
 
-/* O fundo com blobs/gradientes some — a superficie e lisa nos dois temas. */
+/* A cena (.ms-scene) pinta o fundo; o body so cobre o instante antes dela. */
 body {
   background-image: none;
   background-color: var(--bg);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   letter-spacing: 0;
-}
-
-/* Nada de vidro: qualquer superficie translucida vira solida. */
-.card,
-.modal,
-.menu,
-.dropdown-menu {
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
 }
 
 /* ---------- Tipografia utilitaria ---------- */
@@ -195,46 +214,7 @@ body {
 .ms-pos { color: var(--ok); }
 .ms-neg { color: var(--over); }
 
-/* =========================================================================
-   Shell: sidebar (desktop) + bottom-nav (mobile)
-   ========================================================================= */
-.ms-app {
-  min-height: 100vh;
-  min-height: 100dvh;
-  display: flex;
-  background: var(--bg);
-}
-
-.ms-sidebar {
-  display: none;
-  width: var(--sidebar-w);
-  flex-shrink: 0;
-  flex-direction: column;
-  padding: 14px 12px 12px;
-  background: var(--chrome);
-  border-right: 1px solid var(--border);
-  position: sticky;
-  top: 0;
-  height: 100vh;
-}
-.ms-sidebar-top {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 6px 14px;
-}
-.ms-logo {
-  width: 26px;
-  height: 26px;
-  border-radius: 7px;
-  background: var(--primary);
-  color: var(--primary-contrast);
-  display: grid;
-  place-items: center;
-  font-size: 14px;
-  font-weight: 700;
-  margin-right: auto;
-}
+/* Botao so de icone (usado nas paginas e na casca). */
 .ms-icon-btn {
   width: 28px;
   height: 28px;
@@ -255,126 +235,6 @@ body {
 .ms-icon-btn:hover {
   background: var(--surface-2);
   color: var(--text);
-}
-
-.ms-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  flex: 1;
-  overflow-y: auto;
-}
-.ms-nav-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 8px 10px;
-  border: none;
-  background: none;
-  border-radius: var(--radius-sm);
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-muted);
-  text-align: left;
-  text-decoration: none;
-}
-.ms-nav-item svg {
-  width: 18px;
-  height: 18px;
-  fill: none;
-  stroke: currentColor;
-  flex-shrink: 0;
-}
-.ms-nav-item:hover {
-  background: var(--surface-2);
-  color: var(--text);
-}
-.ms-nav-item.active {
-  background: var(--nav-active);
-  color: var(--text);
-  font-weight: 600;
-}
-.ms-sidebar-foot {
-  border-top: 1px solid var(--border);
-  padding-top: 8px;
-  margin-top: 8px;
-}
-
-/* ---------- Coluna de conteudo ---------- */
-.ms-main {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.ms-header {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  background: var(--chrome);
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 0 16px;
-  min-height: var(--header-h);
-}
-.ms-header-title {
-  font-size: 17px;
-  font-weight: 600;
-  margin: 0;
-  white-space: nowrap;
-}
-.ms-header-right {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* Abas sublinhadas do header */
-.ms-tabs {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  height: var(--header-h);
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.ms-tabs::-webkit-scrollbar { display: none; }
-.ms-tab {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  height: 100%;
-  padding: 0 2px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-muted);
-  text-decoration: none;
-  white-space: nowrap;
-  border: none;
-  background: none;
-}
-.ms-tab:hover { color: var(--text); }
-.ms-tab.active { color: var(--primary); font-weight: 600; }
-.ms-tab-underline {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -1px;
-  height: 2px;
-  background: var(--primary);
-  border-radius: 2px;
-}
-
-.ms-body {
-  flex: 1;
-  padding: 16px;
-  max-width: var(--maxw-desktop);
-  width: 100%;
 }
 
 /* =========================================================================
@@ -557,24 +417,7 @@ body {
 .ms-summary-row dd { margin: 0; font-weight: 500; font-variant-numeric: tabular-nums; }
 
 /* Legenda do donut em grid */
-.ms-legend {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-  gap: 2px 16px;
-  align-content: center;
-}
-.ms-legend-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 6px 8px;
-  border-radius: var(--radius-sm);
-  background: none;
-  border: none;
-  text-align: left;
-  width: 100%;
-}
-.ms-legend-item:hover { background: var(--surface-3); }
+
 .ms-legend-dot {
   width: 8px;
   height: 8px;
@@ -582,8 +425,6 @@ body {
   margin-top: 5px;
   flex-shrink: 0;
 }
-.ms-legend-label { font-size: 13px; color: var(--text-muted); display: block; }
-.ms-legend-value { font-size: 14px; font-weight: 500; color: var(--text); }
 
 /* Grid de conteudo: coluna principal + coluna lateral (Summary) */
 .ms-grid-main-side {
@@ -592,146 +433,15 @@ body {
   grid-template-columns: 1fr;
 }
 .ms-stack { display: flex; flex-direction: column; gap: 16px; }
-
-/* =========================================================================
-   Mobile: bottom-nav + drawer
-   ========================================================================= */
-.ms-mobile-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 60;
-  display: flex;
-  background: var(--surface-solid);
-  border-top: 1px solid var(--border);
-  /* Um respiro minimo mesmo sem entalhe, e o inset inteiro em telas com
-     indicador de home (iPhone X pra frente). */
-  padding-bottom: max(6px, env(safe-area-inset-bottom));
-  /* Nas quinas arredondadas, os itens das pontas encostavam no arco. */
-  padding-left: max(4px, env(safe-area-inset-left));
-  padding-right: max(4px, env(safe-area-inset-right));
-}
-.ms-mobile-nav-item {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  /* Alvo de toque mais alto: 54px era o minimo do minimo pra ícone + rotulo. */
-  padding: 11px 0 10px;
-  border: none;
-  background: none;
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--text-faint);
-  text-decoration: none;
-}
-.ms-mobile-nav-item svg {
-  width: 21px;
-  height: 21px;
-  fill: none;
-  stroke: currentColor;
-}
-.ms-mobile-nav-item.active { color: var(--primary); }
-
-.ms-drawer-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 70;
-  background: rgba(16, 16, 20, 0.35);
-}
-.ms-drawer {
-  position: fixed;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 71;
-  width: 268px;
-  background: var(--surface-solid);
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  padding: 14px 12px 12px;
-}
-
 @media (min-width: 880px) {
-  .ms-sidebar { display: flex; }
-  .ms-mobile-nav { display: none; }
-  .ms-header { padding: 0 24px; }
-  .ms-body { padding: 20px 24px 40px; }
   .ms-grid-main-side { grid-template-columns: minmax(0, 1fr) 300px; }
 }
-
-@media (max-width: 879px) {
-  /* Espaco pra barra fixa: altura dela mais o inset do aparelho. */
-  .ms-body { padding-bottom: calc(92px + env(safe-area-inset-bottom)); }
-  .ms-header { padding: 0 14px; gap: 12px; }
-}
-
-/* Botao de menu que so existe no mobile (a sidebar cobre o desktop) */
-.ms-only-mobile { display: grid; }
-@media (min-width: 880px) {
-  .ms-only-mobile { display: none; }
-}
-
-/* Seletor de mes reaproveitado no header, no formato do botao "This month" */
-.ms-header .month-nav {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  height: 34px;
-  padding: 0 4px;
-  background: var(--surface-solid);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
-  box-shadow: none;
-}
-.ms-header .month-arrow {
-  width: 26px;
-  height: 26px;
-  border: none;
-  background: none;
-  color: var(--text-muted);
-  display: grid;
-  place-items: center;
-  border-radius: 6px;
-}
-.ms-header .month-arrow svg { width: 14px; height: 14px; fill: none; stroke: currentColor; }
-.ms-header .month-arrow:hover { background: var(--surface-2); color: var(--text); }
 
 /* =========================================================================
    Financas — Fase 2
    ========================================================================= */
 
 /* Destaque "Ainda posso gastar" */
-.ms-hero {
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.ms-hero-value {
-  font-size: 40px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
-  line-height: 1.1;
-}
-.ms-hero-status { font-size: 13px; color: var(--text-muted); }
-.ms-hero.status-warning .ms-hero-status { color: var(--warning); }
-.ms-hero.status-over .ms-hero-value,
-.ms-hero.status-over .ms-hero-status { color: var(--over); }
-.ms-hero-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border);
-}
-.ms-hero-stats > div { display: flex; flex-direction: column; gap: 3px; }
-.ms-hero-stat-value { font-size: 17px; font-weight: 500; font-variant-numeric: tabular-nums; }
 
 /* Grafico de barras dos ultimos meses */
 .ms-bars { display: flex; align-items: flex-end; gap: 10px; height: 150px; }
@@ -774,12 +484,7 @@ body {
 .ms-filter-row > .ms-label { min-width: 110px; }
 
 /* Donut + legenda */
-.ms-donut-layout {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 20px;
-  align-items: center;
-}
+
 /* 160px em vez de 200: o anel era o item mais alto do card e definia sozinho
    os 283px de altura, pra mostrar quatro fatias. */
 .ms-donut-wrap { position: relative; width: 160px; justify-self: center; }
@@ -799,61 +504,19 @@ body {
 }
 .ms-donut-center-value { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
 
-@media (min-width: 880px) {
-  .ms-donut-layout { grid-template-columns: 190px 1fr; }
-}
-
 /* No celular a lista fica mais enxuta: some a conta e as acoes ficam sempre visiveis */
 @media (max-width: 879px) {
   .ms-row { gap: 8px; padding: 10px 12px; }
   .ms-row-account { display: none; }
   .ms-row-actions { opacity: 1; }
-  .ms-hero-value { font-size: 32px; }
+
   .ms-filter-row > .ms-label { min-width: 100%; }
 }
 
 /* -------------------------------------------------------------------------
-   Ajustes de mobile: no celular o header nao cabe numa linha so e a linha de
-   lancamento nao cabe na largura da tela.
+   Ajustes de mobile: a linha de lancamento nao cabe na largura da tela.
    ------------------------------------------------------------------------- */
 @media (max-width: 879px) {
-  /* Titulo + mes na primeira linha, abas ocupando a segunda inteira. */
-  .ms-header {
-    flex-wrap: wrap;
-    row-gap: 0;
-    padding-bottom: 0;
-    /* 12px de respiro entre os tres blocos estourava a linha por 1px em
-       "Dashboard" + navegador de mes, e o mes caia sozinho numa terceira
-       linha. Com 8 sobra folga, e o titulo trunca antes de quebrar. */
-    gap: 8px;
-  }
-  .ms-header-title {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .ms-header-right { min-width: 0; }
-  /* A primeira linha vale sempre --header-h, tenha a tela abas ou nao. Sem
-     isso ela encolhia (28px em Estudos, 35 em Financas) quando as abas
-     entravam na segunda linha, e cada aba do app abria com um topo de altura
-     diferente. */
-  .ms-header > .ms-icon-btn,
-  .ms-header-title,
-  .ms-header-right {
-    min-height: var(--header-h);
-    display: flex;
-    align-items: center;
-  }
-  .ms-header-title { order: 1; }
-  .ms-header-right { order: 2; }
-  .ms-tabs {
-    order: 3;
-    flex-basis: 100%;
-    height: 42px;
-    gap: 16px;
-    border-top: 1px solid var(--border);
-  }
-
   /* Linha em duas alturas: nome/valor em cima, categoria embaixo. */
   .ms-row { flex-wrap: wrap; row-gap: 4px; }
   .ms-row-name { flex: 1 1 auto; order: 2; }
@@ -873,7 +536,6 @@ body {
   .ms-card-head { flex-wrap: wrap; row-gap: 8px; padding: 12px; }
   .ms-card-actions { margin-left: 0; flex-basis: 100%; flex-wrap: wrap; }
   .ms-card-body { padding: 12px; }
-  .ms-body { padding-left: 12px; padding-right: 12px; }
 }
 
 /* =========================================================================
@@ -948,13 +610,6 @@ body {
   padding: 10px 16px;
   border-top: 1px solid var(--border);
   background: var(--surface-3);
-}
-
-.ms-progress-head {
-  display: flex;
-  justify-content: space-between;
-  font-size: 13px;
-  margin-bottom: 5px;
 }
 
 /* Formulario curto em linha (nova materia, novo assunto) */
@@ -1111,80 +766,14 @@ body {
    ========================================================================= */
 
 /* Tres trilhas: dinheiro (estatico), dia (muda toda hora) e estudos (prazos). */
-.ms-dash {
-  display: grid;
-  grid-template-columns: 1fr;
-  grid-template-areas: 'money' 'day' 'studies';
-  gap: 16px;
-  align-items: start;
-}
-.ms-dash-money { grid-area: money; }
-.ms-dash-day { grid-area: day; }
-.ms-dash-studies { grid-area: studies; }
-.ms-hero-top { display: flex; align-items: center; justify-content: space-between; }
 
 /* Saldo por fonte: salario, VR, carteira */
-.ms-sources { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-.ms-source { padding: 14px 16px; display: flex; flex-direction: column; gap: 3px; }
-.ms-source-value {
-  font-size: 20px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
-  /* "-R$ 1.200,00" nao pode quebrar entre o sinal e o numero. */
-  white-space: nowrap;
-}
 
 /* No celular, tres colunas davam 75px uteis pra um valor que precisa de 103:
    o texto vazava do card e o negativo quebrava em tres linhas. Empilhado, cada
    fonte vira uma linha com o rotulo a esquerda e o valor a direita. */
-@media (max-width: 620px) {
-  .ms-sources { grid-template-columns: 1fr; gap: 8px; }
-  /* Grade de tres colunas em vez de flex: com o rotulo em largura livre, cada
-     valor comecava num ponto diferente e a coluna de numeros ficava torta. */
-  .ms-source {
-    display: grid;
-    grid-template-columns: 76px minmax(0, 1fr) auto;
-    align-items: baseline;
-    gap: 10px;
-    padding: 11px 14px;
-  }
-  .ms-source .ms-muted { text-align: right; }
-  .ms-source-value { font-size: 18px; }
-  .ms-sources-4 { grid-template-columns: 1fr; }
-}
 
 /* Acoes rapidas do hero: gasto (solido) e receita (contorno) */
-.ms-quick-actions { display: flex; gap: 10px; margin-top: 14px; }
-.ms-quick {
-  flex: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  height: 40px;
-  border-radius: var(--radius-sm);
-  border: 1px solid transparent;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 120ms ease, background 120ms ease, box-shadow 120ms ease;
-}
-.ms-quick svg { width: 17px; height: 17px; fill: none; stroke: currentColor; }
-.ms-quick:hover { transform: translateY(-1px); }
-.ms-quick:active { transform: translateY(0) scale(0.98); }
-.ms-quick-expense {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: var(--primary-contrast);
-}
-.ms-quick-expense:hover {
-  background: var(--primary-hover);
-  border-color: var(--primary-hover);
-  box-shadow: 0 3px 10px -3px var(--primary);
-}
-.ms-quick-income { background: var(--ok-bg); border-color: var(--ok); color: var(--ok); }
-.ms-quick-income:hover { background: var(--ok); color: var(--surface); }
 
 /* Fatura estimada: total + barra fixos/variaveis */
 .ms-invoice-total { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
@@ -1224,7 +813,6 @@ body {
 .ms-dot-variable { background: var(--invoice-variable); }
 
 /* Historico curto: linhas mais apertadas que a lista completa */
-.ms-row-tight { padding-top: 7px; padding-bottom: 7px; }
 
 /* Faixa de controles no topo de uma aba: filtro/periodo a esquerda, acao a
    direita. Substitui o par titulo + section-head do layout antigo. */
@@ -1240,10 +828,6 @@ body {
 .ms-toolbar .year-nav { margin: 0; }
 
 /* Faixa de quatro indicadores (Investimentos) */
-.ms-sources-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-@media (min-width: 880px) {
-  .ms-sources-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-}
 
 /* Barras de duas series lado a lado: aporte e resgate no mesmo mes. */
 .ms-bar-track-pair { gap: 3px; }
@@ -1459,29 +1043,6 @@ body {
 .ms-chip-ok { background: var(--ok-bg); color: var(--ok); }
 
 /* Anel de agua */
-.ms-water { display: flex; align-items: center; gap: 14px; }
-.ms-water-ring { position: relative; width: 56px; height: 56px; flex-shrink: 0; }
-.ms-water-pct {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-@media (min-width: 880px) {
-  .ms-dash {
-    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
-    grid-template-areas: 'money day' 'money studies';
-  }
-}
-@media (min-width: 1280px) {
-  .ms-dash {
-    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-areas: 'money day studies';
-  }
-}
 
 /* Linhas de configuracao: a acao fica sempre visivel (nao sao alvo de hover) */
 .ms-row-actions-fixed { opacity: 1; }
@@ -1674,85 +1235,18 @@ body {
    ate agora" (342px) espremido em 300px de largura. Aqui cada card declara
    quantas colunas quer, e a altura vem do conteudo.
    ========================================================================= */
-.ms-resumo {
-  display: grid;
-  gap: 16px;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  align-items: start;
-}
-.ms-col-12 { grid-column: span 12; }
-.ms-col-8 { grid-column: span 12; }
-.ms-col-4 { grid-column: span 12; }
-
-@media (min-width: 880px) {
-  .ms-col-8 { grid-column: span 7; }
-  .ms-col-4 { grid-column: span 5; }
-}
-@media (min-width: 1120px) {
-  .ms-col-8 { grid-column: span 8; }
-  .ms-col-4 { grid-column: span 4; }
-}
 
 /* Hero em faixa: numero + o que sobrou de cada fonte + tendencia, tudo na
    mesma linha. Empilhado, isso ocupava 203px pra mostrar quatro numeros. */
 /* Card partido ao meio: a esquerda o dinheiro do mes (numero em cima,
    comparacao com o mes passado embaixo), a direita o donut. */
-.ms-hero-band { flex-direction: row; align-items: stretch; gap: 0; }
-.ms-hero-left {
-  position: relative;
-  flex: 1 1 0;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  padding-right: 24px;
-}
+
 /* Ancorado no topo da faixa: no fluxo do .ms-hero-row ele cairia no meio,
    alinhado aos numeros, e roubaria a largura das tres fontes. */
-.ms-hero-edit {
-  position: absolute;
-  top: 0;
-  right: 24px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 10px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: none;
-  color: var(--text-muted);
-  font-size: 12px;
-  font-weight: 600;
-}
-.ms-hero-edit svg {
-  width: 15px;
-  height: 15px;
-  fill: none;
-  stroke: currentColor;
-}
-.ms-hero-edit:hover {
-  background: var(--surface-2);
-  color: var(--text);
-}
-.ms-hero-row {
-  display: flex;
-  align-items: center;
-  gap: 22px;
-  flex-wrap: wrap;
-}
-.ms-hero-main { display: flex; flex-direction: column; gap: 2px; flex: 0 0 auto; }
+
 /* Colados a esquerda: com `flex: 1` cada metrica virava uma coluna de 1fr e
    os tres numeros ficavam espalhados por 700px de faixa. */
-.ms-hero-band .ms-hero-stats {
-  flex: 0 0 auto;
-  grid-template-columns: none;
-  grid-auto-flow: column;
-  gap: 22px;
-  margin-top: 0;
-  padding-top: 0;
-  padding-left: 22px;
-  border-top: none;
-  border-left: 1px solid var(--border);
-}
+
 /* Ocupa a largura inteira da metade esquerda, ate a divisoria. */
 .ms-hero-trend {
   display: flex;
@@ -1766,33 +1260,6 @@ body {
 .ms-hero-trend-label { font-size: 12px; color: var(--text-muted); }
 
 @media (max-width: 879px) {
-  .ms-hero-band { flex-direction: column; }
-  .ms-hero-left { padding-right: 0; }
-  .ms-hero-edit { right: 0; }
-  .ms-hero-row { flex-direction: column; align-items: stretch; gap: 0; }
-  .ms-hero-donut {
-    padding-left: 0;
-    border-left: none;
-    border-top: 1px solid var(--border);
-    margin-top: 16px;
-    padding-top: 16px;
-  }
-
-  .ms-hero-band .ms-hero-stats {
-    /* Empilhado, o flex-basis passa a valer como ALTURA e esticava o bloco
-       pra 260px. Aqui a altura volta a ser a do conteudo. */
-    flex: 0 0 auto;
-    /* Sem largura sobrando, as tres metricas voltam a dividir a linha em vez
-       de correrem pra fora da tela. */
-    grid-auto-flow: row;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
-    margin-top: 16px;
-    padding-top: 16px;
-    padding-left: 0;
-    border-top: 1px solid var(--border);
-    border-left: none;
-  }
   .ms-hero-trend {
     align-items: stretch;
     padding-left: 0;
@@ -1847,99 +1314,31 @@ body {
 
 /* Donut na coluna estreita: anel menor em cima, legenda em lista embaixo —
    lado a lado so funciona quando sobra largura. */
-.ms-donut-compact { grid-template-columns: 1fr !important; gap: 12px; }
-.ms-donut-compact .ms-donut-wrap { width: 140px; }
-.ms-donut-compact .ms-donut { width: 140px; height: 140px; }
-.ms-donut-compact .ms-legend { grid-template-columns: 1fr; }
 
 /* Donut dentro do hero: encostado na direita, ocupando a sobra da faixa. */
-.ms-hero-donut {
-  flex: 1 1 0;
-  min-width: 0;
-  padding-left: 24px;
-  border-left: 1px solid var(--border);
-  display: flex;
-  align-items: stretch;
-}
-.ms-donut-inline {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 20px;
-  align-items: center;
-  width: 100%;
-  height: 100%;
-}
-.ms-donut-inline .ms-donut-wrap { width: 150px; }
-.ms-donut-inline .ms-donut { width: 150px; height: 150px; }
-.ms-donut-inline .ms-donut-center-value { font-size: 16px; }
+
 /* Legenda em uma coluna, nome e valor na mesma linha: em duas colunas o bloco
    passava de 400px e quebrava a faixa do hero pra baixo. */
 /* Lista que desce e, no fim da coluna, continua na coluna ao lado. Colunas de
    CSS (e nao grid) porque grid distribui por linha, e porque `columns` cria
    quantas colunas couberem — a legenda passa a ocupar a largura toda do card
    em vez de deixar um vazio a direita. */
-.ms-donut-inline .ms-legend {
-  display: block;
-  /* Quantas colunas cabem vem do componente (column-count inline): aqui so o
-     espacamento. `column-width` nao serve — o navegador o trata como minimo e
-     estoura o card em vez de estreitar a coluna. */
-  column-gap: 24px;
-  /* `auto` (em vez do balance padrao) preenche a coluna ate o fim da altura
-     antes de passar pra proxima: a lista usa o espaco vertical do card e so
-     entao vai pra direita. Com `balance`, quatro categorias viravam 2+2 e
-     sobrava metade do card em branco em cima e embaixo. */
-  column-fill: auto;
-  align-self: center;
-  /* A altura vem inline, calculada a partir do numero de categorias (ver
-     GastoPorCategoria): com altura automatica o multicol nunca chega ao fim
-     da coluna e a segunda nunca comeca; com altura fixa demais, sobra uma
-     terceira coluna pra fora do card. */
-  min-width: 0;
-}
+
 /* `width: auto`: dentro do multicol, 100% media a largura do CONTAINER, nao a
    da coluna — cada item ficava com a largura inteira e a segunda coluna saia
    pra fora do card. */
-.ms-donut-inline .ms-legend-item { break-inside: avoid; width: auto; }
-.ms-donut-inline .ms-legend-item + .ms-legend-item { border-top: 1px solid var(--border); }
-.ms-donut-inline .ms-legend-item { padding: 7px 6px; align-items: center; }
+
 /* Com a largura do meio-card sobrando, nome e valor cabem na mesma linha:
    nome a esquerda, valor a direita. `flex: 1 1 auto` em vez de `width: 100%`
    — dentro do item flex, o width percentual colapsava o span pra zero. */
 /* `:not(.ms-legend-dot)` porque a bolinha tambem e um <span> filho do item —
    sem isso ela herdava o flex-grow e virava uma elipse de 81px. */
-.ms-donut-inline .ms-legend-item > span:not(.ms-legend-dot) {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-}
-.ms-donut-inline .ms-legend-label {
-  font-size: 12.5px;
-  display: block;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.ms-donut-inline .ms-legend-value { font-size: 13px; white-space: nowrap; flex: 0 0 auto; }
-.ms-donut-inline .ms-legend-value .ms-muted { display: none; }
+
 /* Dentro do item flex a bolinha herdava flex-grow e esticava pra 81px de
    largura, virando uma elipse. */
-.ms-donut-inline .ms-legend-dot { margin-top: 0; flex: 0 0 8px; }
-
-
 
 /* Sem largura pra uma segunda coluna, a legenda vira lista unica. Precisa vir
    depois da regra base — mesma especificidade, ganha a ultima. */
-@media (max-width: 879px) {
-  .ms-donut-inline .ms-legend { columns: 1; }
-  /* Em 375px, um anel de 150 deixava so ~110px pros nomes das categorias. */
-  .ms-donut-inline { gap: 14px; }
-  .ms-donut-inline .ms-donut-wrap { width: 110px; }
-  .ms-donut-inline .ms-donut { width: 110px; height: 110px; }
-}
 
 /* =========================================================================
    PENDENTES — fila da ingestão automática

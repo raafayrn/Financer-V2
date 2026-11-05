@@ -259,3 +259,57 @@ export function EyeOffIcon() {
     </svg>
   );
 }
+
+/** Dinheiro entrando (seta para baixo). */
+export function ArrowInIcon() {
+  return (
+    <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 5v14M6 13l6 6 6-6" />
+    </svg>
+  );
+}
+
+/** Dinheiro saindo (seta para cima e para fora). */
+export function ArrowOutIcon() {
+  return (
+    <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M7 17 17 7M9 7h8v8" />
+    </svg>
+  );
+}
+
+export function TrendUpIcon() {
+  return (
+    <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m3 16 6-6 4 4 8-8M15 6h6v6" />
+    </svg>
+  );
+}
+
+export function CardIcon() {
+  return (
+    <svg viewBox="0 0 24 24" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="5.5" width="18" height="13" rx="2.5" />
+      <path d="M3 10h18M7 15h3" />
+    </svg>
+  );
+}
+
+export function PieIcon() {
+  return (
+    <svg viewBox="0 0 24 24" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3a9 9 0 1 0 9 9h-9V3Z" />
+      <path d="M15 3.5A9 9 0 0 1 20.5 9H15V3.5Z" />
+    </svg>
+  );
+}
+
+export function ImageIcon() {
+  return (
+    <svg viewBox="0 0 24 24" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="16" rx="3" />
+      <circle cx="9" cy="10" r="1.8" />
+      <path d="m4 18 5.5-5 4 3.5L17 13l3 3" />
+    </svg>
+  );
+}

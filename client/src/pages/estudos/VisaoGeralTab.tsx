@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { Ring } from '../../components/Ring';
 import { api } from '../../api/client';
 import { formatDayMonth } from '../../utils/format';
 import {
@@ -210,19 +211,16 @@ export function VisaoGeralTab() {
                   Nenhuma matéria cadastrada.
                 </p>
               ) : (
-                <div className="ms-stack" style={{ gap: 12 }}>
+                // Um anel por matéria, como os cards de meta do print 3.
+                <div className="ms-goal-grid">
                   {subjects.map((s) => (
-                    <div key={s.id}>
-                      <div className="ms-progress-head">
-                        <span>{s.name}</span>
-                        <span className="ms-muted">{s.progress}%</span>
-                      </div>
-                      <span className="ms-progress">
-                        <span
-                          className="ms-progress-fill"
-                          style={{ width: `${s.progress}%`, background: s.color }}
-                        />
-                      </span>
+                    <div key={s.id} className="ms-goal">
+                      <Ring value={s.progress} size={78} stroke={8} color={s.color}>
+                        <span className="ms-ring-value" style={{ fontSize: 17 }}>
+                          {s.progress}%
+                        </span>
+                      </Ring>
+                      <span className="ms-goal-name">{s.name}</span>
                     </div>
                   ))}
                 </div>

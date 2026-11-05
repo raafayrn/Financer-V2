@@ -5,7 +5,17 @@ import type { Investment, InvestmentInput, InvestmentSummary } from '../api/type
 import { BrandIcon } from '../components/BrandIcon';
 import { formatCurrency, formatDayMonth, monthShort } from '../utils/format';
 import { INVESTMENT_TYPE_COLOR, INVESTMENT_TYPE_LABEL } from '../utils/investments';
-import { ChevronLeftIcon, ChevronRightIcon, EditIcon, TrashIcon } from '../components/icons';
+import {
+  ArrowInIcon,
+  ArrowOutIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  EditIcon,
+  PiggyBankIcon,
+  TrashIcon,
+  TrendUpIcon,
+} from '../components/icons';
+import { Kpi } from '../components/Kpi';
 import { InvestmentFormModal } from '../components/InvestmentFormModal';
 import { springSmooth, springTap } from '../lib/motion';
 
@@ -88,7 +98,7 @@ export function InvestmentsPage() {
           </button>
         </div>
         <motion.button
-          className="ms-btn ms-btn-primary"
+          className="ms-btn ms-btn-ink"
           onClick={() => setModal({ kind: 'create' })}
           whileTap={{ scale: 0.95 }}
           transition={springTap}
@@ -105,36 +115,40 @@ export function InvestmentsPage() {
         <div className="alert alert-error">{error}</div>
       ) : summary ? (
         <motion.div className="ms-stack" variants={overviewContainer} initial="hidden" animate="show">
-          <motion.div className="ms-sources ms-sources-4" variants={overviewItem}>
-            <div className="ms-card ms-source">
-              <span className="ms-label">Saldo investido</span>
-              <span className="ms-source-value">{formatCurrency(summary.totalBalance)}</span>
-              <span className="ms-muted">total acumulado</span>
-            </div>
-            <div className="ms-card ms-source">
-              <span className="ms-label">Aportes</span>
-              <span className="ms-source-value" style={{ color: 'var(--ok)' }}>
-                {formatCurrency(summary.totals.contributedYear)}
-              </span>
-              <span className="ms-muted">em {year}</span>
-            </div>
-            <div className="ms-card ms-source">
-              <span className="ms-label">Resgates</span>
-              <span className="ms-source-value" style={{ color: 'var(--over)' }}>
-                {formatCurrency(summary.totals.withdrawnYear)}
-              </span>
-              <span className="ms-muted">em {year}</span>
-            </div>
-            <div className="ms-card ms-source">
-              <span className="ms-label">Aporte líquido</span>
-              <span
-                className="ms-source-value"
-                style={{ color: summary.totals.netYear >= 0 ? 'var(--ok)' : 'var(--over)' }}
-              >
-                {formatCurrency(summary.totals.netYear)}
-              </span>
-              <span className="ms-muted">aportes − resgates</span>
-            </div>
+          {/* Os quatro numeros no formato do "Total saved" do print. */}
+          <motion.div className="ms-grid12" variants={overviewItem}>
+            <Kpi
+              className="span-3"
+              feature
+              label="Saldo investido"
+              value={formatCurrency(summary.totalBalance)}
+              icon={PiggyBankIcon}
+              foot={<span>total acumulado</span>}
+            />
+            <Kpi
+              className="span-3"
+              label="Aportes"
+              value={formatCurrency(summary.totals.contributedYear)}
+              icon={ArrowInIcon}
+              tone="good"
+              foot={<span>em {year}</span>}
+            />
+            <Kpi
+              className="span-3"
+              label="Resgates"
+              value={formatCurrency(summary.totals.withdrawnYear)}
+              icon={ArrowOutIcon}
+              tone="bad"
+              foot={<span>em {year}</span>}
+            />
+            <Kpi
+              className="span-3"
+              label="Aporte líquido"
+              value={formatCurrency(summary.totals.netYear)}
+              icon={TrendUpIcon}
+              tone={summary.totals.netYear >= 0 ? 'good' : 'bad'}
+              foot={<span>aportes − resgates</span>}
+            />
           </motion.div>
 
           <div className="ms-grid-main-side">

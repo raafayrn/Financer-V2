@@ -1,5 +1,5 @@
 import { useOutletContext } from 'react-router-dom';
-import type { Account, Category, ChatPreview, Expense, Income, Summary } from '../../api/types';
+import type { Account, Category, Expense, Income, Summary } from '../../api/types';
 
 export interface TrendPoint {
   year: number;
@@ -12,7 +12,6 @@ export type ModalState =
   | { kind: 'closed' }
   | { kind: 'create' }
   | { kind: 'edit'; expense: Expense }
-  | { kind: 'chat-batch'; previews: ChatPreview[]; index: number }
   | { kind: 'income'; defaultAccountId?: string }
   | { kind: 'edit-income'; income: Income }
   | { kind: 'income-sources' }

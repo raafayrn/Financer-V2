@@ -496,3 +496,12 @@ export interface IngestTokenRow {
 export interface IngestTokenCreated extends IngestTokenRow {
   token: string;
 }
+
+/** Cenas de fundo embutidas no cliente; 'custom' é a foto do usuário. */
+export type BackgroundPreset = 'aurora' | 'dusk' | 'plain' | 'custom';
+
+export interface BackgroundSetting {
+  preset: BackgroundPreset;
+  /** Foto já reduzida e desfocada (data URL). Fica guardada mesmo quando outra cena está ativa. */
+  image: string | null;
+}

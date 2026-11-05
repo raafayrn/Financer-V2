@@ -13,28 +13,14 @@ import type {
   Summary,
 } from '../../api/types';
 import { useMonth } from '../../context/MonthContext';
+import { lastMonths } from '../../utils/format';
+import { useDataChanged } from '../../lib/dataEvents';
 import { ExpenseFormModal } from '../../components/ExpenseFormModal';
 import { IncomeFormModal } from '../../components/IncomeFormModal';
 import { IncomeSourcesModal } from '../../components/IncomeSourcesModal';
 import { ManageModal } from '../../components/ManageModal';
 import { ClearMonthModal } from '../../components/ClearMonthModal';
 import type { FinancasCtx, ModalState, TrendPoint } from './context';
-
-/** Últimos `n` meses (mais antigo → mais novo) terminando em (year, month). */
-function lastMonths(year: number, month: number, n: number): { year: number; month: number }[] {
-  const result: { year: number; month: number }[] = [];
-  let y = year;
-  let m = month;
-  for (let i = 0; i < n; i++) {
-    result.unshift({ year: y, month: m });
-    m -= 1;
-    if (m < 1) {
-      m = 12;
-      y -= 1;
-    }
-  }
-  return result;
-}
 
 /**
  * Container das três abas de Finanças. Carrega os dados do mês uma única vez,
@@ -118,6 +104,9 @@ export function FinancasPage() {
     void load();
   }, [load]);
 
+  // Gasto lançado pelo "+" do dock ou pelo assistente (ambos fora da página).
+  useDataChanged(() => void load());
+
   async function handleCreate(data: ExpenseInput) {
     await api.createExpense(data);
     setModal({ kind: 'closed' });
@@ -184,41 +173,6 @@ export function FinancasPage() {
     await load();
   }
 
-  // Fluxo de confirmação em lote (vários lançamentos extraídos de uma foto).
-  async function handleBatchSubmit(data: ExpenseInput) {
-    if (modal.kind !== 'chat-batch') return;
-    await api.createExpense(data);
-    advanceBatch();
-  }
-  function advanceBatch() {
-    if (modal.kind !== 'chat-batch') return;
-    const nextIndex = modal.index + 1;
-    if (nextIndex >= modal.previews.length) {
-      setModal({ kind: 'closed' });
-      void load();
-    } else {
-      setModal({ kind: 'chat-batch', previews: modal.previews, index: nextIndex });
-    }
-  }
-  // Lança este e todos os demais lançamentos do lote de uma vez, sem revisar um a um.
-  async function handleAcceptAllBatch() {
-    if (modal.kind !== 'chat-batch') return;
-    const remaining = modal.previews.slice(modal.index);
-    const defaultAccountId = accounts.find((a) => a.kind === 'CREDIT_CARD')?.id ?? null;
-    for (const preview of remaining) {
-      await api.createExpense({
-        description: preview.description,
-        amount: preview.amount,
-        date: preview.date,
-        categoryId: preview.categoryId,
-        accountId: defaultAccountId,
-        recurring: preview.recurring,
-      });
-    }
-    setModal({ kind: 'closed' });
-    await load();
-  }
-
   const modals = (
     <>
       {modal.kind === 'create' && (
@@ -238,20 +192,6 @@ export function FinancasPage() {
           initial={modal.expense}
           onCancel={() => setModal({ kind: 'closed' })}
           onSubmit={(data) => handleEdit(modal.expense.id, data)}
-        />
-      )}
-      {modal.kind === 'chat-batch' && (
-        <ExpenseFormModal
-          key={modal.index}
-          title="Confirmar lançamento"
-          progress={`${modal.index + 1} de ${modal.previews.length}`}
-          categories={categories}
-          accounts={accounts}
-          initial={modal.previews[modal.index]}
-          onCancel={() => setModal({ kind: 'closed' })}
-          onSubmit={handleBatchSubmit}
-          onSkip={advanceBatch}
-          onAcceptAll={handleAcceptAllBatch}
         />
       )}
       {modal.kind === 'income' && (

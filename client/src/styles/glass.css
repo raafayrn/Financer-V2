@@ -1,0 +1,983 @@
+/* =========================================================================
+   Vidro fosco — casca e kit de componentes (nov/2026).
+   Carregado depois do monarch.css. Os tokens (cores, cenas, vidro) moram no
+   monarch.css; aqui so ha regras que os consomem.
+
+   Desempenho no iPhone: a cena ja vem desfocada (imagem parada), entao os
+   cards sao so translucidos — nenhum card usa backdrop-filter. O desfoque de
+   verdade fica em quatro lugares que tem conteudo rolando por baixo: barra do
+   topo, trilho, dock e painel do chat. Nao anime `filter`/`backdrop-filter`.
+
+   Lembretes da casa: sem `transition` em background/color (o tema congela) e
+   sem AnimatePresence no que precisa sumir do DOM.
+   ========================================================================= */
+
+/* ---------- Cena de fundo ---------- */
+.ms-scene {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--bg);
+}
+.ms-scene-aurora { background: var(--scene-aurora); }
+.ms-scene-dusk { background: var(--scene-dusk); }
+.ms-scene-plain { background: var(--bg); }
+.ms-scene-photo {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+}
+/* Veu do tema por cima da cena: segura o contraste com qualquer foto. */
+.ms-scene::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--scene-tint);
+}
+.ms-scene-plain::after { display: none; }
+
+/* ---------- Vidro: cards ---------- */
+.ms-card,
+.card,
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--glass-edge);
+  border-radius: var(--radius);
+  box-shadow: var(--glass-hi), var(--shadow);
+}
+.ms-card-head { border-bottom-color: var(--border); padding: 16px 18px; }
+.ms-card-head-plain { padding-bottom: 4px; }
+.ms-card-body { padding: 18px; }
+.ms-card-title { font-size: 15px; font-weight: 600; letter-spacing: -0.005em; }
+
+/* Superficies que flutuam sobre conteudo precisam ser solidas. */
+.modal {
+  background: var(--surface-solid);
+  border: 1px solid var(--glass-edge);
+  border-radius: 26px;
+}
+.dropdown-menu,
+.menu {
+  background: var(--menu-bg);
+  border-color: var(--border-strong);
+}
+
+/* ---------- Botoes em pilula ---------- */
+.ms-btn {
+  text-decoration: none;
+  border-radius: var(--radius-pill);
+  border-color: var(--glass-edge);
+  background: var(--surface-solid);
+  padding: 0 14px;
+}
+.ms-btn-ghost { background: none; border-color: transparent; }
+.ms-btn-primary {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+.ms-btn-ink {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--ink-contrast);
+  font-weight: 600;
+}
+.ms-btn-ink:hover { background: var(--ink-hover); border-color: var(--ink-hover); }
+.ms-btn-lg { height: 42px; padding: 0 18px; font-size: 14px; }
+
+.ms-segment { border-radius: var(--radius-pill); padding: 3px; }
+.ms-segment-item { border-radius: var(--radius-pill); }
+.ms-segment-pill { border-radius: var(--radius-pill); }
+
+/* =========================================================================
+   Casca
+   ========================================================================= */
+.ms-app {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px 18px 0;
+  padding-top: max(14px, env(safe-area-inset-top));
+}
+
+/* ---------- Barra do topo ---------- */
+.ms-topbar {
+  position: sticky;
+  top: max(10px, env(safe-area-inset-top));
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 58px;
+  padding: 0 9px;
+  border-radius: var(--radius-pill);
+  background: var(--chrome);
+  border: 1px solid var(--glass-edge);
+  box-shadow: var(--glass-hi), var(--shadow);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+}
+.ms-topbar-who {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+.ms-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: var(--ink);
+  color: var(--ink-contrast);
+  font-weight: 700;
+  font-size: 15px;
+  box-shadow: 0 0 0 3px var(--surface-3);
+}
+.ms-topbar-hello {
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Campo do assistente no centro (o "Can you send $250…" do print). */
+.ms-command {
+  flex: 1 1 auto;
+  max-width: 520px;
+  margin: 0 auto;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px 0 10px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  border: 1px solid var(--glass-edge);
+}
+.ms-command:focus-within { border-color: var(--primary); }
+.ms-command-orb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background:
+    radial-gradient(circle at 32% 30%, var(--surface-solid) 0%, transparent 42%),
+    conic-gradient(from 200deg, var(--primary), var(--feature), var(--chart-1), var(--primary));
+  box-shadow: 0 0 12px var(--accent-soft);
+}
+.ms-command input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: none;
+  outline: none;
+  background: none;
+  color: var(--text);
+  font-size: 13px;
+  padding: 0;
+  box-shadow: none;
+}
+.ms-command input::placeholder { color: var(--text-faint); }
+
+.ms-topbar-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.ms-round-btn {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+.ms-round-btn:hover { background: var(--surface-3); color: var(--text); }
+.ms-round-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; }
+.ms-round-btn-solid,
+.ms-round-btn-solid:hover {
+  background: var(--nav-active);
+  color: var(--nav-active-text);
+  box-shadow: var(--shadow);
+}
+.ms-round-btn-dot {
+  position: absolute;
+  top: 8px;
+  right: 9px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 0 0 2px var(--nav-active);
+}
+
+/* ---------- Trilho + palco ---------- */
+.ms-frame {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  width: 100%;
+  max-width: var(--maxw-desktop);
+  margin: 0 auto;
+}
+
+.ms-rail {
+  position: sticky;
+  top: calc(max(10px, env(safe-area-inset-top)) + 58px + 64px);
+  z-index: 30;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: var(--rail-w);
+  padding: 10px 0;
+  margin-top: 64px;
+  border-radius: var(--radius-pill);
+  background: var(--chrome);
+  border: 1px solid var(--glass-edge);
+  box-shadow: var(--glass-hi), var(--shadow);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+}
+.ms-rail-item {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+  text-decoration: none;
+}
+.ms-rail-item svg { width: 18px; height: 18px; fill: none; stroke: currentColor; }
+.ms-rail-item:hover { background: var(--surface-3); color: var(--text); }
+.ms-rail-item.active,
+.ms-rail-item.active:hover {
+  background: var(--nav-active);
+  color: var(--nav-active-text);
+  box-shadow: var(--shadow);
+}
+/* Tooltip em CSS puro: some sozinho, nada para desmontar. */
+.ms-rail-item::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 5px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-solid);
+  color: var(--text);
+  border: 1px solid var(--glass-edge);
+  box-shadow: var(--shadow);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s;
+}
+.ms-rail-item:hover::after,
+.ms-rail-item:focus-visible::after { opacity: 1; }
+.ms-rail-sep {
+  width: 22px;
+  height: 1px;
+  background: var(--border-strong);
+  margin: 2px 0;
+}
+
+/* O palco: o painel grande de vidro que segura a pagina. */
+.ms-stage {
+  flex: 1;
+  min-width: 0;
+  padding: 28px 28px 120px;
+  border-radius: 34px;
+  background: var(--stage);
+  border: 1px solid var(--glass-edge);
+  box-shadow: var(--glass-hi);
+}
+
+.ms-page-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+.ms-page-titles { min-width: 0; }
+.ms-page-title {
+  margin: 0;
+  font-size: 34px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+}
+.ms-page-subtitle {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+.ms-page-tools { display: flex; align-items: center; gap: 8px; }
+
+/* Seletor de mes como pilula de vidro ("This month" do print). */
+.ms-page-tools .month-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 40px;
+  padding: 0 5px;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  border: 1px solid var(--glass-edge);
+  box-shadow: var(--glass-hi);
+}
+.ms-page-tools .month-arrow {
+  width: 30px;
+  height: 30px;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+}
+.ms-page-tools .month-arrow svg { width: 14px; height: 14px; fill: none; stroke: currentColor; }
+.ms-page-tools .month-arrow:hover { background: var(--surface-3); color: var(--text); }
+
+/* ---------- Pilulas de aba (dock e cabecalho do celular) ---------- */
+.ms-pill-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 15px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.ms-pill-tab:hover { color: var(--text); }
+.ms-pill-tab-bg {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-pill);
+  z-index: 0;
+}
+.ms-pill-tab-label { position: relative; z-index: 1; display: inline-flex; align-items: center; }
+
+/* ---------- Dock ---------- */
+.ms-dock {
+  position: fixed;
+  left: 50%;
+  bottom: calc(14px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100vw - 24px);
+  padding: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--chrome);
+  border: 1px solid var(--glass-edge);
+  box-shadow: var(--glass-hi), var(--shadow-float);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+}
+.ms-dock-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.ms-dock-tabs::-webkit-scrollbar { display: none; }
+.ms-dock .ms-pill-tab.active { color: var(--nav-active-text); font-weight: 600; }
+.ms-dock .ms-pill-tab-bg { background: var(--nav-active); box-shadow: var(--shadow); }
+.ms-dock-plus {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: none;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  background: var(--ink);
+  color: var(--ink-contrast);
+  box-shadow: var(--shadow);
+}
+.ms-dock-plus svg { width: 18px; height: 18px; fill: none; stroke: currentColor; }
+
+.ms-dock-mobile { display: none; }
+.ms-dock-sections { display: flex; align-items: center; gap: 0; }
+.ms-dock-section {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 58px;
+  height: 50px;
+  border: none;
+  background: none;
+  border-radius: var(--radius-pill);
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 0;
+}
+.ms-dock-section > svg,
+.ms-dock-section > span:not(.ms-dock-section-bg) { position: relative; z-index: 1; }
+.ms-dock-section svg { width: 20px; height: 20px; fill: none; stroke: currentColor; }
+.ms-dock-section.active { color: var(--nav-active-text); }
+.ms-dock-section-bg {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-pill);
+  background: var(--nav-active);
+  box-shadow: var(--shadow);
+}
+
+/* Pilulas de aba sob o titulo: so no celular (no desktop elas estao no dock). */
+.ms-head-tabs {
+  display: none;
+  gap: 2px;
+  padding: 4px;
+  margin: -8px 0 18px;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  border: 1px solid var(--glass-edge);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.ms-head-tabs::-webkit-scrollbar { display: none; }
+.ms-head-tabs .ms-pill-tab { height: 32px; padding: 0 13px; }
+.ms-head-tabs .ms-pill-tab.active { color: var(--ink-contrast); font-weight: 600; }
+.ms-head-tabs .ms-pill-tab-bg { background: var(--ink); }
+
+.ms-only-mobile { display: none; }
+
+/* ---------- Chat (painel que desce do campo do topo) ---------- */
+.chat-panel {
+  position: fixed;
+  top: calc(max(10px, env(safe-area-inset-top)) + 66px);
+  bottom: auto;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  z-index: 45;
+  width: min(460px, calc(100vw - 20px));
+  max-height: min(70vh, 620px);
+  background: var(--chrome);
+  border: 1px solid var(--glass-edge);
+  border-radius: 26px;
+  box-shadow: var(--glass-hi), var(--shadow-float);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+}
+.chat-panel-header {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 8px;
+  padding: 12px 10px 10px 18px;
+  text-align: left;
+}
+.chat-panel-close { align-self: center; }
+.chat-panel-close { margin-left: auto; }
+.chat-card { background: var(--surface-solid); border-color: var(--glass-edge); }
+:root[data-glass='off'] .chat-panel { background: var(--surface-solid); }
+
+/* =========================================================================
+   Kit: selos, KPIs, aneis, barras, tabela
+   ========================================================================= */
+
+/* Selo de variacao ("↑ 8%  vs mes passado"). */
+.ms-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.ms-delta-good { background: var(--ok-bg); color: var(--ok); }
+.ms-delta-bad { background: var(--over-bg); color: var(--over); }
+.ms-delta-warn { background: var(--warning-bg); color: var(--warning); }
+.ms-delta-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Card de numero (Income / Expenses / Net profit / Savings rate). */
+.ms-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  min-width: 0;
+}
+.ms-kpi-head { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.ms-kpi-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: var(--surface-solid);
+  color: var(--text-muted);
+  box-shadow: var(--shadow);
+}
+.ms-kpi-icon svg { width: 15px; height: 15px; fill: none; stroke: currentColor; }
+.ms-kpi-icon.good { color: var(--ok); }
+.ms-kpi-icon.bad { color: var(--over); }
+.ms-kpi-icon.accent { color: var(--primary); }
+.ms-kpi-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ms-kpi-value {
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ms-kpi-feature {
+  background: linear-gradient(150deg, var(--feature) 0%, var(--feature-2) 100%);
+  border-color: transparent;
+  color: var(--feature-contrast);
+}
+.ms-kpi-feature .ms-kpi-label,
+.ms-kpi-feature .ms-delta-line { color: var(--feature-contrast); opacity: 0.86; }
+.ms-kpi-feature .ms-kpi-icon { background: var(--surface-3); color: var(--feature-contrast); box-shadow: none; }
+.ms-kpi-feature .ms-delta { background: var(--surface-3); color: var(--feature-contrast); }
+
+/* Anel de progresso (metas do print 3; aqui: agua, materias). */
+.ms-ring { position: relative; display: inline-grid; place-items: center; flex-shrink: 0; }
+.ms-ring svg { display: block; }
+.ms-ring-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1.1;
+}
+.ms-ring-value { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ms-ring-caption { font-size: 11px; color: var(--text-faint); }
+
+/* Barra de limite com trilho hachurado (Monthly Spending Limit). */
+.ms-limit-track {
+  position: relative;
+  height: 12px;
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--bar-idle) 0 2px,
+    transparent 2px 7px
+  );
+}
+.ms-limit-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: var(--radius-pill);
+  background: var(--chart-1);
+}
+.ms-limit-fill.over { background: var(--over); }
+
+/* Tabela de lancamentos (Recent Activities). */
+.ms-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
+.ms-table th {
+  text-align: left;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-faint);
+  padding: 10px 12px;
+  background: var(--surface-3);
+  white-space: nowrap;
+}
+.ms-table th:first-child { border-radius: 12px 0 0 12px; }
+.ms-table th:last-child { border-radius: 0 12px 12px 0; }
+.ms-table td {
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.ms-table tr:last-child td { border-bottom: none; }
+.ms-table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ms-table-name { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.ms-table-name span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.ms-table-muted { color: var(--text-muted); white-space: nowrap; }
+.ms-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.ms-status::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.ms-status-in { color: var(--ok); }
+.ms-status-out { color: var(--primary); }
+
+/* Grade de 12 colunas das paginas novas. */
+.ms-grid12 {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+.ms-grid12 > * { grid-column: span 12; min-width: 0; }
+
+/* Legenda pequena de graficos. */
+.ms-chart-legend { display: flex; gap: 12px; font-size: 12px; color: var(--text-muted); }
+.ms-chart-legend i {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: 0;
+}
+
+/* =========================================================================
+   Inicio (print "Good morning")
+   ========================================================================= */
+.ms-balance { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.ms-balance-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ms-balance-value {
+  font-size: 38px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.05;
+}
+.ms-balance-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ms-balance-actions .ms-btn { width: 100%; }
+.ms-wallets {
+  border-radius: 16px;
+  background: var(--surface-3);
+  border: 1px solid var(--glass-edge);
+  padding: 12px;
+}
+.ms-wallets-head { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; }
+.ms-wallets-head b { color: var(--text); font-weight: 600; }
+.ms-wallet-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.ms-wallet {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px;
+  border-radius: 12px;
+  background: var(--surface-solid);
+  box-shadow: var(--shadow);
+  min-width: 0;
+}
+.ms-wallet-name { font-size: 11px; font-weight: 600; color: var(--text-muted); }
+.ms-wallet-value {
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ms-wallet-hint { font-size: 11px; color: var(--ok); }
+.ms-wallet-hint.neg { color: var(--over); }
+
+.ms-quad {
+  padding: 10px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.ms-quad .ms-kpi {
+  border-radius: 16px;
+  background: var(--surface-3);
+  border: 1px solid var(--glass-edge);
+  padding: 14px;
+}
+.ms-quad .ms-kpi-feature {
+  background: linear-gradient(150deg, var(--feature) 0%, var(--feature-2) 100%);
+  border-color: transparent;
+}
+.ms-quad .ms-kpi-value { font-size: 24px; }
+
+/* Barras por mes (Profit and Loss). */
+.ms-mbars {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  height: 190px;
+  padding: 8px 4px 0;
+}
+.ms-mbars-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+  min-width: 0;
+  position: relative;
+}
+.ms-mbars-stack {
+  flex: 1;
+  width: 100%;
+  max-width: 34px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 3px;
+}
+.ms-mbars-spent { border-radius: 9px; background: var(--chart-2); min-height: 3px; }
+.ms-mbars-spent.current { background: var(--chart-1); }
+.ms-mbars-left {
+  border-radius: 9px;
+  background: repeating-linear-gradient(-45deg, var(--feature) 0 3px, transparent 3px 6px);
+  border: 1px solid var(--feature);
+}
+.ms-mbars-month { font-size: 11px; color: var(--text-faint); }
+.ms-mbars-tip {
+  position: absolute;
+  bottom: calc(100% - 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: var(--surface-solid);
+  box-shadow: var(--shadow-float);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  z-index: 2;
+}
+
+.ms-water-card { display: flex; align-items: center; gap: 18px; padding: 18px; }
+.ms-water-info { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+
+.ms-day-cards .ms-row { padding-left: 18px; padding-right: 18px; }
+
+/* =========================================================================
+   Resumo (print "Reports")
+   ========================================================================= */
+.ms-pace { padding: 4px 18px 16px; }
+.ms-pace svg { display: block; width: 100%; height: auto; overflow: visible; }
+.ms-pace-axis { font-size: 10px; fill: var(--text-faint); }
+.ms-pace-grid { stroke: var(--border); stroke-width: 1; }
+.ms-pace-real { fill: none; stroke: var(--chart-1); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.ms-pace-ideal { fill: none; stroke: var(--chart-2); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 1 0; opacity: 0.85; }
+.ms-pace-cursor { stroke: var(--border-strong); stroke-width: 1; }
+.ms-pace-dot { fill: var(--surface-solid); stroke: var(--chart-1); stroke-width: 2.5; }
+.ms-pace-tip {
+  position: absolute;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: var(--surface-solid);
+  box-shadow: var(--shadow-float);
+  font-size: 12px;
+  pointer-events: none;
+  white-space: nowrap;
+  transform: translate(-50%, calc(-100% - 12px));
+}
+.ms-pace-tip b { display: block; font-size: 11px; color: var(--text-faint); font-weight: 600; margin-bottom: 2px; }
+.ms-pace-wrap { position: relative; }
+
+/* Rosca + barras por categoria. */
+.ms-cat-donut { display: grid; place-items: center; padding: 6px 0 14px; }
+.ms-cat-donut .ms-donut-wrap { width: 180px; height: 180px; }
+.ms-cat-list { display: flex; flex-direction: column; gap: 10px; padding: 0 18px 18px; }
+.ms-cat-row {
+  display: grid;
+  grid-template-columns: 10px minmax(70px, 0.9fr) minmax(0, 1.4fr) auto;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  border: none;
+  background: none;
+  padding: 0;
+  color: inherit;
+  text-align: left;
+}
+.ms-cat-row i { width: 8px; height: 8px; border-radius: 3px; }
+.ms-cat-name { color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ms-cat-bar { height: 6px; border-radius: var(--radius-pill); background: var(--bar-idle); overflow: hidden; }
+.ms-cat-bar span { display: block; height: 100%; border-radius: var(--radius-pill); }
+.ms-cat-pct { font-weight: 600; font-variant-numeric: tabular-nums; min-width: 34px; text-align: right; }
+.ms-cat-row.dim { opacity: 0.45; }
+
+/* =========================================================================
+   Ajustes: aparencia
+   ========================================================================= */
+.ms-scene-picker { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
+.ms-scene-option {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 16px;
+  border: 2px solid transparent;
+  background: var(--surface-3);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+}
+.ms-scene-option.active { border-color: var(--primary); }
+.ms-scene-swatch {
+  height: 64px;
+  border-radius: 11px;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  overflow: hidden;
+}
+.ms-scene-swatch.aurora { background: var(--scene-aurora); }
+.ms-scene-swatch.dusk { background: var(--scene-dusk); }
+.ms-scene-swatch.plain { background: var(--bg); border: 1px solid var(--border); }
+.ms-scene-swatch.empty {
+  display: grid;
+  place-items: center;
+  border: 1px dashed var(--border-strong);
+  color: var(--text-faint);
+}
+.ms-scene-swatch.empty svg { width: 18px; height: 18px; fill: none; stroke: currentColor; }
+.ms-switch-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+
+/* =========================================================================
+   Responsivo
+   ========================================================================= */
+@media (min-width: 1200px) {
+  .ms-grid12 > .span-3 { grid-column: span 3; }
+  .ms-grid12 > .span-4 { grid-column: span 4; }
+  .ms-grid12 > .span-8 { grid-column: span 8; }
+}
+@media (min-width: 880px) and (max-width: 1199px) {
+  .ms-grid12 > .span-3,
+  .ms-grid12 > .span-4 { grid-column: span 6; }
+  .ms-grid12 > .span-8 { grid-column: span 12; }
+  .ms-grid12 > .span-4-wide { grid-column: span 12; }
+}
+@media (min-width: 560px) and (max-width: 879px) {
+  .ms-grid12 > .span-3 { grid-column: span 6; }
+}
+
+@media (max-width: 879px) {
+  .ms-app { padding: max(8px, env(safe-area-inset-top)) 10px 0; gap: 10px; }
+  .ms-topbar { height: 54px; padding: 0 7px; gap: 8px; top: max(8px, env(safe-area-inset-top)); }
+  .ms-avatar { width: 38px; height: 38px; }
+  .ms-command { display: none; }
+  .ms-only-mobile { display: grid; }
+  .ms-round-btn { width: 38px; height: 38px; }
+  .ms-rail { display: none; }
+  .ms-frame { gap: 0; }
+  .ms-stage {
+    padding: 8px 2px calc(104px + env(safe-area-inset-bottom));
+    background: none;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .ms-page-head { margin-bottom: 16px; align-items: center; }
+  .ms-page-title { font-size: 26px; }
+  .ms-page-subtitle { font-size: 13px; }
+  .ms-head-tabs { display: flex; }
+  .ms-dock-desktop { display: none; }
+  .ms-dock-mobile { display: flex; }
+  .ms-dock { bottom: max(10px, env(safe-area-inset-bottom)); }
+  .chat-panel { top: calc(max(8px, env(safe-area-inset-top)) + 60px); max-height: 64vh; }
+
+  .ms-balance-value { font-size: 32px; }
+  .ms-kpi-value { font-size: 24px; }
+  .ms-table .hide-sm { display: none; }
+  .ms-card-head { padding: 13px 14px; }
+}
+@media (max-width: 380px) {
+  .ms-dock-section { width: 52px; }
+  .ms-wallet-value { font-size: 13px; }
+}
+
+/* Aneis de progresso por materia (cards de meta do print 3). */
+.ms-goal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
+.ms-goal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 8px 12px;
+  border-radius: 16px;
+  background: var(--surface-3);
+  border: 1px solid var(--glass-edge);
+  text-align: center;
+  min-width: 0;
+}
+.ms-goal-name {
+  font-size: 12px;
+  font-weight: 600;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Tendencia dos ultimos meses, agora num card proprio (antes vivia no hero). */
+.ms-card-body > .ms-hero-trend { margin-top: 0; padding-top: 0; border-top: none; }
+.ms-card-body > .ms-hero-trend .ms-spark { height: 96px; }
