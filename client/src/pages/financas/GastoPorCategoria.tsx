@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { formatCurrency } from '../../utils/format';
+import { useHideValues } from '../../lib/hideValues';
 import { useFinancas } from './context';
 
 const R = 62; // raio da rosca
@@ -14,6 +15,8 @@ const C = 2 * Math.PI * R;
 export function GastoPorCategoria() {
   const { summary } = useFinancas();
   const [hovered, setHovered] = useState<string | null>(null);
+  const { mask } = useHideValues();
+  const money = (v: number) => mask(formatCurrency(v));
 
   const total = summary.totalSpent;
   const slices = summary.byCategory
@@ -75,7 +78,8 @@ export function GastoPorCategoria() {
                   opacity={hovered && hovered !== a.id ? 0.35 : 1}
                   onMouseEnter={() => setHovered(a.id)}
                   onMouseLeave={() => setHovered(null)}
-                  style={{ transition: 'opacity .15s, stroke-width .15s' }}
+                  onClick={() => setHovered(a.id)}
+                  className="ms-donut-arc"
                 />
               ))}
             </g>
@@ -83,7 +87,7 @@ export function GastoPorCategoria() {
           <div className="ms-donut-center">
             <span className="ms-muted">{active ? active.name : 'Total gasto'}</span>
             <span className="ms-donut-center-value">
-              {formatCurrency(active ? active.value : total)}
+              {money(active ? active.value : total)}
             </span>
             <span className="ms-muted">{active ? `${active.pct.toFixed(1)}%` : 'neste mês'}</span>
           </div>
@@ -98,7 +102,12 @@ export function GastoPorCategoria() {
             className={`ms-cat-row${hovered && hovered !== s.id ? ' dim' : ''}`}
             onMouseEnter={() => setHovered(s.id)}
             onMouseLeave={() => setHovered(null)}
-            title={formatCurrency(s.value)}
+            onFocus={() => setHovered(s.id)}
+            onBlur={() => setHovered(null)}
+            onClick={() => setHovered(s.id)}
+            aria-pressed={hovered === s.id}
+            aria-label={`${s.name}: ${money(s.value)}, ${Math.round(s.pct)}% do total`}
+            title={money(s.value)}
           >
             <i style={{ background: s.color }} />
             <span className="ms-cat-name">{s.name}</span>

@@ -709,6 +709,7 @@
   font-variant-numeric: tabular-nums;
   line-height: 1.05;
 }
+.ms-balance-limit { display: flex; flex-direction: column; gap: 8px; }
 .ms-balance-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .ms-balance-actions .ms-btn { width: 100%; }
 .ms-wallets {
@@ -810,8 +811,6 @@
   z-index: 2;
 }
 
-.ms-water-card { display: flex; align-items: center; gap: 18px; padding: 18px; }
-.ms-water-info { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 
 .ms-day-cards .ms-row { padding-left: 18px; padding-right: 18px; }
 
@@ -981,3 +980,122 @@
 /* Tendencia dos ultimos meses, agora num card proprio (antes vivia no hero). */
 .ms-card-body > .ms-hero-trend { margin-top: 0; padding-top: 0; border-top: none; }
 .ms-card-body > .ms-hero-trend .ms-spark { height: 96px; }
+
+/* -------------------------------------------------------------------------
+   Acessibilidade (revisão de nov/2026)
+   ------------------------------------------------------------------------- */
+
+/* Colunas dos gráficos viraram <button> para o valor abrir com toque e
+   teclado; isto tira a cara de botão sem tirar o comportamento. */
+.ms-bare-btn {
+  appearance: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  cursor: pointer;
+}
+.ms-spark-track > .ms-spark-fill { display: block; }
+
+/* Anel de foco próprio, só para teclado. currentColor acompanha o texto,
+   que já passa no contraste nos dois temas. */
+.ms-bare-btn:focus-visible,
+.ms-cat-row:focus-visible,
+.ms-pace svg:focus-visible,
+.ms-icon-btn:focus-visible,
+.ms-btn:focus-visible,
+a.ms-row:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+.ms-donut-arc { transition: opacity 0.15s, stroke-width 0.15s; }
+
+/* O verde de "ok" em texto pequeno ficava em 3,8:1 sobre o vidro claro. */
+:root[data-theme='light'] {
+  --ok: #1d5e3b;
+}
+
+/* Com o zoom liberado, campo com fonte < 16px faz o iOS ampliar a tela ao
+   focar. No toque, todo campo fica com 16px. */
+@media (pointer: coarse) {
+  input,
+  select,
+  textarea {
+    font-size: max(16px, 1em) !important;
+  }
+}
+
+/* Quem pede menos movimento no sistema não vê transições nem animações. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  /* O spinner é o único aviso de que algo está carregando: continua girando, mais devagar. */
+  .spinner {
+    animation-duration: 1.5s !important;
+    animation-iteration-count: infinite !important;
+  }
+}
+
+/* Cards do dia no celular: só têm um botão no cabeçalho e um chip curto na
+   linha, então cabem numa linha só — as regras gerais de mobile (feitas para
+   a lista de lançamentos) quebravam tudo em duas. */
+@media (max-width: 879px) {
+  .ms-day-cards .ms-card-head { flex-wrap: nowrap; }
+  .ms-day-cards .ms-card-actions { margin-left: auto; flex-basis: auto; }
+  .ms-day-cards .ms-row { flex-wrap: nowrap; }
+  .ms-day-cards .ms-row .ms-chip { order: 0; flex-basis: auto; margin-left: 0; flex-shrink: 0; }
+  .ms-day-cards .ms-row-name { order: 0; }
+}
+
+/* =========================================================================
+   Início: cards alinhados (nov/2026)
+   Cada linha da grade estica até o card mais alto; colunas com dois cards
+   dividem a altura ao meio, então o vão entre eles cai na mesma linha nas
+   duas colunas. Conteúdo maior que a metade ainda empurra o card (min-height
+   automático do flex), só deixa de ficar simétrico.
+   ========================================================================= */
+.ms-home { align-items: stretch; }
+.ms-home > .ms-card,
+.ms-home > .ms-stack > .ms-card {
+  display: flex;
+  flex-direction: column;
+}
+.ms-home > .ms-stack > .ms-card { flex: 1 1 0; }
+/* Card vazio não fica com um buraco embaixo: a mensagem ocupa o miolo. */
+.ms-home .ms-card > .empty,
+.ms-home .ms-card-body:has(> .empty) {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ms-home .ms-card-body:has(> .empty) > .empty { padding: 0; }
+.ms-home .ms-card > .ms-card-body { flex: 1; }
+/* No saldo, os botões descem até o pé do card, alinhados com o fim da linha. */
+.ms-home .ms-balance-actions { margin-top: auto; }
+/* Gráfico de meses ocupa a altura que sobrar em vez de deixar vão. */
+.ms-home .ms-mbars { height: 100%; min-height: 150px; }
+.ms-home .ms-card-body:has(> .ms-mbars) { display: flex; flex-direction: column; }
+.ms-home .ms-card-body > .ms-mbars { flex: 1; height: auto; }
+
+/* Tablet: duas colunas. "dense" sobe o bloco do cartão para o lado das
+   pendências, em vez de deixar meia linha vazia. */
+@media (min-width: 880px) and (max-width: 1199px) {
+  .ms-home { grid-auto-flow: row dense; }
+  .ms-home > .ms-stack.span-4:last-of-type { grid-column: span 6; }
+}
+/* Celular: uma coluna, cada card com a altura do próprio conteúdo. */
+@media (max-width: 879px) {
+  .ms-home > .ms-stack > .ms-card { flex: none; }
+}
+.ms-empty-cta { display: flex; flex-direction: column; align-items: center; gap: 12px; }

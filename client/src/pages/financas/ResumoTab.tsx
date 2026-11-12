@@ -12,6 +12,7 @@ import {
   TrendUpIcon,
 } from '../../components/icons';
 import { useQuickActions } from '../../components/QuickActions';
+import { useHideValues } from '../../lib/hideValues';
 import { formatCurrency, formatDayMonth, monthName, monthShort } from '../../utils/format';
 import { GastoPorCategoria } from './GastoPorCategoria';
 import { RitmoDeGastos } from './RitmoDeGastos';
@@ -43,6 +44,8 @@ function TrendStrip({ trend, year, month }: { trend: TrendPoint[]; year: number;
   // O hook vem antes da guarda: com menos de dois meses nao ha tendencia,
   // mas a ordem dos hooks nao pode depender disso.
   const [hovered, setHovered] = useState<number | null>(null);
+  const { mask } = useHideValues();
+  const money = (v: number) => mask(formatCurrency(v));
   if (trend.length < 2) return null;
 
   const max = Math.max(1, ...trend.map((t) => t.spent));
@@ -81,27 +84,33 @@ function TrendStrip({ trend, year, month }: { trend: TrendPoint[]; year: number;
             before && before.spent > 0
               ? Math.round(((t.spent - before.spent) / before.spent) * 100)
               : null;
+          // Botão para o valor do mês aparecer com toque e teclado também.
           return (
-            <div
+            <button
+              type="button"
               key={`${t.year}-${t.month}`}
-              className={`ms-spark-col${hovered === i ? ' hovered' : ''}`}
+              className={`ms-spark-col ms-bare-btn${hovered === i ? ' hovered' : ''}`}
+              aria-label={`${monthName(t.month)} de ${t.year}: ${money(t.spent)}`}
               onMouseEnter={() => setHovered(i)}
+              onFocus={() => setHovered(i)}
+              onBlur={() => setHovered(null)}
+              onClick={() => setHovered(i)}
             >
               {hovered === i && (
-                <div className="ms-spark-tip" role="tooltip">
+                <span className="ms-spark-tip" aria-hidden="true">
                   <span className="ms-spark-tip-month">
                     {monthName(t.month)} de {t.year}
                   </span>
-                  <span className="ms-spark-tip-value">{formatCurrency(t.spent)}</span>
+                  <span className="ms-spark-tip-value">{money(t.spent)}</span>
                   {change !== null && before && (
                     <span className={`ms-spark-tip-delta${change > 0 ? ' up' : ''}`}>
                       {change > 0 ? '↑' : '↓'} {Math.abs(change)}% vs {monthShort(before.month)}
                     </span>
                   )}
-                </div>
+                </span>
               )}
-              <div className="ms-spark-track">
-                <div
+              <span className="ms-spark-track">
+                <span
                   className={`ms-spark-fill${isCurrent ? ' current' : ''}`}
                   style={{ height: `${heightPct}%` }}
                 />
@@ -109,11 +118,14 @@ function TrendStrip({ trend, year, month }: { trend: TrendPoint[]; year: number;
                     empurravam a faixa pra baixo so pra dizer o obvio. */}
                 {/* Barra alta cobre o rotulo; barra baixa deixa ele no fundo
                     do card. A cor segue quem esta atras. */}
-                <span className={`ms-spark-month${heightPct >= 32 ? ' on-fill' : ''}`}>
+                <span
+                  className={`ms-spark-month${heightPct >= 32 ? ' on-fill' : ''}`}
+                  aria-hidden="true"
+                >
                   {monthShort(t.month)}
                 </span>
-              </div>
-            </div>
+              </span>
+            </button>
           );
         })}
       </div>
@@ -128,6 +140,9 @@ function TrendStrip({ trend, year, month }: { trend: TrendPoint[]; year: number;
 export function ResumoTab() {
   const { summary, trend, year, month, expenses, incomes, categoryById, openModal } = useFinancas();
   const { newExpense } = useQuickActions();
+  // Respeita o "ocultar valores" ligado no Início.
+  const { hidden, mask } = useHideValues();
+  const money = (v: number) => mask(formatCurrency(v));
 
   // Todas as contas que se repetem todo mes — nao so as assinaturas.
   const recurring = expenses
@@ -170,7 +185,7 @@ export function ResumoTab() {
       <Kpi
         className="span-3"
         label="Renda do mês"
-        value={formatCurrency(totalAvailable)}
+        value={money(totalAvailable)}
         icon={ArrowInIcon}
         tone="good"
         action={
@@ -178,6 +193,7 @@ export function ResumoTab() {
             type="button"
             className="ms-icon-btn"
             title="Definir salário, VR e carteira do mês"
+            aria-label="Definir salário, VR e carteira do mês"
             onClick={() => openModal({ kind: 'income-sources' })}
           >
             <EditIcon />
@@ -188,7 +204,7 @@ export function ResumoTab() {
       <Kpi
         className="span-3"
         label="Gastos"
-        value={formatCurrency(summary.totalSpent)}
+        value={money(summary.totalSpent)}
         icon={ArrowOutIcon}
         tone="bad"
         foot={
@@ -201,7 +217,7 @@ export function ResumoTab() {
       <Kpi
         className="span-3"
         label="Ainda posso gastar"
-        value={formatCurrency(summary.remaining)}
+        value={money(summary.remaining)}
         icon={TrendUpIcon}
         tone="accent"
         foot={
@@ -213,7 +229,7 @@ export function ResumoTab() {
       <Kpi
         className="span-3"
         label="Renda livre"
-        value={freeRate === null ? '—' : `${freeRate.toFixed(1).replace('.', ',')}%`}
+        value={freeRate === null ? '—' : hidden ? '••••' : `${freeRate.toFixed(1).replace('.', ',')}%`}
         icon={PieIcon}
         foot={<span>da renda ainda não gasta</span>}
       />
@@ -247,14 +263,14 @@ export function ResumoTab() {
               <div className="ms-money-col">
                 <div className="ms-money-col-head">
                   <span className="ms-label">Entra</span>
-                  <span className="ms-money-col-total">{formatCurrency(totalAvailable)}</span>
+                  <span className="ms-money-col-total">{money(totalAvailable)}</span>
                 </div>
                 <dl className="ms-summary">
-                  <SummaryRow label="Salário" value={formatCurrency(summary.income.salary)} />
-                  <SummaryRow label="Vale (VR)" value={formatCurrency(summary.income.voucher)} />
-                  <SummaryRow label="Carteira (Pix)" value={formatCurrency(summary.walletBalance)} />
+                  <SummaryRow label="Salário" value={money(summary.income.salary)} />
+                  <SummaryRow label="Vale (VR)" value={money(summary.income.voucher)} />
+                  <SummaryRow label="Carteira (Pix)" value={money(summary.walletBalance)} />
                   {summary.income.extra > 0 && (
-                    <SummaryRow label="Outros" value={formatCurrency(summary.income.extra)} />
+                    <SummaryRow label="Outros" value={money(summary.income.extra)} />
                   )}
                 </dl>
               </div>
@@ -263,32 +279,32 @@ export function ResumoTab() {
                 <div className="ms-money-col-head">
                   <span className="ms-label">Sai</span>
                   <span className="ms-money-col-total ms-neg">
-                    {formatCurrency(summary.accounts.total)}
+                    {money(summary.accounts.total)}
                   </span>
                 </div>
                 <dl className="ms-summary">
-                  <SummaryRow label="Fixos (cartão)" value={formatCurrency(summary.accounts.fixed)} />
+                  <SummaryRow label="Fixos (cartão)" value={money(summary.accounts.fixed)} />
                   <SummaryRow
                     label="Variáveis (cartão)"
-                    value={formatCurrency(summary.accounts.variable)}
+                    value={money(summary.accounts.variable)}
                   />
                   <SummaryRow
                     label="Fatura estimada"
-                    value={formatCurrency(summary.accounts.fixed + summary.accounts.variable)}
+                    value={money(summary.accounts.fixed + summary.accounts.variable)}
                     strong
                   />
                   <SummaryRow
                     label="Vale-alimentação"
-                    value={formatCurrency(summary.accounts.foodVoucher)}
+                    value={money(summary.accounts.foodVoucher)}
                   />
-                  <SummaryRow label="Carteira (Pix)" value={formatCurrency(summary.accounts.wallet)} />
+                  <SummaryRow label="Carteira (Pix)" value={money(summary.accounts.wallet)} />
                 </dl>
               </div>
             </div>
             <div className="ms-delta-line" style={{ marginTop: 14 }}>
-              <span>Sobra no salário {formatCurrency(salaryRemaining)}</span>
+              <span>Sobra no salário {money(salaryRemaining)}</span>
               <span>·</span>
-              <span>no VR {formatCurrency(voucherRemaining)}</span>
+              <span>no VR {money(voucherRemaining)}</span>
             </div>
           </div>
         </section>
@@ -321,7 +337,7 @@ export function ResumoTab() {
                         className={`ms-ledger-amount ${entry.kind === 'income' ? 'ms-pos' : 'ms-neg'}`}
                       >
                         {entry.kind === 'income' ? '+' : '−'}
-                        {formatCurrency(entry.amount)}
+                        {money(entry.amount)}
                       </span>
                     </span>
                     <span className="ms-ledger-meta">
@@ -353,7 +369,7 @@ export function ResumoTab() {
           <div className="ms-card-head">
             <div>
               <h3 className="ms-card-title">Recorrentes</h3>
-              <span className="ms-muted">{formatCurrency(recurringTotal)} por mês</span>
+              <span className="ms-muted">{money(recurringTotal)} por mês</span>
             </div>
             <div className="ms-card-actions">
               <Link className="ms-btn ms-btn-ghost" to="/financas/recorrentes">
@@ -374,7 +390,7 @@ export function ResumoTab() {
                       <span className="ms-sub-name">{item.description}</span>
                       <span className="ms-sub-meta">{cat?.name ?? 'Todo mês'}</span>
                     </span>
-                    <span className="ms-sub-amount">{formatCurrency(item.amount)}</span>
+                    <span className="ms-sub-amount">{money(item.amount)}</span>
                   </div>
                 );
               })
@@ -386,7 +402,7 @@ export function ResumoTab() {
           <div className="ms-card-head">
             <div>
               <h3 className="ms-card-title">Parcelamentos</h3>
-              <span className="ms-muted">{formatCurrency(installmentsTotal)} neste mês</span>
+              <span className="ms-muted">{money(installmentsTotal)} neste mês</span>
             </div>
             <div className="ms-card-actions">
               <Link className="ms-btn ms-btn-ghost" to="/financas/recorrentes/parcelamentos">
@@ -420,7 +436,7 @@ export function ResumoTab() {
                         <span className="ms-progress-fill" style={{ width: `${(no / total) * 100}%` }} />
                       </span>
                     </span>
-                    <span className="ms-sub-amount">{formatCurrency(item.amount)}</span>
+                    <span className="ms-sub-amount">{money(item.amount)}</span>
                   </div>
                 );
               })

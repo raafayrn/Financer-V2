@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { formatCompact, formatCurrency } from '../../utils/format';
 import { useFinancas } from './context';
+import { useHideValues } from '../../lib/hideValues';
 
 const W = 640;
 const H = 230;
@@ -42,6 +43,8 @@ export function RitmoDeGastos() {
   const { expenses, summary, year, month } = useFinancas();
   const [hover, setHover] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+  const { hidden, mask } = useHideValues();
+  const money = (v: number) => mask(formatCurrency(v));
 
   const days = new Date(year, month, 0).getDate();
   const now = new Date();
@@ -88,6 +91,19 @@ export function RitmoDeGastos() {
     setHover(Math.max(1, Math.min(lastDay, day)));
   }
 
+  // Setas percorrem os dias pelo teclado (o mouse não é o único jeito de ler).
+  function onKey(ev: React.KeyboardEvent<SVGSVGElement>) {
+    if (lastDay === 0) return;
+    const step = ev.key === 'ArrowRight' ? 1 : ev.key === 'ArrowLeft' ? -1 : 0;
+    if (ev.key === 'Home' || ev.key === 'End') {
+      ev.preventDefault();
+      setHover(ev.key === 'Home' ? 1 : lastDay);
+    } else if (step !== 0) {
+      ev.preventDefault();
+      setHover((h) => Math.max(1, Math.min(lastDay, (h ?? lastDay) + step)));
+    }
+  }
+
   const hoverIdeal = hover !== null ? (limit / days) * hover : 0;
   const hoverReal = hover !== null ? cumulative[hover - 1] : 0;
 
@@ -96,7 +112,7 @@ export function RitmoDeGastos() {
       <div className="ms-card-head ms-card-head-plain">
         <div>
           <h3 className="ms-card-title">Ritmo de gastos</h3>
-          <span className="ms-muted">Passe o mouse para comparar cada dia.</span>
+          <span className="ms-muted">Toque ou passe o mouse para comparar cada dia.</span>
         </div>
         <div className="ms-card-actions ms-chart-legend">
           <span>
@@ -117,15 +133,24 @@ export function RitmoDeGastos() {
             ref={svgRef}
             viewBox={`0 0 ${W} ${H}`}
             role="img"
-            aria-label="Gasto acumulado do mês comparado ao ritmo da renda"
+            aria-label="Gasto acumulado do mês comparado ao ritmo da renda. Use as setas para ver cada dia."
+            tabIndex={lastDay === 0 ? -1 : 0}
             onPointerMove={onMove}
-            onPointerLeave={() => setHover(null)}
+            onPointerDown={onMove}
+            // No toque o "leave" vem logo depois do dedo sair; o valor
+            // tocado fica na tela até tocar em outro lugar.
+            onPointerLeave={(ev) => {
+              if (ev.pointerType === 'mouse') setHover(null);
+            }}
+            onKeyDown={onKey}
+            onFocus={() => setHover((h) => h ?? (lastDay || null))}
+            onBlur={() => setHover(null)}
           >
             {ticks.map((t) => (
               <g key={t}>
                 <line className="ms-pace-grid" x1={PAD.left} x2={W - PAD.right} y1={y(t)} y2={y(t)} />
                 <text className="ms-pace-axis" x={PAD.left - 8} y={y(t) + 3} textAnchor="end">
-                  {formatCompact(t)}
+                  {hidden ? '•••' : formatCompact(t)}
                 </text>
               </g>
             ))}
@@ -146,16 +171,17 @@ export function RitmoDeGastos() {
           {hover !== null && (
             <div
               className="ms-pace-tip"
+              aria-live="polite"
               style={{ left: `${(x(hover) / W) * 100}%`, top: `${(y(hoverReal) / H) * 100}%` }}
             >
               <b>
                 Dia {hover}/{String(month).padStart(2, '0')}
               </b>
-              Gasto: {formatCurrency(hoverReal)}
+              Gasto: {money(hoverReal)}
               {limit > 0 && (
                 <>
                   <br />
-                  Ritmo: {formatCurrency(hoverIdeal)}
+                  Ritmo: {money(hoverIdeal)}
                 </>
               )}
             </div>
